@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>要確認リスト ｜ 漢字マスター</title>
+<script src="data/kanji/all_grades.js"></script>
+<style>
+  :root {
+    --bg: #F7F5F2;
+    --card: #FFFFFF;
+    --ink: #1A1A1A;
+    --ink-sub: #666;
+    --accent: #D4471E;
+    --accent-bg: #FFF0ED;
+    --border: #E0DDD8;
+    --shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI','Hiragino Sans','Noto Sans JP',sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+  header {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow);
+  }
+  header h1 { font-size: 16px; font-weight: 700; color: var(--accent); }
+  .header-meta { font-size: 13px; color: var(--ink-sub); }
+  .btn-back {
+    margin-left: auto; text-decoration: none; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px;
+    font-size: 13px; color: var(--ink); cursor: pointer;
+  }
+  .btn-refresh {
+    background: var(--accent-bg); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 6px 14px; font-size: 13px;
+    color: var(--accent); cursor: pointer; font-weight: 600;
+  }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+  .empty-state { text-align: center; padding: 80px 20px; color: var(--ink-sub); }
+  .empty-state .emoji { font-size: 56px; margin-bottom: 16px; }
+  .empty-state h2 { font-size: 20px; margin-bottom: 8px; }
+
+  .grade-section { margin-bottom: 36px; }
+  .grade-heading {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--accent);
+  }
+  .grade-badge { background: var(--accent); color: white; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .grade-heading h2 { font-size: 15px; }
+  .grade-count { font-size: 13px; color: var(--ink-sub); margin-left: auto; }
+
+  .kanji-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+
+  .kanji-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 8px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .kanji-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-color: var(--accent); }
+
+  .card-top { display: flex; align-items: flex-start; gap: 10px; }
+  .card-char { font-size: 38px; line-height: 1; font-family: 'Yu Mincho','游明朝',serif; min-width: 42px; }
+  .card-meta { flex: 1; }
+  .card-meta-name { font-size: 15px; font-weight: 700; }
+  .card-meta-info { font-size: 11px; color: var(--ink-sub); margin-top: 3px; }
+
+  .card-note { font-size: 12px; color: #B33927; background: var(--accent-bg); border-radius: 6px; padding: 5px 8px; line-height: 1.5; }
+  .card-note-empty { font-size: 12px; color: #aaa; font-style: italic; }
+
+  .card-preview {
+    width: 100%; aspect-ratio: 1; max-height: 100px;
+    cursor: pointer; border-radius: 8px; background: #FAFAFA;
+    border: 1px solid var(--border); overflow: hidden;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .card-preview svg { width: 90%; height: 90%; }
+
+  .card-actions { display: flex; gap: 6px; }
+  .btn-open {
+    flex: 1; padding: 6px 0; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 7px; font-size: 12px; cursor: pointer; color: var(--ink);
+    text-align: center; text-decoration: none;
+  }
+  .btn-uncheck {
+    padding: 6px 10px; background: var(--accent-bg); border: 1px solid var(--accent);
+    border-radius: 7px; font-size: 12px; cursor: pointer; color: var(--accent); font-weight: 600;
+  }
+
+  .anim-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .anim-overlay.open { display: flex; }
+  .anim-box {
+    background: var(--card); border-radius: 20px; padding: 28px 32px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column; align-items: center; gap: 16px; min-width: 300px;
+  }
+  .anim-char-label { font-size: 22px; font-weight: 700; }
+  .anim-canvas {
+    width: 200px; height: 200px; border: 1px solid var(--border);
+    border-radius: 12px; background: #FAFAFA;
+  }
+  .anim-canvas svg { width: 100%; height: 100%; }
+  .anim-controls { display: flex; gap: 10px; }
+  .anim-btn { padding: 8px 20px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 13px; }
+  .anim-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .anim-note { font-size: 13px; color: #B33927; background: var(--accent-bg); padding: 6px 12px; border-radius: 8px; width: 100%; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚠️ 要確認リスト</h1>
+  <span class="header-meta" id="total-count">読み込み中...</span>
+  <button class="btn-refresh" onclick="loadData()">🔄 再読み込み</button>
+  <a class="btn-back" href="http://localhost:3000/viewer.html">← 確認ツールへ戻る</a>
+</header>
+
+<main id="main-content">
+  <div class="empty-state"><div class="emoji">⏳</div><h2>読み込んでいます...</h2></div>
+</main>
+
+<div class="anim-overlay" id="anim-overlay">
+  <div class="anim-box">
+    <div class="anim-char-label" id="anim-label"></div>
+    <div class="anim-canvas" id="anim-canvas"></div>
+    <div class="anim-note" id="anim-note" style="display:none"></div>
+    <div class="anim-controls">
+      <button class="anim-btn primary" onclick="playAnim()">▶ 再生</button>
+      <button class="anim-btn" onclick="closeAnim()">✕ 閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:3000/api/review-status';
+const allKanji = window.ALL_GRADES_KANJI || {};
+let reviewStatus = {};
+let animData = null;
+let animTimer = null;
+let animIdx = 0;
+
+async function loadData() {
+  try {
+    const res = await fetch(API_URL + '?t=' + Date.now());
+    reviewStatus = res.ok ? await res.json() : {};
+  } catch(e) {
+    reviewStatus = JSON.parse(localStorage.getItem('kanji_review_status_all') || '{}');
+  }
+  renderPage();
+}
+
+function renderPage() {
+  const warnChars = Object.entries(reviewStatus).filter(([k, v]) => v.state === 'warn');
+  document.getElementById('total-count').textContent = warnChars.length + ' 文字が要確認';
+  const main = document.getElementById('main-content');
+  if (warnChars.length === 0) {
+    main.innerHTML = '<div class="empty-state"><div class="emoji">🎉</div><h2>要確認の文字はありません</h2><p>確認ツールで「⚠️ 要確認」を押した文字がここに表示されます。</p></div>';
+    return;
+  }
+  const byGrade = {};
+  warnChars.forEach(([char, status]) => {
+    const info = allKanji[char] || {};
+    const g = info.grade || 0;
+    if (!byGrade[g]) byGrade[g] = [];
+    byGrade[g].push({ char, status, info });
+  });
+  const gradeNames = { 0:'学年不明', 1:'小学1年生', 2:'小学2年生', 3:'小学3年生', 4:'小学4年生', 5:'小学5年生', 6:'小学6年生' };
+  let html = '';
+  Object.keys(byGrade).sort((a,b) => a-b).forEach(g => {
+    const items = byGrade[g];
+    html += '<div class="grade-section"><div class="grade-heading"><span class="grade-badge">' + (gradeNames[g]||'小学'+g+'年生') + '</span><h2>要確認の漢字</h2><span class="grade-count">' + items.length + ' 字</span></div><div class="kanji-cards">';
+    items.forEach(({ char, status, info }) => { html += renderCard(char, status, info); });
+    html += '</div></div>';
+  });
+  main.innerHTML = html;
+}
+
+function renderCard(char, status, info) {
+  const note = status.note ? '<div class="card-note">' + esc(status.note) + '</div>' : '<span class="card-note-empty">メモなし</span>';
+  const preview = buildPreview(char, info);
+  const updatedAt = status.updatedAt ? new Date(status.updatedAt).toLocaleString('ja') : '';
+  const charEsc = esc(char).replace(/'/g,"&#39;");
+  return '<div class="kanji-card" id="card-' + encodeURIComponent(char) + '">' +
+    '<div class="card-top"><div class="card-char">' + esc(char) + '</div>' +
+    '<div class="card-meta"><div class="card-meta-name">' + esc(char) + '</div>' +
+    '<div class="card-meta-info">小' + (info.grade||'?') + '年 ／ ' + (info.strokeCount||'?') + '画</div>' +
+    (updatedAt ? '<div class="card-meta-info">📅 ' + updatedAt + '</div>' : '') +
+    '</div></div>' + note +
+    '<div class="card-preview" onclick="openAnim(\'' + charEsc + '\')" title="クリックで書き順を確認">' + preview +
+    '<div style="position:absolute;bottom:4px;right:6px;font-size:10px;color:#aaa;">▶ 書き順</div></div>' +
+    '<div class="card-actions">' +
+    '<a class="btn-open" href="http://localhost:3000/viewer.html?char=' + encodeURIComponent(char) + '" target="_blank">🔍 確認ツールで開く</a>' +
+    '<button class="btn-uncheck" onclick="uncheckChar(\'' + charEsc + '\')">✕ 解除</button>' +
+    '</div></div>';
+}
+
+function buildPreview(char, info) {
+  if (!info.paths || info.paths.length === 0) return '<div style="font-size:48px;font-family:serif;">' + esc(char) + '</div>';
+  const paths = info.paths.map((d, i) => {
+    const alpha = (0.3 + (i / info.paths.length) * 0.7).toFixed(2);
+    return '<path d="' + d.replace(/"/g,'&quot;') + '" fill="none" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="' + alpha + '"/>';
+  }).join('');
+  return '<svg viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">' + paths + '</svg>';
+}
+
+async function uncheckChar(char) {
+  if (!confirm('「' + char + '」の要確認チェックを解除しますか？')) return;
+  delete reviewStatus[char];
+  try {
+    await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ char, state:'none', note:'' }) });
+  } catch(e) {}
+  localStorage.setItem('kanji_review_status_all', JSON.stringify(reviewStatus));
+  const card = document.getElementById('card-' + encodeURIComponent(char));
+  if (card) { card.style.opacity='0'; card.style.transition='opacity 0.3s'; setTimeout(renderPage, 320); }
+}
+
+function openAnim(char) {
+  const info = allKanji[char] || {};
+  animData = info; animIdx = 0; clearInterval(animTimer);
+  document.getElementById('anim-label').textContent = char + '（' + (info.strokeCount||'?') + '画）';
+  const noteEl = document.getElementById('anim-note');
+  const note = reviewStatus[char]?.note;
+  if (note) { noteEl.textContent = '📝 ' + note; noteEl.style.display = ''; }
+  else { noteEl.style.display = 'none'; }
+  renderAnimFrame(0);
+  document.getElementById('anim-overlay').classList.add('open');
+}
+
+function renderAnimFrame(upTo) {
+  if (!animData.paths) return;
+  const canvas = document.getElementById('anim-canvas');
+  let html = animData.paths.slice(0, upTo+1).map((d, i) => {
+    const cur = i === upTo;
+    return '<path d="' + d.replace(/"/g,'&quot;') + '" fill="none" stroke="' + (cur ? '#D4471E' : '#1A1A1A') + '" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="' + (cur ? 1 : 0.35) + '"/>';
+  }).join('');
+  if (animData.numbers && animData.numbers[upTo]) {
+    const n = animData.numbers[upTo];
+    html += '<circle cx="' + n.x + '" cy="' + n.y + '" r="5" fill="#D4471E" opacity="0.85"/><text x="' + n.x + '" y="' + (n.y+4) + '" text-anchor="middle" font-size="6" fill="white" font-weight="bold">' + n.num + '</text>';
+  }
+  canvas.innerHTML = '<svg viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">' + html + '</svg>';
+}
+
+function playAnim() {
+  if (!animData) return;
+  clearInterval(animTimer); animIdx = 0; renderAnimFrame(0);
+  animTimer = setInterval(() => {
+    animIdx++;
+    if (animIdx >= (animData.paths?.length||1)) { clearInterval(animTimer); return; }
+    renderAnimFrame(animIdx);
+  }, 700);
+}
+
+function closeAnim() { clearInterval(animTimer); document.getElementById('anim-overlay').classList.remove('open'); }
+document.getElementById('anim-overlay').addEventListener('click', (e) => { if (e.target === document.getElementById('anim-overlay')) closeAnim(); });
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+loadData();
+</script>
+</body>
+</html>
