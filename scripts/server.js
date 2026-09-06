@@ -124,6 +124,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── API: Save Batch Strokes ─────────────────────────────────────────
+  if (pathname === '/api/save-batch-strokes' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { items } = JSON.parse(body);
+        if (!Array.isArray(items) || items.length === 0) throw new Error('Items array required');
+
+        // Group by grade
+        const byGrade = {};
+        for (const item of items) {
+          if (!item.char || !item.grade || !item.paths) continue;
+          if (!byGrade[item.grade]) byGrade[item.grade] = [];
+          byGrade[item.grade].push(item);
+        }
+
+        let updatedCount = 0;
+        for (const grade of Object.keys(byGrade)) {
+          const gradeFile = path.join(ROOT_DIR, 'data', 'kanji', `grade${grade}.json`);
+          if (!fs.existsSync(gradeFile)) continue;
+          const data = JSON.parse(fs.readFileSync(gradeFile, 'utf-8'));
+
+          for (const item of byGrade[grade]) {
+            if (data[item.char]) {
+              data[item.char].paths = item.paths;
+              if (item.numbers) data[item.char].numbers = item.numbers;
+              updatedCount++;
+            }
+          }
+          fs.writeFileSync(gradeFile, JSON.stringify(data, null, 2), 'utf-8');
+          console.log(`[Editor] Batch updated ${byGrade[grade].length} characters in grade${grade}.json`);
+        }
+
+        // Run sync-data.js once
+        const { execSync } = require('child_process');
+        execSync('node scripts/sync-data.js', { cwd: ROOT_DIR, stdio: 'pipe' });
+        console.log(`[Editor] Synced all grade data files after batch save (${updatedCount} items).`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, count: updatedCount }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
   // ── API: Refetch Char from KanjiVG ─────────────────────────────────
   if (pathname === '/api/refetch-char' && req.method === 'POST') {
     let body = '';
