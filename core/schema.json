@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kanji Core Data (per grade)",
+  "description": "小学校学年別漢字ストロークデータ。各漢字のSVGパス（書き順）と画番号座標を含む。",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "#/$defs/KanjiEntry"
+  },
+  "$defs": {
+    "KanjiEntry": {
+      "type": "object",
+      "required": ["char", "grade", "codePoint", "strokeCount", "paths", "numbers"],
+      "properties": {
+        "char": {
+          "type": "string",
+          "description": "漢字1文字",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "grade": {
+          "type": "integer",
+          "description": "配当学年（1〜6）",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "codePoint": {
+          "type": "string",
+          "description": "Unicode コードポイント（5桁16進数、0パディング）",
+          "pattern": "^[0-9a-f]{5}$"
+        },
+        "strokeCount": {
+          "type": "integer",
+          "description": "画数",
+          "minimum": 1
+        },
+        "paths": {
+          "type": "array",
+          "description": "SVGパス文字列の配列（書き順）。viewBox は 0 0 109 109。KanjiVG由来。",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "numbers": {
+          "type": "array",
+          "description": "画番号の表示座標（SVG座標系）",
+          "items": {
+            "type": "object",
+            "required": ["num", "x", "y"],
+            "properties": {
+              "num": {
+                "type": "integer",
+                "description": "画番号（1始まり）",
+                "minimum": 1
+              },
+              "x": {
+                "type": "number",
+                "description": "X座標（viewBox 0-109）"
+              },
+              "y": {
+                "type": "number",
+                "description": "Y座標（viewBox 0-109）"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

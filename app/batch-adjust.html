@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字 字形点検・教科書体比較ビューア（全学年対応）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f5f1eb;
+      --panel-bg: #FDF8F0;
+      --accent: #B33927;
+      --accent-hover: #962c1d;
+      --text: #3E342B;
+      --border: #E8DFD1;
+      --success: #27ae60;
+      --warning: #f39c12;
+    }
+    @font-face {
+      font-family: 'KyokashoFont';
+      src: local('UD Digi Kyokasho NK-B'),
+           local('UD Digi Kyokasho N-B'),
+           local('UD デジタル 教科書体 NK-B'),
+           local('UD デジタル 教科書体 N-B'),
+           local('UD Digi Kyokasho NK-R'),
+           local('HGKyokashotai'),
+           local('HG教科書体'),
+           local('Klee One');
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-color);
+      color: var(--text);
+      padding: 20px;
+    }
+    header {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      position: sticky;
+      top: 10px;
+      z-index: 100;
+    }
+    .header-left h1 {
+      font-size: 20px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .header-left p {
+      font-size: 13px;
+      color: #666;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    select, button {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      background: #fff;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    button:hover:not(:disabled) {
+      background: #f0eae1;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    button.primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: #e0d8cc;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.1s;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    .card.improved {
+      border-color: #a3d9a5;
+    }
+    .card-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .char-name {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--text);
+    }
+    .stroke-count {
+      font-size: 12px;
+      color: #888;
+    }
+    .svg-preview {
+      width: 140px;
+      height: 140px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .svg-preview svg {
+      width: 100%;
+      height: 100%;
+    }
+    .card-stats {
+      font-size: 11px;
+      color: #666;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-improved { background: #e8f8f5; color: #117a65; }
+    .badge-same { background: #f4f6f7; color: #7f8c8d; }
+    .card-actions {
+      width: 100%;
+      display: flex;
+      gap: 6px;
+    }
+    .card-actions a {
+      flex: 1;
+      text-align: center;
+      padding: 6px 0;
+      font-size: 12px;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      display: block;
+    }
+    .card-actions a:hover {
+      background: #f0eae1;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    #status-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+    #status-toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1 id="page-title">漢字 字形点検・教科書体比較ビューア</h1>
+      <p id="page-subtitle">教科書体（薄グレー）とKanjiVGストローク（黒線）を重ねて表示し、字形を点検・編集できます。</p>
+      <div class="progress-bar-container">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <label style="font-size:12px; font-weight:bold;">学年:</label>
+      <select id="grade-select" style="font-weight:bold; color:var(--accent);">
+        <option value="1">小学1年 (80字)</option>
+        <option value="2" selected>小学2年 (160字)</option>
+        <option value="3">小学3年 (200字)</option>
+        <option value="4">小学4年 (202字)</option>
+        <option value="5">小学5年 (193字)</option>
+        <option value="6">小学6年 (191字)</option>
+      </select>
+
+      <label style="font-size:12px; font-weight:bold;">フォント:</label>
+      <select id="font-select">
+        <option value="UD Digi Kyokasho NK-B" selected>UDデジタル教科書体 (Win)</option>
+        <option value="Klee One">Klee One (Webフォント)</option>
+      </select>
+
+      <span style="border-left:1px solid var(--border); height:24px; margin:0 4px;"></span>
+      <input id="search-input" type="text" placeholder="🔍 漢字を検索" 
+        style="width:100px; padding:6px 10px; font-size:16px; text-align:center; border:1px solid var(--border); border-radius:6px; font-family:inherit;" maxlength="1">
+
+      <button id="start-btn" class="primary">🪄 一括自動調整</button>
+      <button id="save-btn" disabled>💾 この学年を保存</button>
+    </div>
+  </header>
+
+  <div id="summary-bar" style="margin-bottom: 16px; font-size: 13px; color: #555; display: none;">
+    <span id="summary-text"></span>
+  </div>
+
+  <div id="kanji-grid" class="grid">
+    <!-- Rendered cards -->
+  </div>
+
+  <div id="status-toast"></div>
+
+  <script src="../data/kanji/all_grades.js"></script>
+  <script>
+    const KANJI_BY_GRADE = {
+      1: [...'一右雨円王音下火花貝学気九休玉金空月犬見五口校左三山子四糸字耳七車手十出女小上森人水正生青夕石赤千川先早草足村大男竹中虫町天田土二日入年白八百文木本名目立力林六'],
+      2: [...'引羽雲園遠何科夏家歌画回会海絵外角楽活間丸岩顔汽記帰弓牛魚京強教近兄形計元言原戸古午後語工公広交光考行高黄合谷国黒今才細作算止市矢姉思紙寺自時室社弱首秋週春書少場色食心新親図数西声星晴切雪線折組船走多太体台地池知茶昼長鳥朝直通弟店点電刀冬当東答頭同道読南肉馬買売麦半番父風分聞米歩母方北毎妹万明鳴毛門夜野友用曜来里理話'],
+      3: [...'悪安暗医委意育員院飲運泳駅央横屋温化界開階寒感漢館岸起期客究急級宮球去橋業曲局銀区苦具君係軽血決研県庫湖向幸港号根祭皿仕死使始指歯詩次事持式実写者主守取酒受州拾終習集住重宿所暑助昭消商章勝乗植申身神真深進世整昔全相送想息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農波配倍箱畑発反坂板皮悲美鼻筆氷表秒病品負部服福物平返勉放味命面問役薬由油有遊予羊洋葉陽様落流旅両緑礼列練路和'],
+      4: [...'愛案以衣位囲胃印英栄塩億加果貨課芽改械害街各覚完官管関観願希季紀喜旗器機議求泣救給挙漁共協鏡競極訓軍郡径型景芸欠結建健験固功好候航康告差最菜材昨札刷殺察参産散残士氏史司試児治辞失借種周祝順初松笑唱焼象照賞臣信成省清静席積節説浅戦選然争倉巣束側続卒孫帯隊達単置仲貯兆腸低底停的典伝徒努灯堂働特得毒熱念敗梅博拍飯飛費必票標不夫付府副粉兵別辺変便包法望牧末満未脈無約勇要養浴利陸良料量輪類令冷例歴連老労録'],
+      5: [...'圧移因永営衛易益液演応往桜恩可仮価河過賀快解格確額刊幹慣眼基寄規技義逆久旧居許境均禁句群経潔件券険検限現減故個護効厚耕鉱構興講混査再災妻採際在財罪雑酸賛支志枝師資飼示似識質舎謝授修述術準序招承証条状常情織職制性政勢精製税責績接設舌絶銭祖素総造増測属率損退貸態団断築張提程適敵統銅導徳独任燃能破犯判版比肥非備俵評貧布婦富武復複仏編弁保墓報豊防貿暴務夢迷綿輸余預容略留領'],
+      6: [...'異遺域宇映延沿我灰拡革閣割株干巻看簡危机揮貴疑吸供胸郷勤筋系敬警劇激穴絹権憲厳己呼庁座裁策冊蚕至私姿視詞誌磁射捨尺若樹収宗就衆従縦縮熟純処署諸除将傷障城蒸針仁垂推寸盛聖誠宣専泉洗染善奏窓創装層操蔵臓存尊誕担探暖段頂潮賃痛展討党糖届難乳認納脳派拝背肺俳班晩否批秘腹奮並陛閉片補暮宝訪亡忘棒枚幕密盟模訳郵優幼欲翌乱卵覧裏律臨朗論']
+    };
+
+    const grid = document.getElementById('kanji-grid');
+    const startBtn = document.getElementById('start-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const fontSelect = document.getElementById('font-select');
+    const gradeSelect = document.getElementById('grade-select');
+    const summaryBar = document.getElementById('summary-bar');
+    const summaryText = document.getElementById('summary-text');
+    const toast = document.getElementById('status-toast');
+
+    let currentGrade = 2;
+    const adjustedData = {};
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function getFontFamily(fontName) {
+      if (fontName.includes('UD Digi')) {
+        return "'KyokashoFont', sans-serif";
+      }
+      return `"${fontName}", sans-serif`;
+    }
+
+    // Measure font bounding box
+    function renderFontMaskAligned(char, fontName, W, RES, targetCx, targetCy, targetW, targetH) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = W; tempCanvas.height = W;
+      const tCtx = tempCanvas.getContext('2d');
+      const fontSize = W * 0.85;
+      tCtx.font = `400 ${fontSize}px ${getFontFamily(fontName)}`;
+      tCtx.textBaseline = 'middle';
+      tCtx.textAlign = 'center';
+      tCtx.fillStyle = '#000';
+      tCtx.fillText(char, W * 0.5, W * 0.5);
+
+      const tData = tCtx.getImageData(0, 0, W, W).data;
+      let fMinX = W, fMinY = W, fMaxX = 0, fMaxY = 0, count = 0;
+      for (let y = 0; y < W; y++) {
+        for (let x = 0; x < W; x++) {
+          if (tData[(y * W + x) * 4 + 3] > 40) {
+            if (x < fMinX) fMinX = x; if (x > fMaxX) fMaxX = x;
+            if (y < fMinY) fMinY = y; if (y > fMaxY) fMaxY = y;
+            count++;
+          }
+        }
+      }
+
+      if (count === 0) return { mask: new Uint8Array(W * W), canvas: tempCanvas };
+
+      const fCx = (fMinX + fMaxX) / 2;
+      const fCy = (fMinY + fMaxY) / 2;
+      const fW = Math.max(1, fMaxX - fMinX);
+      const fH = Math.max(1, fMaxY - fMinY);
+
+      const scale = Math.min(1.15, Math.max(0.85, (targetW && targetH) ? Math.min(targetW / fW, targetH / fH) : 1));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = W;
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.translate(targetCx, targetCy);
+      ctx.scale(scale, scale);
+      ctx.translate(-fCx, -fCy);
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+
+      const data = ctx.getImageData(0, 0, W, W).data;
+      const mask = new Uint8Array(W * W);
+      for (let i = 0; i < W * W; i++) {
+        if (data[i * 4 + 3] > 40) mask[i] = 1;
+      }
+      return { mask, canvas };
+    }
+
+    function renderStrokePixels(pathStr, W, RES) {
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = W;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(RES, RES);
+      const p2d = new Path2D(pathStr);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke(p2d);
+
+      const data = ctx.getImageData(0, 0, W, W).data;
+      const px = [];
+      let minX = W, minY = W, maxX = 0, maxY = 0;
+      for (let y = 0; y < W; y++) {
+        for (let x = 0; x < W; x++) {
+          if (data[(y * W + x) * 4 + 3] > 40) {
+            px.push(x | (y << 16));
+            if (x < minX) minX = x; if (x > maxX) maxX = x;
+            if (y < minY) minY = y; if (y > maxY) maxY = y;
+          }
+        }
+      }
+      return { pixels: px, minX, minY, maxX, maxY };
+    }
+
+    // Render single preview with font overlay
+    function renderOverlayPreview(char) {
+      const kanji = window.ALL_GRADES_KANJI ? window.ALL_GRADES_KANJI[char] : null;
+      if (!kanji || !kanji.paths) return '';
+
+      const RES = 2; // Fast 2x for preview
+      const W = 109 * RES;
+      const strokePixelsList = [];
+      let kMinX = W, kMinY = W, kMaxX = 0, kMaxY = 0;
+      for (let si = 0; si < kanji.paths.length; si++) {
+        const sp = renderStrokePixels(kanji.paths[si], W, RES);
+        strokePixelsList.push(sp);
+        if (sp.pixels.length > 0) {
+          if (sp.minX < kMinX) kMinX = sp.minX;
+          if (sp.minY < kMinY) kMinY = sp.minY;
+          if (sp.maxX > kMaxX) kMaxX = sp.maxX;
+          if (sp.maxY > kMaxY) kMaxY = sp.maxY;
+        }
+      }
+      const kCx = (kMinX + kMaxX) / 2;
+      const kCy = (kMinY + kMaxY) / 2;
+      const kW = Math.max(1, kMaxX - kMinX);
+      const kH = Math.max(1, kMaxY - kMinY);
+
+      const fontName = fontSelect.value;
+      const { canvas: fontCanvas } = renderFontMaskAligned(char, fontName, W, RES, kCx, kCy, kW, kH);
+      const fontDataUrl = fontCanvas.toDataURL('image/png');
+
+      const strokePathsHtml = kanji.paths.map(p => 
+        `<path d="${p}" fill="none" stroke="#1B1612" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />`
+      ).join('');
+
+      return `
+        <svg viewBox="0 0 109 109">
+          <line x1="54.5" y1="0" x2="54.5" y2="109" stroke="#E8DFD1" stroke-width="0.5" stroke-dasharray="2 2" />
+          <line x1="0" y1="54.5" x2="109" y2="54.5" stroke="#E8DFD1" stroke-width="0.5" stroke-dasharray="2 2" />
+          <image href="${fontDataUrl}" x="0" y="0" width="109" height="109" opacity="0.32" />
+          ${strokePathsHtml}
+        </svg>
+      `;
+    }
+
+    // Initialize cards for selected grade
+    async function loadGradeCards(grade) {
+      currentGrade = parseInt(grade, 10);
+      const list = KANJI_BY_GRADE[currentGrade] || [];
+      grid.innerHTML = '';
+      summaryBar.style.display = 'none';
+      saveBtn.disabled = true;
+
+      document.getElementById('page-title').textContent = `小学${currentGrade}年生 漢字（${list.length}字）字形点検・比較`;
+
+      // Create skeleton cards
+      for (const char of list) {
+        const kanji = window.ALL_GRADES_KANJI ? window.ALL_GRADES_KANJI[char] : null;
+        const strokeCount = kanji ? kanji.strokeCount : '?';
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `card-${char}`;
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="char-name">${char}</span>
+            <span class="stroke-count">${strokeCount}画</span>
+          </div>
+          <div class="svg-preview" id="preview-${char}">
+            <div style="display:flex; height:100%; align-items:center; justify-content:center; color:#bbb; font-size:11px;">読込中...</div>
+          </div>
+          <div class="card-stats" id="stats-${char}">
+            <span>教科書体重ね合わせ</span>
+          </div>
+          <div class="card-actions">
+            <a href="stroke-editor.html?char=${encodeURIComponent(char)}&grade=${currentGrade}" target="_blank" title="個別エディタで開く">✏️ 編集</a>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+
+      // Render overlay for cards progressively
+      for (let i = 0; i < list.length; i++) {
+        const char = list[i];
+        const preview = document.getElementById(`preview-${char}`);
+        if (preview) {
+          preview.innerHTML = renderOverlayPreview(char);
+        }
+        if (i % 8 === 0) await new Promise(r => setTimeout(r, 10));
+      }
+    }
+
+    gradeSelect.addEventListener('change', () => {
+      sessionStorage.removeItem('batch-scroll');
+      const url = new URL(window.location);
+      url.searchParams.set('grade', gradeSelect.value);
+      history.replaceState(null, '', url);
+      loadGradeCards(gradeSelect.value);
+    });
+
+    fontSelect.addEventListener('change', () => {
+      loadGradeCards(gradeSelect.value);
+    });
+
+    // Search: type a kanji to jump to it
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', async () => {
+      const char = searchInput.value.trim();
+      if (!char) return;
+      
+      // Find which grade this character belongs to
+      let foundGrade = null;
+      for (const [g, list] of Object.entries(KANJI_BY_GRADE)) {
+        if (list.includes(char)) { foundGrade = g; break; }
+      }
+      
+      if (!foundGrade) {
+        searchInput.style.borderColor = '#e74c3c';
+        searchInput.style.background = '#fef0f0';
+        return;
+      }
+      
+      searchInput.style.borderColor = '#27ae60';
+      searchInput.style.background = '#f0fef0';
+      
+      // Switch grade if needed
+      if (gradeSelect.value !== foundGrade) {
+        gradeSelect.value = foundGrade;
+        const url = new URL(window.location);
+        url.searchParams.set('grade', foundGrade);
+        history.replaceState(null, '', url);
+        await loadGradeCards(foundGrade);
+      }
+      
+      // Scroll to and highlight the card
+      const card = document.getElementById(`card-${char}`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.transition = 'box-shadow 0.3s, border-color 0.3s';
+        card.style.boxShadow = '0 0 0 3px var(--accent)';
+        card.style.borderColor = 'var(--accent)';
+        setTimeout(() => {
+          card.style.boxShadow = '';
+          card.style.borderColor = '';
+        }, 2000);
+      }
+      
+      // Clear after a moment
+      setTimeout(() => {
+        searchInput.value = '';
+        searchInput.style.borderColor = '';
+        searchInput.style.background = '';
+      }, 1500);
+    });
+
+    // Save scroll position before unload
+    window.addEventListener('beforeunload', () => {
+      sessionStorage.setItem('batch-scroll', JSON.stringify({
+        grade: gradeSelect.value,
+        scrollY: window.scrollY
+      }));
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Check URL param ?grade=N
+      const params = new URLSearchParams(window.location.search);
+      const g = params.get('grade') || '2';
+      gradeSelect.value = g;
+      await loadGradeCards(g);
+
+      // Restore scroll position if same grade
+      try {
+        const saved = JSON.parse(sessionStorage.getItem('batch-scroll'));
+        if (saved && saved.grade === g && saved.scrollY) {
+          window.scrollTo(0, saved.scrollY);
+        }
+      } catch(e) {}
+    });
+  </script>
+</body>
+</html>

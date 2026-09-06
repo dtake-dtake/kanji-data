@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Curriculum Data (per grade)",
+  "description": "教科書カリキュラムデータ。出版社別の単元構成・漢字の読み・用例を含む。",
+  "type": "object",
+  "required": ["grade", "totalKanji", "units", "kanjiDetails"],
+  "properties": {
+    "grade": {
+      "type": "integer",
+      "description": "学年（1〜6）",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "totalKanji": {
+      "type": "integer",
+      "description": "この学年の配当漢字の総数"
+    },
+    "units": {
+      "type": "array",
+      "description": "単元一覧（教科書掲載順）",
+      "items": {
+        "$ref": "#/$defs/Unit"
+      }
+    },
+    "kanjiDetails": {
+      "type": "object",
+      "description": "各漢字の詳細情報（キー＝漢字1文字）",
+      "additionalProperties": {
+        "$ref": "#/$defs/KanjiDetail"
+      }
+    },
+    "specialWords": {
+      "type": "array",
+      "description": "特別な読み方の言葉（熟字訓など）",
+      "items": {
+        "$ref": "#/$defs/SpecialWord"
+      }
+    }
+  },
+  "$defs": {
+    "Unit": {
+      "type": "object",
+      "required": ["book", "name", "kanji"],
+      "properties": {
+        "book": {
+          "type": "string",
+          "description": "上巻/下巻",
+          "enum": ["上", "下"]
+        },
+        "name": {
+          "type": "string",
+          "description": "単元名"
+        },
+        "kanji": {
+          "type": "array",
+          "description": "この単元で学ぶ漢字（教科書掲載順）",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1
+          }
+        }
+      }
+    },
+    "KanjiDetail": {
+      "type": "object",
+      "required": ["book", "page", "unit", "readings", "examples"],
+      "properties": {
+        "book": {
+          "type": "string",
+          "description": "上巻/下巻",
+          "enum": ["上", "下"]
+        },
+        "page": {
+          "type": "integer",
+          "description": "教科書巻末のページ番号"
+        },
+        "unit": {
+          "type": "string",
+          "description": "所属する単元名"
+        },
+        "readings": {
+          "type": "object",
+          "required": ["primary", "on", "kun"],
+          "properties": {
+            "primary": {
+              "type": "string",
+              "description": "代表的な読み"
+            },
+            "on": {
+              "type": "array",
+              "description": "音読み",
+              "items": { "type": "string" }
+            },
+            "kun": {
+              "type": "array",
+              "description": "訓読み（送り仮名付き）",
+              "items": { "type": "string" }
+            },
+            "extra": {
+              "type": "array",
+              "description": "小学校で習わない読み（表外読み）",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "examples": {
+          "type": "array",
+          "description": "用例（熟語や短文）",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "SpecialWord": {
+      "type": "object",
+      "required": ["word", "reading", "page", "book"],
+      "properties": {
+        "word": {
+          "type": "string",
+          "description": "熟字訓や特殊な読みの言葉"
+        },
+        "reading": {
+          "type": "string",
+          "description": "読み方（ひらがな）"
+        },
+        "page": {
+          "type": "integer",
+          "description": "教科書のページ番号"
+        },
+        "book": {
+          "type": "string",
+          "description": "上巻/下巻",
+          "enum": ["上", "下"]
+        }
+      }
+    }
+  }
+}

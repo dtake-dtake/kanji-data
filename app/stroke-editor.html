@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字 筆順エディタ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kurenaido&family=Yomogi&family=Kaisei+Opti:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f5f1eb;
+      --panel-bg: #FDF8F0;
+      --accent: #B33927;
+      --text: #3E342B;
+      --border: #E8DFD1;
+      --hover: #f0e9e1;
+      --stroke-gray: #D8CEBE;
+      --stroke-dark: #1B1612;
+      --handle-line: #999;
+      --point-m: #e74c3c;
+      --point-end: #3498db;
+      --point-cp: #f1c40f;
+    }
+
+    @font-face {
+      font-family: 'KyokashoFont';
+      src: local('UD Digi Kyokasho NK-B'),
+           local('UD Digi Kyokasho N-B'),
+           local('UD デジタル 教科書体 NK-B'),
+           local('UD デジタル 教科書体 N-B'),
+           local('UD Digi Kyokasho NK-R'),
+           local('HGKyokashotai'),
+           local('HG教科書体'),
+           local('Klee One');
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      margin-right: 20px;
+      color: var(--accent);
+    }
+
+    input, select, button {
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background-color: #fff;
+      color: var(--text);
+    }
+
+    button {
+      cursor: pointer;
+      background-color: #fff;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background-color: var(--hover);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      background-color: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    button.primary:hover {
+      background-color: #9A2F1F;
+    }
+
+    .kanji-input {
+      width: 80px;
+      text-align: center;
+      font-size: 1.2rem;
+    }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      display: flex;
+      padding: 20px;
+      gap: 20px;
+      overflow: hidden;
+    }
+
+    .editor-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      align-items: center;
+      position: relative;
+    }
+
+    .editor-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .editor-toolbar button.active {
+      background-color: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .svg-container {
+      width: 100%;
+      max-width: 700px;
+      aspect-ratio: 1;
+      background-color: #eee8df;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      position: relative;
+      user-select: none;
+    }
+
+    svg#main-editor {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* Editor SVG styles */
+    .grid-line {
+      stroke: var(--border);
+      stroke-width: 0.5;
+    }
+    .grid-line.dash {
+      stroke-dasharray: 4 4;
+    }
+    .stroke-bg {
+      fill: none;
+      stroke: var(--stroke-gray);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      cursor: pointer;
+      pointer-events: stroke;
+    }
+    .stroke-bg:hover {
+      stroke: #C4B7A3;
+    }
+    .stroke-active {
+      fill: none;
+      stroke: var(--stroke-dark);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .handle-line {
+      stroke: var(--handle-line);
+      stroke-width: 0.5;
+      stroke-dasharray: 2 2;
+    }
+    .guide-line {
+      stroke: #e74cdc;
+      stroke-width: 0.4;
+      stroke-dasharray: 1.5 1.5;
+      pointer-events: none;
+    }
+    .guide-line.center {
+      stroke: #3498db;
+      stroke-width: 0.5;
+    }
+    .control-point {
+      cursor: grab;
+      stroke: #fff;
+      stroke-width: 0.5;
+    }
+    .control-point:active {
+      cursor: grabbing;
+    }
+    .cp-m { fill: var(--point-m); }
+    .cp-end { fill: var(--point-end); }
+    .cp-bezier { fill: var(--point-cp); stroke: #888; stroke-width: 0.5; }
+
+    .sidebar {
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .panel {
+      background-color: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .panel h2 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+    }
+
+    .preview-svg-container {
+      width: 100%;
+      aspect-ratio: 1;
+      background-color: #fff;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+    svg#preview-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .stroke-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .stroke-selector button {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stroke-selector button.active {
+      background-color: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .image-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .image-controls input[type="range"] {
+      width: 100%;
+    }
+
+    .action-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .action-panel .row {
+      display: flex;
+      gap: 10px;
+    }
+    .action-panel button {
+      flex: 1;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(62, 52, 43, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+    #toast.show {
+      opacity: 1;
+    }
+
+    /* Drag over overlay */
+    #drag-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(179, 57, 39, 0.1);
+      border: 2px dashed var(--accent);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: var(--accent);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .svg-container.dragover #drag-overlay {
+      display: flex;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>漢字 筆順エディタ</h1>
+    <div>
+      <input type="text" id="kanji-input" class="kanji-input" placeholder="漢字" maxlength="1">
+      <select id="grade-select">
+        <option value="1">小1</option>
+        <option value="2">小2</option>
+        <option value="3">小3</option>
+        <option value="4">小4</option>
+        <option value="5">小5</option>
+        <option value="6">小6</option>
+        <option value="0">全学年</option>
+      </select>
+    </div>
+    <button id="load-btn">読み込み</button>
+    <button id="prev-char-btn" title="前の漢字 (←)">◀</button>
+    <span id="char-position" style="font-size:12px; color:var(--text); min-width:60px; text-align:center;">- / -</span>
+    <button id="next-char-btn" title="次の漢字 (→)">▶</button>
+    
+    <div style="flex-grow: 1;"></div>
+    
+    <button id="font-overlay-btn" title="教科書体フォントを重ねて表示">🔤 教科書体を重ねる</button>
+    <button id="auto-adjust-btn" title="教科書体に合わせて自動調整" style="background:#2ecc71; color:#fff;">🪄 自動調整</button>
+    
+    <button id="undo-btn" title="Ctrl+Z">↶ 元に戻す</button>
+    <button id="redo-btn" title="Ctrl+Y">↷ やり直し</button>
+    
+    <button id="refetch-btn" title="KanjiVGから再取得">🔄 KanjiVGに戻す</button>
+    <button id="ref-site-btn" title="参考サイトで正しい字形を確認">📖 参考を見る</button>
+    <a href="batch-adjust.html" target="_blank" style="text-decoration:none;"><button type="button" title="1年生80文字を一括で教科書体にフィット" style="background:#8e44ad; color:#fff;">⚡ 1年生一括調整</button></a>
+    <button id="save-btn" class="primary">💾 保存</button>
+  </header>
+
+  <main>
+    <div class="editor-section">
+      <div class="editor-toolbar">
+        <button id="toggle-move-mode" title="ストローク全体を移動します">全体移動: OFF</button>
+        <button id="toggle-rotate-mode" title="支点を設定してクリック→他の点をドラッグで回転">回転: OFF</button>
+        <span style="margin-left:auto; display:flex; align-items:center; gap:4px;">
+          <button id="zoom-out-btn" title="縮小" style="min-width:28px;">−</button>
+          <span id="zoom-level" style="font-size:12px; min-width:40px; text-align:center;">100%</span>
+          <button id="zoom-in-btn" title="拡大" style="min-width:28px;">+</button>
+          <button id="zoom-reset-btn" title="リセット" style="font-size:11px;">リセット</button>
+        </span>
+      </div>
+      <div class="svg-container" id="svg-container">
+        <svg id="main-editor" viewBox="-14 -14 137 137" xmlns="http://www.w3.org/2000/svg">
+          <!-- White square for kanji grid area -->
+          <rect x="0" y="0" width="109" height="109" fill="#ffffff" stroke="#c8bcab" stroke-width="0.8" />
+          
+          <g id="grid-layer">
+            <line x1="54.5" y1="0" x2="54.5" y2="109" class="grid-line dash" />
+            <line x1="0" y1="54.5" x2="109" y2="54.5" class="grid-line dash" />
+            <line x1="0" y1="0" x2="109" y2="109" class="grid-line dash" />
+            <line x1="109" y1="0" x2="0" y2="109" class="grid-line dash" />
+          </g>
+          
+          <image id="ref-image" x="0" y="0" width="109" height="109" opacity="0.3" preserveAspectRatio="xMidYMid slice" style="display:none; pointer-events:none;" />
+          <g id="strokes-bg-layer"></g>
+          <g id="stroke-active-layer"></g>
+          <g id="controls-layer"></g>
+          <g id="guides-layer"></g>
+        </svg>
+        <div id="drag-overlay">画像をドロップ</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="panel">
+        <h2>プレビュー</h2>
+        <div class="preview-svg-container">
+          <svg id="preview-svg" viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">
+            <g id="preview-strokes-layer"></g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>画選択</h2>
+        <div id="stroke-selector" class="stroke-selector">
+          <!-- Buttons injected via JS -->
+        </div>
+        <div style="display:flex; gap:4px; margin-top:8px;">
+          <button id="del-segment-btn" title="選択中のセグメントを削除 (Delete)" style="flex:1; font-size:11px;">🗑️ セグメント削除</button>
+          <button id="add-segment-btn" title="末尾にセグメント追加 (Insert)" style="flex:1; font-size:11px;">➕ セグメント追加</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>参照画像</h2>
+        <div style="margin-bottom:8px;">
+          <label style="font-size:12px; display:block; margin-bottom:4px; font-weight:bold;">フォント参照</label>
+          <select id="font-select" style="width:100%; margin-bottom:4px; font-size:12px;">
+            <option value="UD Digi Kyokasho NK-B" selected>UDデジタル教科書体 (Win)</option>
+            <option value="Klee One">Klee One (ペン字風)</option>
+            <option value="Zen Kurenaido">ZEN紅道 (ボールペン風)</option>
+            <option value="Yomogi">よもぎ (丸みある手書き)</option>
+            <option value="Kaisei Opti">楷世オプティ (楷書風)</option>
+          </select>
+          <div style="display:flex; gap:4px; align-items:center; font-size:11px;">
+            <label>サイズ</label>
+            <input type="range" id="font-size-adjust" min="60" max="120" step="1" value="92" style="flex:1;">
+            <span id="font-size-val">92%</span>
+          </div>
+          <div style="display:flex; gap:4px; align-items:center; font-size:11px;">
+            <label>位置Y</label>
+            <input type="range" id="font-y-adjust" min="70" max="98" step="0.5" value="87" style="flex:1;">
+            <span id="font-y-val">87%</span>
+          </div>
+        </div>
+        <div class="image-controls">
+          <input type="file" id="image-file" accept="image/*" style="display:none;">
+          <button id="image-upload-btn">画像を選択</button>
+          <button id="image-clear-btn">画像をクリア</button>
+          <label for="image-opacity">透明度</label>
+          <input type="range" id="image-opacity" min="0" max="1" step="0.1" value="0.3">
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <!-- Load Kanji Data -->
+  <script src="../data/kanji/all_grades.js"></script>
+
+  <script>
+    // --- State ---
+    let currentKanji = null;
+    let currentStrokeIndex = -1;
+    let parsedStrokes = []; // Array of segment arrays
+    let selectedSegmentIndex = -1; // For segment delete
+    let isWholeMoveMode = false;
+    let isRotateMode = false;
+    let pivotPoint = null; // { x, y } - rotation pivot
+    let selectedStrokes = new Set(); // For multi-stroke group move
+    
+    // History
+    let history = [];
+    let historyIndex = -1;
+    let isRestoringHistory = false;
+    
+    // Dragging state
+    let dragState = null;
+    
+    // Zoom/pan state with outer margin
+    const BASE_PAD = 14;
+    const TOTAL_CANVAS_SIZE = 109 + BASE_PAD * 2; // 137
+    let zoomLevel = 1;
+    let panX = -BASE_PAD, panY = -BASE_PAD;
+    let isPanning = false;
+    let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
+    
+    // Font overlay state
+    let fontOverlayActive = false;
+
+    // Kanji lists per grade for navigation
+    const KANJI_BY_GRADE = {
+      1: [...'一右雨円王音下火花貝学気九休玉金空月犬見五口校左三山子四糸字耳七車手十出女小上森人水正生青夕石赤千川先早草足村大男竹中虫町天田土二日入年白八百文木本名目立力林六'],
+      2: [...'引羽雲園遠何科夏家歌画回会海絵外角楽活間丸岩顔汽記帰弓牛魚京強教近兄形計元言原戸古午後語工公広交光考行高黄合谷国黒今才細作算止市矢姉思紙寺自時室社弱首秋週春書少場色食心新親図数西声星晴切雪線折組船走多太体台地池知茶昼長鳥朝直通弟店点電刀冬当東答頭同道読南肉馬買売麦半番父風分聞米歩母方北毎妹万明鳴毛門夜野友用曜来里理話'],
+      3: [...'悪安暗医委意育員院飲運泳駅央横屋温化界開階寒感漢館岸起期客究急級宮球去橋業曲局銀区苦具君係軽血決研県庫湖向幸港号根祭皿仕死使始指歯詩次事持式実写者主守取酒受州拾終習集住重宿所暑助昭消商章勝乗植申身神真深進世整昔全相送想息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農波配倍箱畑発反坂板皮悲美鼻筆氷表秒病品負部服福物平返勉放味命面問役薬由油有遊予羊洋葉陽様落流旅両緑礼列練路和'],
+      4: [...'愛案以衣位囲胃印英栄塩億加果貨課芽改械害街各覚完官管関観願希季紀喜旗器機議求泣救給挙漁共協鏡競極訓軍郡径型景芸欠結建健験固功好候航康告差最菜材昨札刷殺察参産散残士氏史司試児治辞失借種周祝順初松笑唱焼象照賞臣信成省清静席積節説浅戦選然争倉巣束側続卒孫帯隊達単置仲貯兆腸低底停的典伝徒努灯堂働特得毒熱念敗梅博拍飯飛費必票標不夫付府副粉兵別辺変便包法望牧末満未脈無約勇要養浴利陸良料量輪類令冷例歴連老労録'],
+      5: [...'圧移因永営衛易益液演応往桜恩可仮価河過賀快解格確額刊幹慣眼基寄規技義逆久旧居許境均禁句群経潔件券険検限現減故個護効厚耕鉱構興講混査再災妻採際在財罪雑酸賛支志枝師資飼示似識質舎謝授修述術準序招承証条状常情織職制性政勢精製税責績接設舌絶銭祖素総造増測属率損退貸態団断築張提程適敵統銅導徳独任燃能破犯判版比肥非備俵評貧布婦富武復複仏編弁保墓報豊防貿暴務夢迷綿輸余預容略留領'],
+      6: [...'異遺域宇映延沿我灰拡革閣割株干巻看簡危机揮貴疑吸供胸郷勤筋系敬警劇激穴絹権憲厳己呼庁座裁策冊蚕至私姿視詞誌磁射捨尺若樹収宗就衆従縦縮熟純処署諸除将傷障城蒸針仁垂推寸盛聖誠宣専泉洗染善奏窓創装層操蔵臓存尊誕担探暖段頂潮賃痛展討党糖届難乳認納脳派拝背肺俳班晩否批秘腹奮並陛閉片補暮宝訪亡忘棒枚幕密盟模訳郵優幼欲翌乱卵覧裏律臨朗論']
+    };
+
+    function getGradeList(grade) {
+      if (grade === 0 || grade === '0') {
+        // All grades
+        let all = [];
+        for (let g = 1; g <= 6; g++) all = all.concat(KANJI_BY_GRADE[g]);
+        return all;
+      }
+      return KANJI_BY_GRADE[grade] || [];
+    }
+
+    // --- DOM Elements ---
+    const kanjiInput = document.getElementById('kanji-input');
+    const gradeSelect = document.getElementById('grade-select');
+    const loadBtn = document.getElementById('load-btn');
+    const toggleMoveModeBtn = document.getElementById('toggle-move-mode');
+    
+    const svgEditor = document.getElementById('main-editor');
+    const strokesBgLayer = document.getElementById('strokes-bg-layer');
+    const strokeActiveLayer = document.getElementById('stroke-active-layer');
+    const controlsLayer = document.getElementById('controls-layer');
+    const guidesLayer = document.getElementById('guides-layer');
+    const refImage = document.getElementById('ref-image');
+    
+    const previewStrokesLayer = document.getElementById('preview-strokes-layer');
+    const strokeSelector = document.getElementById('stroke-selector');
+    
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const refetchBtn = document.getElementById('refetch-btn');
+    
+    const imageUploadBtn = document.getElementById('image-upload-btn');
+    const imageFile = document.getElementById('image-file');
+    const imageClearBtn = document.getElementById('image-clear-btn');
+    const imageOpacity = document.getElementById('image-opacity');
+    const svgContainer = document.getElementById('svg-container');
+
+    // --- Init ---
+    function init() {
+      // Parse URL params
+      const params = new URLSearchParams(window.location.search);
+      const charParam = params.get('char');
+      const gradeParam = params.get('grade');
+      
+      if (gradeParam) {
+        gradeSelect.value = gradeParam;
+      }
+      
+      if (charParam) {
+        kanjiInput.value = charParam;
+        loadKanji(charParam);
+      }
+      
+      setupEventListeners();
+    }
+
+    // --- Data Handling ---
+    function findKanji(char) {
+      if (!window.ALL_GRADES_KANJI) {
+        showToast('エラー: 漢字データ(all_grades.js)が見つかりません');
+        return null;
+      }
+      return window.ALL_GRADES_KANJI[char] || null;
+    }
+
+    function loadKanji(char) {
+      if (!char) return;
+      
+      const kanjiData = findKanji(char);
+      if (!kanjiData) {
+        showToast(`漢字「${char}」が見つかりませんでした`);
+        return;
+      }
+      
+      currentKanji = JSON.parse(JSON.stringify(kanjiData)); // Deep copy
+      
+      // Parse paths
+      parsedStrokes = currentKanji.paths.map(pathStr => parseSvgPath(pathStr));
+      
+      // Reset history
+      history = [];
+      historyIndex = -1;
+      pushHistory();
+      
+      // Select first stroke
+      currentStrokeIndex = 0;
+      selectedStrokes.clear();
+      
+      updateUI();
+      updateCharPosition();
+      if (fontOverlayActive) renderFontOverlay();
+    }
+
+    // --- Navigation ---
+    function navigateChar(delta) {
+      if (!currentKanji) return;
+      const grade = parseInt(gradeSelect.value) || currentKanji.grade;
+      const list = getGradeList(grade);
+      const idx = list.indexOf(currentKanji.char);
+      if (idx === -1) return;
+      const newIdx = idx + delta;
+      if (newIdx < 0 || newIdx >= list.length) return;
+      const newChar = list[newIdx];
+      kanjiInput.value = newChar;
+      // Update URL
+      const url = new URL(window.location);
+      url.searchParams.set('char', newChar);
+      url.searchParams.set('grade', grade);
+      window.history.replaceState({}, '', url);
+      loadKanji(newChar);
+    }
+
+    function updateCharPosition() {
+      const posSpan = document.getElementById('char-position');
+      if (!currentKanji) { posSpan.textContent = '- / -'; return; }
+      const grade = parseInt(gradeSelect.value) || currentKanji.grade;
+      const list = getGradeList(grade);
+      const idx = list.indexOf(currentKanji.char);
+      posSpan.textContent = idx >= 0 ? `${idx + 1} / ${list.length}` : '- / -';
+    }
+
+    // --- Font Overlay & Auto-Adjust ---
+    function getSelectedFont() {
+      const sel = document.getElementById('font-select');
+      const val = sel.value;
+      if (val.includes('UD Digi')) {
+        return "'KyokashoFont', sans-serif";
+      }
+      return `"${val}", sans-serif`;
+    }
+    
+    function renderFontToCanvas() {
+      const size = 109 * 4; // 4x resolution
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // 1. Render all KanjiVG strokes to canvas to get PIXEL bounding box
+      //    (matches batch-adjust.html's approach exactly)
+      const strokeCanvas = document.createElement('canvas');
+      strokeCanvas.width = size; strokeCanvas.height = size;
+      const sCtx = strokeCanvas.getContext('2d');
+      sCtx.scale(size / 109, size / 109);
+      for (const segs of parsedStrokes) {
+        const pathStr = buildSvgPath(segs);
+        const p2d = new Path2D(pathStr);
+        sCtx.strokeStyle = '#000';
+        sCtx.lineWidth = 4;
+        sCtx.lineCap = 'round';
+        sCtx.lineJoin = 'round';
+        sCtx.stroke(p2d);
+      }
+      const sData = sCtx.getImageData(0, 0, size, size).data;
+      let kMinX = size, kMinY = size, kMaxX = 0, kMaxY = 0;
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (sData[(y * size + x) * 4 + 3] > 40) {
+            if (x < kMinX) kMinX = x; if (x > kMaxX) kMaxX = x;
+            if (y < kMinY) kMinY = y; if (y > kMaxY) kMaxY = y;
+          }
+        }
+      }
+      const kCx = (kMinX + kMaxX) / 2;
+      const kCy = (kMinY + kMaxY) / 2;
+      const kW = Math.max(1, kMaxX - kMinX);
+      const kH = Math.max(1, kMaxY - kMinY);
+
+      // 2. Render font to measure its bounding box
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = size; tempCanvas.height = size;
+      const tCtx = tempCanvas.getContext('2d');
+      const baseFontSize = size * 0.85;
+      tCtx.font = `400 ${baseFontSize}px ${getSelectedFont()}`;
+      tCtx.textBaseline = 'middle';
+      tCtx.textAlign = 'center';
+      tCtx.fillStyle = '#000';
+      tCtx.fillText(currentKanji.char, size * 0.5, size * 0.5);
+
+      const tData = tCtx.getImageData(0, 0, size, size).data;
+      let fMinX = size, fMinY = size, fMaxX = 0, fMaxY = 0, count = 0;
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (tData[(y * size + x) * 4 + 3] > 40) {
+            if (x < fMinX) fMinX = x; if (x > fMaxX) fMaxX = x;
+            if (y < fMinY) fMinY = y; if (y > fMaxY) fMaxY = y;
+            count++;
+          }
+        }
+      }
+
+      if (count === 0) return { canvas: tempCanvas, ctx: tCtx, size };
+
+      const fCx = (fMinX + fMaxX) / 2;
+      const fCy = (fMinY + fMaxY) / 2;
+      const fW = Math.max(1, fMaxX - fMinX);
+      const fH = Math.max(1, fMaxY - fMinY);
+
+      // 3. Scale and translate font to match KanjiVG stroke area
+      const scale = Math.min(1.15, Math.max(0.85, Math.min(kW / fW, kH / fH)));
+
+      // User manual offset sliders
+      const userSizeScale = parseFloat(document.getElementById('font-size-adjust').value) / 92;
+      const userYOffset = (parseFloat(document.getElementById('font-y-adjust').value) - 87) * (size / 109) * 0.5;
+      const finalScale = scale * userSizeScale;
+
+      ctx.save();
+      ctx.translate(kCx, kCy + userYOffset);
+      ctx.scale(finalScale, finalScale);
+      ctx.translate(-fCx, -fCy);
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, size };
+    }
+
+    function getCanvasBBox(ctx, w, h) {
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      let minX = w, minY = h, maxX = 0, maxY = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const a = data[(y * w + x) * 4 + 3]; // alpha
+          if (a > 30) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      return { minX, minY, maxX, maxY };
+    }
+
+    async function renderFontOverlay() {
+      if (!currentKanji) return;
+      
+      // Wait for the selected font to load for this specific character
+      const fontName = document.getElementById('font-select').value;
+      try {
+        await document.fonts.load(`400 100px "${fontName}"`, currentKanji.char);
+      } catch(e) { /* fallback if font fails */ }
+      
+      const { canvas, ctx, size } = renderFontToCanvas();
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      refImage.setAttribute('href', dataUrl);
+      refImage.setAttribute('x', '0');
+      refImage.setAttribute('y', '0');
+      refImage.setAttribute('width', '109');
+      refImage.setAttribute('height', '109');
+      refImage.style.display = 'block';
+      refImage.setAttribute('opacity', imageOpacity.value);
+      fontOverlayActive = true;
+      document.getElementById('font-overlay-btn').style.background = '#e74cdc';
+      document.getElementById('font-overlay-btn').style.color = '#fff';
+    }
+
+    function toggleFontOverlay() {
+      if (fontOverlayActive) {
+        refImage.style.display = 'none';
+        fontOverlayActive = false;
+        document.getElementById('font-overlay-btn').style.background = '';
+        document.getElementById('font-overlay-btn').style.color = '';
+      } else {
+        renderFontOverlay();
+      }
+    }
+
+    // --- Zoom & Pan with outer margin ---
+    function updateViewBox() {
+      const vw = TOTAL_CANVAS_SIZE / zoomLevel;
+      const vh = TOTAL_CANVAS_SIZE / zoomLevel;
+      // Allow panning with generous bounds around canvas
+      const minPan = -BASE_PAD - 20;
+      const maxPanX = 109 + BASE_PAD + 20 - vw;
+      const maxPanY = 109 + BASE_PAD + 20 - vh;
+      panX = Math.max(minPan, Math.min(panX, maxPanX));
+      panY = Math.max(minPan, Math.min(panY, maxPanY));
+      svgEditor.setAttribute('viewBox', `${panX} ${panY} ${vw} ${vh}`);
+      document.getElementById('zoom-level').textContent = `${Math.round(zoomLevel * 100)}%`;
+      // Re-render to update control point sizes
+      if (currentKanji) renderEditor();
+    }
+
+    function zoomAt(factor, svgX, svgY) {
+      const oldZoom = zoomLevel;
+      zoomLevel = Math.max(1, Math.min(8, zoomLevel * factor));
+      // Zoom toward the point (svgX, svgY)
+      const ratio = 1 - oldZoom / zoomLevel;
+      panX += (svgX - panX) * ratio;
+      panY += (svgY - panY) * ratio;
+      updateViewBox();
+    }
+
+    function resetZoom() {
+      zoomLevel = 1;
+      panX = -BASE_PAD;
+      panY = -BASE_PAD;
+      updateViewBox();
+    }
+
+    // Get bounding box of all SVG stroke paths
+    function getSvgPathsBBox() {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const segs of parsedStrokes) {
+        for (const seg of segs) {
+          if (seg.type === 'M') {
+            minX = Math.min(minX, seg.x); maxX = Math.max(maxX, seg.x);
+            minY = Math.min(minY, seg.y); maxY = Math.max(maxY, seg.y);
+          }
+          if (seg.abs_x !== undefined) {
+            minX = Math.min(minX, seg.abs_x); maxX = Math.max(maxX, seg.abs_x);
+            minY = Math.min(minY, seg.abs_y); maxY = Math.max(maxY, seg.abs_y);
+          }
+          if (seg.abs_cp1x !== undefined) {
+            minX = Math.min(minX, seg.abs_cp1x); maxX = Math.max(maxX, seg.abs_cp1x);
+            minY = Math.min(minY, seg.abs_cp1y); maxY = Math.max(maxY, seg.abs_cp1y);
+          }
+          if (seg.abs_cp2x !== undefined) {
+            minX = Math.min(minX, seg.abs_cp2x); maxX = Math.max(maxX, seg.abs_cp2x);
+            minY = Math.min(minY, seg.abs_cp2y); maxY = Math.max(maxY, seg.abs_cp2y);
+          }
+        }
+      }
+      return { minX, minY, maxX, maxY };
+    }
+
+    // Auto-adjust: align SVG paths to match font glyph
+    // --- Auto-adjust: snap stroke points to font centerline ---
+    async function autoAdjust() {
+      if (!currentKanji || parsedStrokes.length === 0) return;
+      
+      const btn = document.getElementById('auto-adjust-btn');
+      btn.textContent = '⏳ 調整中...';
+      btn.disabled = true;
+      
+      const fontName = document.getElementById('font-select').value;
+      try {
+        await document.fonts.load(`400 100px "${fontName}"`, currentKanji.char);
+      } catch(e) {}
+      await new Promise(r => setTimeout(r, 50));
+      
+      const RES = 3;
+      const W = 109 * RES;
+      
+      // 1. Render font → pixel map
+      const fontCanvas = document.createElement('canvas');
+      fontCanvas.width = W; fontCanvas.height = W;
+      const fontCtx = fontCanvas.getContext('2d');
+      const fontSizePct = parseFloat(document.getElementById('font-size-adjust').value) / 100;
+      const yPct = parseFloat(document.getElementById('font-y-adjust').value) / 100;
+      fontCtx.font = `400 ${W * fontSizePct}px "${fontName}", sans-serif`;
+      fontCtx.textBaseline = 'alphabetic';
+      fontCtx.textAlign = 'center';
+      fontCtx.fillStyle = '#000';
+      fontCtx.fillText(currentKanji.char, W * 0.5, W * yPct);
+      
+      const fontData = fontCtx.getImageData(0, 0, W, W).data;
+      const fontSet = new Uint8Array(W * W);
+      for (let i = 0; i < W * W; i++) {
+        if (fontData[i * 4 + 3] > 30) fontSet[i] = 1;
+      }
+      
+      // 2. For each stroke, snap key points to font center
+      let adjusted = 0;
+      for (let si = 0; si < parsedStrokes.length; si++) {
+        const segs = parsedStrokes[si];
+        
+        // Snap M (start point)
+        if (segs[0] && segs[0].type === 'M') {
+          const old = { x: segs[0].x, y: segs[0].y };
+          const c = findFontCenter(old.x, old.y, fontSet, W, RES, 5);
+          const dx = c.x - old.x, dy = c.y - old.y;
+          if (Math.abs(dx) > 0.2 || Math.abs(dy) > 0.2) {
+            segs[0].x = c.x; segs[0].y = c.y;
+            // Move cp1 of the first curve segment with start point
+            if (segs[1] && segs[1].abs_cp1x !== undefined) {
+              segs[1].abs_cp1x += dx; segs[1].abs_cp1y += dy;
+            }
+            adjusted++;
+          }
+        }
+        
+        // Snap each segment's end point
+        for (let i = 1; i < segs.length; i++) {
+          const seg = segs[i];
+          if (seg.abs_x === undefined) continue;
+          
+          const old = { x: seg.abs_x, y: seg.abs_y };
+          const c = findFontCenter(old.x, old.y, fontSet, W, RES, 5);
+          const dx = c.x - old.x, dy = c.y - old.y;
+          if (Math.abs(dx) < 0.2 && Math.abs(dy) < 0.2) continue;
+          adjusted++;
+          
+          seg.abs_x = c.x; seg.abs_y = c.y;
+          // Move cp2 with end point (preserves incoming curve shape)
+          if (seg.abs_cp2x !== undefined) {
+            seg.abs_cp2x += dx; seg.abs_cp2y += dy;
+          }
+          // Move cp1 of NEXT segment (preserves outgoing curve from this point)
+          if (i + 1 < segs.length && segs[i+1].abs_cp1x !== undefined) {
+            segs[i+1].abs_cp1x += dx; segs[i+1].abs_cp1y += dy;
+          }
+        }
+      }
+      
+      pushHistory();
+      updateUI();
+      if (fontOverlayActive) await renderFontOverlay();
+      btn.textContent = '🪄 自動調整';
+      btn.disabled = false;
+      showToast(`自動調整完了: ${adjusted}ポイントを移動`);
+    }
+    
+    // Find the center of font pixels near (svgX, svgY)
+    function findFontCenter(svgX, svgY, fontSet, W, RES, radius) {
+      const cx = Math.round(svgX * RES);
+      const cy = Math.round(svgY * RES);
+      const r = Math.round(radius * RES);
+      
+      let sumX = 0, sumY = 0, count = 0;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          // Use circular window
+          if (dx*dx + dy*dy > r*r) continue;
+          const x = cx + dx, y = cy + dy;
+          if (x >= 0 && x < W && y >= 0 && y < W) {
+            if (fontSet[y * W + x]) {
+              sumX += x; sumY += y; count++;
+            }
+          }
+        }
+      }
+      
+      if (count === 0) return { x: svgX, y: svgY }; // No font pixels nearby
+      return { x: sumX / count / RES, y: sumY / count / RES };
+    }
+
+    // --- Path Parsing and Rebuilding ---
+    // A simplified parser for the kanji SVG format
+    // Expected commands: M, c, C, s, S
+    function parseSvgPath(pathStr) {
+      const regex = /([MmcCsS])([^MmcCsS]*)/g;
+      const segments = [];
+      let match;
+      
+      let currX = 0, currY = 0; // Absolute current position
+      
+      while ((match = regex.exec(pathStr)) !== null) {
+        const cmd = match[1];
+        const argsStr = match[2].trim();
+        // Split by comma or space, handle negative signs (e.g., "1.5-2.0" -> "1.5", "-2.0")
+        const args = argsStr.replace(/([0-9])(-)/g, '$1 -').split(/[\s,]+/).filter(s => s !== '').map(Number);
+        
+        if (cmd === 'M') {
+          currX = args[0];
+          currY = args[1];
+          segments.push({ type: 'M', x: currX, y: currY });
+        } else if (cmd === 'c') {
+          // relative cubic
+          for (let i = 0; i < args.length; i += 6) {
+            const cp1x = args[i], cp1y = args[i+1];
+            const cp2x = args[i+2], cp2y = args[i+3];
+            const x = args[i+4], y = args[i+5];
+            
+            segments.push({
+              type: 'c',
+              // Store absolute coordinates for editor
+              abs_cp1x: currX + cp1x, abs_cp1y: currY + cp1y,
+              abs_cp2x: currX + cp2x, abs_cp2y: currY + cp2y,
+              abs_x: currX + x, abs_y: currY + y,
+              // Store relative for rebuilding
+              rel_cp1x: cp1x, rel_cp1y: cp1y,
+              rel_cp2x: cp2x, rel_cp2y: cp2y,
+              rel_x: x, rel_y: y
+            });
+            currX += x;
+            currY += y;
+          }
+        } else if (cmd === 'C') {
+          // absolute cubic
+          for (let i = 0; i < args.length; i += 6) {
+            const cp1x = args[i], cp1y = args[i+1];
+            const cp2x = args[i+2], cp2y = args[i+3];
+            const x = args[i+4], y = args[i+5];
+            
+            segments.push({
+              type: 'C',
+              abs_cp1x: cp1x, abs_cp1y: cp1y,
+              abs_cp2x: cp2x, abs_cp2y: cp2y,
+              abs_x: x, abs_y: y
+            });
+            currX = x;
+            currY = y;
+          }
+        } else if (cmd === 's') {
+          // relative smooth cubic
+          for (let i = 0; i < args.length; i += 4) {
+             const cp2x = args[i], cp2y = args[i+1];
+             const x = args[i+2], y = args[i+3];
+             segments.push({
+               type: 's',
+               abs_cp2x: currX + cp2x, abs_cp2y: currY + cp2y,
+               abs_x: currX + x, abs_y: currY + y,
+               rel_cp2x: cp2x, rel_cp2y: cp2y,
+               rel_x: x, rel_y: y
+             });
+             currX += x;
+             currY += y;
+          }
+        } else if (cmd === 'S') {
+           // absolute smooth cubic
+           for (let i = 0; i < args.length; i += 4) {
+             const cp2x = args[i], cp2y = args[i+1];
+             const x = args[i+2], y = args[i+3];
+             segments.push({
+               type: 'S',
+               abs_cp2x: cp2x, abs_cp2y: cp2y,
+               abs_x: x, abs_y: y
+             });
+             currX = x;
+             currY = y;
+           }
+        }
+      }
+      return segments;
+    }
+
+    function buildSvgPath(segments) {
+      let pathStr = "";
+      let currX = 0, currY = 0;
+      
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        
+        // Format numbers to 2 decimal places max to avoid huge strings
+        const f = (num) => Number(num.toFixed(2));
+        
+        if (seg.type === 'M') {
+          pathStr += `M${f(seg.x)},${f(seg.y)}`;
+          currX = seg.x;
+          currY = seg.y;
+        } else if (seg.type === 'c') {
+          // Need to re-calculate relative from absolute if points moved
+          const dx1 = seg.abs_cp1x - currX;
+          const dy1 = seg.abs_cp1y - currY;
+          const dx2 = seg.abs_cp2x - currX;
+          const dy2 = seg.abs_cp2y - currY;
+          const dx = seg.abs_x - currX;
+          const dy = seg.abs_y - currY;
+          
+          // Combine consecutive same-commands if we wanted, but we keep them separate
+          pathStr += `c${f(dx1)},${f(dy1)},${f(dx2)},${f(dy2)},${f(dx)},${f(dy)}`;
+          currX = seg.abs_x;
+          currY = seg.abs_y;
+        } else if (seg.type === 'C') {
+          pathStr += `C${f(seg.abs_cp1x)},${f(seg.abs_cp1y)},${f(seg.abs_cp2x)},${f(seg.abs_cp2y)},${f(seg.abs_x)},${f(seg.abs_y)}`;
+          currX = seg.abs_x;
+          currY = seg.abs_y;
+        } else if (seg.type === 's') {
+          const dx2 = seg.abs_cp2x - currX;
+          const dy2 = seg.abs_cp2y - currY;
+          const dx = seg.abs_x - currX;
+          const dy = seg.abs_y - currY;
+          pathStr += `s${f(dx2)},${f(dy2)},${f(dx)},${f(dy)}`;
+          currX = seg.abs_x;
+          currY = seg.abs_y;
+        } else if (seg.type === 'S') {
+          pathStr += `S${f(seg.abs_cp2x)},${f(seg.abs_cp2y)},${f(seg.abs_x)},${f(seg.abs_y)}`;
+          currX = seg.abs_x;
+          currY = seg.abs_y;
+        }
+      }
+      return pathStr;
+    }
+
+    // --- Rendering UI ---
+    function updateUI() {
+      if (!currentKanji) return;
+      
+      renderStrokeSelector();
+      renderEditor();
+      renderPreview();
+    }
+
+    function renderStrokeSelector() {
+      strokeSelector.innerHTML = '';
+      for (let i = 0; i < parsedStrokes.length; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i + 1;
+        if (i === currentStrokeIndex) {
+          btn.classList.add('active');
+        }
+        if (selectedStrokes.has(i)) {
+          btn.style.outline = '2px solid #e74cdc';
+          btn.style.outlineOffset = '-2px';
+        }
+        btn.addEventListener('click', (e) => {
+          if (e.shiftKey) {
+            // Shift+click: toggle multi-select
+            if (selectedStrokes.has(i)) {
+              selectedStrokes.delete(i);
+            } else {
+              selectedStrokes.add(i);
+            }
+            // Also add current stroke to selection
+            selectedStrokes.add(currentStrokeIndex);
+          } else {
+            // Normal click: single select, clear multi-select
+            selectedStrokes.clear();
+            currentStrokeIndex = i;
+          }
+          updateUI();
+        });
+        strokeSelector.appendChild(btn);
+      }
+      // Show group count
+      if (selectedStrokes.size > 1) {
+        const info = document.createElement('span');
+        info.textContent = ` ${selectedStrokes.size}画選択中`;
+        info.style.cssText = 'font-size:11px; color:#e74cdc; margin-left:6px;';
+        strokeSelector.appendChild(info);
+      }
+    }
+
+    function renderPreview() {
+      previewStrokesLayer.innerHTML = '';
+      
+      for (let i = 0; i < parsedStrokes.length; i++) {
+        const pathStr = buildSvgPath(parsedStrokes[i]);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathStr);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', i === currentStrokeIndex ? 'var(--accent)' : 'var(--stroke-dark)');
+        path.setAttribute('stroke-width', '3');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        previewStrokesLayer.appendChild(path);
+      }
+    }
+
+    function renderEditor() {
+      strokesBgLayer.innerHTML = '';
+      strokeActiveLayer.innerHTML = '';
+      controlsLayer.innerHTML = '';
+      
+      const sw = Math.max(1.5, 3 / zoomLevel); // stroke width scaled
+      const swActive = Math.max(2, 5 / zoomLevel);
+      
+      // Draw background strokes
+      for (let i = 0; i < parsedStrokes.length; i++) {
+        const pathStr = buildSvgPath(parsedStrokes[i]);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathStr);
+        
+        if (i === currentStrokeIndex) {
+          path.classList.add('stroke-active');
+          path.style.strokeWidth = swActive;
+          strokeActiveLayer.appendChild(path);
+        } else if (selectedStrokes.has(i)) {
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', '#e74cdc');
+          path.setAttribute('stroke-width', swActive);
+          path.setAttribute('stroke-linecap', 'round');
+          path.setAttribute('stroke-linejoin', 'round');
+          path.style.cursor = 'pointer';
+          path.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentStrokeIndex = i;
+            updateUI();
+          });
+          strokeActiveLayer.appendChild(path);
+        } else {
+          path.classList.add('stroke-bg');
+          path.style.strokeWidth = sw;
+          path.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentStrokeIndex = i;
+            updateUI();
+          });
+          strokesBgLayer.appendChild(path);
+        }
+      }
+      
+      // Draw controls for active stroke
+      if (currentStrokeIndex >= 0 && currentStrokeIndex < parsedStrokes.length) {
+        const segments = parsedStrokes[currentStrokeIndex];
+        let prevX = 0, prevY = 0;
+        
+        for (let i = 0; i < segments.length; i++) {
+          const seg = segments[i];
+          
+          if (seg.type === 'M') {
+            createControlPoint(seg.x, seg.y, 'M', i, 'cp-m', 4);
+            prevX = seg.x;
+            prevY = seg.y;
+          } else if (seg.type === 'c' || seg.type === 'C') {
+            // Handle lines
+            createHandleLine(prevX, prevY, seg.abs_cp1x, seg.abs_cp1y);
+            createHandleLine(seg.abs_x, seg.abs_y, seg.abs_cp2x, seg.abs_cp2y);
+            
+            // CP1
+            createControlPoint(seg.abs_cp1x, seg.abs_cp1y, 'cp1', i, 'cp-bezier', 3);
+            // CP2
+            createControlPoint(seg.abs_cp2x, seg.abs_cp2y, 'cp2', i, 'cp-bezier', 3);
+            // End
+            createControlPoint(seg.abs_x, seg.abs_y, 'end', i, 'cp-end', 4);
+            
+            prevX = seg.abs_x;
+            prevY = seg.abs_y;
+          } else if (seg.type === 's' || seg.type === 'S') {
+            createHandleLine(seg.abs_x, seg.abs_y, seg.abs_cp2x, seg.abs_cp2y);
+            
+            createControlPoint(seg.abs_cp2x, seg.abs_cp2y, 'cp2', i, 'cp-bezier', 3);
+            createControlPoint(seg.abs_x, seg.abs_y, 'end', i, 'cp-end', 4);
+            
+            prevX = seg.abs_x;
+            prevY = seg.abs_y;
+          }
+        }
+      }
+      
+      // Draw pivot point if in rotate mode
+      if (isRotateMode && pivotPoint) {
+        const r = 5 / zoomLevel;
+        const pivot = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        // Diamond shape
+        const px = pivotPoint.x, py = pivotPoint.y;
+        pivot.setAttribute('points', 
+          `${px},${py-r} ${px+r},${py} ${px},${py+r} ${px-r},${py}`);
+        pivot.setAttribute('fill', '#e74cdc');
+        pivot.setAttribute('stroke', '#fff');
+        pivot.setAttribute('stroke-width', 0.5 / zoomLevel);
+        pivot.style.pointerEvents = 'none';
+        controlsLayer.appendChild(pivot);
+        
+        // Cross lines through pivot
+        const cr = 12 / zoomLevel;
+        for (const [x1,y1,x2,y2] of [[px-cr,py,px+cr,py],[px,py-cr,px,py+cr]]) {
+          const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+          l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+          l.setAttribute('stroke','#e74cdc'); l.setAttribute('stroke-width', 0.3/zoomLevel);
+          l.setAttribute('stroke-dasharray', `${1/zoomLevel} ${1/zoomLevel}`);
+          l.style.pointerEvents = 'none';
+          controlsLayer.appendChild(l);
+        }
+      }
+    }
+
+    function createHandleLine(x1, y1, x2, y2) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+      line.setAttribute('stroke-width', 0.5 / zoomLevel);
+      line.setAttribute('stroke-dasharray', `${2/zoomLevel} ${2/zoomLevel}`);
+      line.classList.add('handle-line');
+      controlsLayer.appendChild(line);
+    }
+
+    function createControlPoint(x, y, pointType, segmentIndex, cssClass, radius) {
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', x);
+      circle.setAttribute('cy', y);
+      circle.setAttribute('r', radius / zoomLevel);
+      circle.setAttribute('stroke-width', 0.5 / zoomLevel);
+      circle.classList.add('control-point', cssClass);
+      
+      const startDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Rotation mode: first click sets pivot, subsequent drags rotate
+        if (isRotateMode) {
+          if (!pivotPoint || (pivotPoint.x === x && pivotPoint.y === y)) {
+            // Set this point as pivot
+            pivotPoint = { x, y };
+            renderEditor();
+            return;
+          }
+          // Start rotation drag
+          const pt = getMousePosition(e);
+          const startAngle = Math.atan2(pt.y - pivotPoint.y, pt.x - pivotPoint.x);
+          dragState = {
+            segmentIndex, pointType,
+            isRotation: true,
+            pivotX: pivotPoint.x, pivotY: pivotPoint.y,
+            startAngle,
+            startSegments: JSON.parse(JSON.stringify(parsedStrokes[currentStrokeIndex])),
+            groupSnapshots: {},
+            strokesToMove: selectedStrokes.size > 1 ? new Set(selectedStrokes) : new Set([currentStrokeIndex]),
+            startX: pt.x, startY: pt.y
+          };
+          // Save snapshots for all strokes to rotate
+          for (const si of dragState.strokesToMove) {
+            dragState.groupSnapshots[si] = JSON.parse(JSON.stringify(parsedStrokes[si]));
+          }
+          return;
+        }
+        
+        const pt = getMousePosition(e);
+        
+        // Build group snapshot for multi-stroke move
+        const groupSnapshots = {};
+        const strokesToMove = selectedStrokes.size > 1 ? selectedStrokes : new Set([currentStrokeIndex]);
+        for (const si of strokesToMove) {
+          groupSnapshots[si] = JSON.parse(JSON.stringify(parsedStrokes[si]));
+        }
+        
+        dragState = {
+          segmentIndex,
+          pointType,
+          startSegments: JSON.parse(JSON.stringify(parsedStrokes[currentStrokeIndex])),
+          groupSnapshots,
+          strokesToMove,
+          startX: pt.x,
+          startY: pt.y
+        };
+        selectedSegmentIndex = segmentIndex;
+      };
+      
+      circle.addEventListener('mousedown', startDrag);
+      circle.addEventListener('touchstart', startDrag, {passive: false});
+      
+      controlsLayer.appendChild(circle);
+    }
+
+    // --- Dragging Logic ---
+    function getMousePosition(evt) {
+      const CTM = svgEditor.getScreenCTM();
+      let clientX, clientY;
+      
+      if (evt.touches && evt.touches.length > 0) {
+        clientX = evt.touches[0].clientX;
+        clientY = evt.touches[0].clientY;
+      } else {
+        clientX = evt.clientX;
+        clientY = evt.clientY;
+      }
+      
+      return {
+        x: (clientX - CTM.e) / CTM.a,
+        y: (clientY - CTM.f) / CTM.d
+      };
+    }
+
+    function getSnapThreshold() { return 1.5 / zoomLevel; }
+
+    function collectAlignmentTargets(excludeStrokeIndex) {
+      const targets = [];
+      // Center lines
+      targets.push({ x: 54.5, y: 54.5, type: 'center' });
+      // Quarter lines
+      targets.push({ x: 27.25, y: 27.25, type: 'center' });
+      targets.push({ x: 81.75, y: 81.75, type: 'center' });
+      
+      // All stroke start/end points
+      for (let si = 0; si < parsedStrokes.length; si++) {
+        if (si === excludeStrokeIndex && !isWholeMoveMode) continue;
+        const segs = parsedStrokes[si];
+        for (const seg of segs) {
+          if (seg.type === 'M') {
+            targets.push({ x: seg.x, y: seg.y, type: 'point' });
+          } else if (seg.abs_x !== undefined) {
+            targets.push({ x: seg.abs_x, y: seg.abs_y, type: 'point' });
+          }
+        }
+      }
+      return targets;
+    }
+
+    function showGuides(px, py) {
+      guidesLayer.innerHTML = '';
+      const targets = collectAlignmentTargets(currentStrokeIndex);
+      let snappedX = null, snappedY = null;
+      
+      const thresh = getSnapThreshold();
+      for (const t of targets) {
+        // Vertical alignment (same X)
+        if (Math.abs(px - t.x) < thresh) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', t.x); line.setAttribute('y1', 0);
+          line.setAttribute('x2', t.x); line.setAttribute('y2', 109);
+          line.classList.add('guide-line');
+          if (t.type === 'center') line.classList.add('center');
+          guidesLayer.appendChild(line);
+          snappedX = t.x;
+        }
+        // Horizontal alignment (same Y)
+        if (Math.abs(py - t.y) < thresh) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', 0); line.setAttribute('y1', t.y);
+          line.setAttribute('x2', 109); line.setAttribute('y2', t.y);
+          line.classList.add('guide-line');
+          if (t.type === 'center') line.classList.add('center');
+          guidesLayer.appendChild(line);
+          snappedY = t.y;
+        }
+      }
+      return { snappedX, snappedY };
+    }
+
+    function handleDrag(e) {
+      if (!dragState) return;
+      e.preventDefault();
+      
+      const pt = getMousePosition(e);
+      const segments = parsedStrokes[currentStrokeIndex];
+      const { segmentIndex, pointType, startSegments, startX, startY } = dragState;
+      
+      // Rotation drag
+      if (dragState.isRotation) {
+        const { pivotX, pivotY, startAngle, groupSnapshots, strokesToMove } = dragState;
+        const currentAngle = Math.atan2(pt.y - pivotY, pt.x - pivotX);
+        const dAngle = currentAngle - startAngle;
+        
+        const cos = Math.cos(dAngle), sin = Math.sin(dAngle);
+        function rotate(ox, oy) {
+          const rx = ox - pivotX, ry = oy - pivotY;
+          return { x: pivotX + rx*cos - ry*sin, y: pivotY + rx*sin + ry*cos };
+        }
+        
+        for (const si of strokesToMove) {
+          const segs = parsedStrokes[si];
+          const origSegs = groupSnapshots[si];
+          if (!origSegs) continue;
+          for (let i = 0; i < segs.length; i++) {
+            const orig = origSegs[i], seg = segs[i];
+            if (seg.type === 'M') {
+              const r = rotate(orig.x, orig.y); seg.x = r.x; seg.y = r.y;
+            }
+            if (seg.abs_x !== undefined) {
+              const r = rotate(orig.abs_x, orig.abs_y); seg.abs_x = r.x; seg.abs_y = r.y;
+            }
+            if (seg.abs_cp1x !== undefined) {
+              const r = rotate(orig.abs_cp1x, orig.abs_cp1y); seg.abs_cp1x = r.x; seg.abs_cp1y = r.y;
+            }
+            if (seg.abs_cp2x !== undefined) {
+              const r = rotate(orig.abs_cp2x, orig.abs_cp2y); seg.abs_cp2x = r.x; seg.abs_cp2y = r.y;
+            }
+          }
+        }
+        renderEditor();
+        return;
+      }
+      
+      const dx = pt.x - startX;
+      const dy = pt.y - startY;
+
+      if (isWholeMoveMode) {
+        // Move all selected strokes by dx, dy
+        const { groupSnapshots, strokesToMove } = dragState;
+        for (const si of strokesToMove) {
+          const segs = parsedStrokes[si];
+          const origSegs = groupSnapshots[si];
+          if (!origSegs) continue;
+          for (let i = 0; i < segs.length; i++) {
+            const orig = origSegs[i];
+            const seg = segs[i];
+            if (seg.type === 'M') {
+              seg.x = orig.x + dx;
+              seg.y = orig.y + dy;
+            } else {
+              if (seg.abs_cp1x !== undefined) seg.abs_cp1x = orig.abs_cp1x + dx;
+              if (seg.abs_cp1y !== undefined) seg.abs_cp1y = orig.abs_cp1y + dy;
+              
+              if (seg.abs_cp2x !== undefined) seg.abs_cp2x = orig.abs_cp2x + dx;
+              if (seg.abs_cp2y !== undefined) seg.abs_cp2y = orig.abs_cp2y + dy;
+              
+              if (seg.abs_x !== undefined) seg.abs_x = orig.abs_x + dx;
+              if (seg.abs_y !== undefined) seg.abs_y = orig.abs_y + dy;
+            }
+          }
+        }
+        // Show guides for current M point
+        const mSeg = segments[0];
+        if (mSeg && mSeg.type === 'M') showGuides(mSeg.x, mSeg.y);
+      } else {
+        // Move single point
+        const seg = segments[segmentIndex];
+        let px = pt.x, py = pt.y;
+        
+        // Snap to alignment targets (Shift to disable)
+        if (!e.shiftKey) {
+          const { snappedX, snappedY } = showGuides(px, py);
+          if (snappedX !== null) px = snappedX;
+          if (snappedY !== null) py = snappedY;
+        } else {
+          guidesLayer.innerHTML = '';
+        }
+        
+        if (pointType === 'M') {
+          seg.x = px;
+          seg.y = py;
+        } else if (pointType === 'cp1') {
+          seg.abs_cp1x = px;
+          seg.abs_cp1y = py;
+        } else if (pointType === 'cp2') {
+          seg.abs_cp2x = px;
+          seg.abs_cp2y = py;
+        } else if (pointType === 'end') {
+          seg.abs_x = px;
+          seg.abs_y = py;
+        }
+      }
+      
+      // Update UI in real-time
+      renderEditor();
+    }
+
+    function endDrag(e) {
+      if (!dragState) return;
+      dragState = null;
+      guidesLayer.innerHTML = '';
+      
+      // Push state to history
+      pushHistory();
+      renderPreview();
+    }
+
+    // --- Segment Operations ---
+    function deleteSegment() {
+      if (currentStrokeIndex < 0) return;
+      const segs = parsedStrokes[currentStrokeIndex];
+      if (segs.length <= 2) {
+        showToast('最低2セグメント（始点+1曲線）必要です', true);
+        return;
+      }
+      // Delete the selected segment, or last segment if none selected
+      let idx = selectedSegmentIndex > 0 ? selectedSegmentIndex : segs.length - 1;
+      if (idx === 0) { showToast('始点(M)は削除できません', true); return; }
+      
+      segs.splice(idx, 1);
+      selectedSegmentIndex = Math.min(selectedSegmentIndex, segs.length - 1);
+      pushHistory();
+      updateUI();
+      showToast(`セグメント ${idx} を削除しました`);
+    }
+
+    function addSegment() {
+      if (currentStrokeIndex < 0) return;
+      const segs = parsedStrokes[currentStrokeIndex];
+      
+      // Determine insert position: after selectedSegmentIndex (or last if none selected)
+      let insertAfter = (selectedSegmentIndex >= 0 && selectedSegmentIndex < segs.length) 
+        ? selectedSegmentIndex : segs.length - 1;
+      
+      // Get the endpoint of the "insertAfter" segment
+      const seg = segs[insertAfter];
+      let startX, startY;
+      if (seg.type === 'M') {
+        startX = seg.x; startY = seg.y;
+      } else {
+        startX = seg.abs_x; startY = seg.abs_y;
+      }
+      
+      // Get the endpoint of the NEXT segment (if exists) for midpoint calculation
+      let endX, endY;
+      if (insertAfter + 1 < segs.length) {
+        const nextSeg = segs[insertAfter + 1];
+        endX = nextSeg.abs_x !== undefined ? nextSeg.abs_x : nextSeg.x;
+        endY = nextSeg.abs_y !== undefined ? nextSeg.abs_y : nextSeg.y;
+      } else {
+        // No next segment: extend horizontally by 15 units
+        endX = startX + 15;
+        endY = startY;
+      }
+      
+      // Midpoint
+      const midX = (startX + endX) / 2;
+      const midY = (startY + endY) / 2;
+      
+      // Create a smooth curve from startXY to midXY
+      const newSeg = {
+        type: 'C',
+        abs_cp1x: startX + (midX - startX) * 0.33,
+        abs_cp1y: startY + (midY - startY) * 0.33,
+        abs_cp2x: startX + (midX - startX) * 0.67,
+        abs_cp2y: startY + (midY - startY) * 0.67,
+        abs_x: midX,
+        abs_y: midY
+      };
+      
+      // Insert after the selected segment
+      segs.splice(insertAfter + 1, 0, newSeg);
+      selectedSegmentIndex = insertAfter + 1;
+      pushHistory();
+      updateUI();
+      showToast(`セグメント ${insertAfter + 1} の後に挿入しました`);
+    }
+
+    // --- History ---
+    function pushHistory() {
+      if (isRestoringHistory) return;
+      
+      // Remove future history if we undo and then do something
+      history = history.slice(0, historyIndex + 1);
+      
+      // Deep copy
+      const snapshot = JSON.parse(JSON.stringify(parsedStrokes));
+      history.push(snapshot);
+      historyIndex++;
+      
+      updateHistoryButtons();
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        restoreHistory();
+      }
+    }
+
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        restoreHistory();
+      }
+    }
+
+    function restoreHistory() {
+      isRestoringHistory = true;
+      parsedStrokes = JSON.parse(JSON.stringify(history[historyIndex]));
+      updateUI();
+      updateHistoryButtons();
+      isRestoringHistory = false;
+    }
+    
+    function updateHistoryButtons() {
+      undoBtn.disabled = historyIndex <= 0;
+      redoBtn.disabled = historyIndex >= history.length - 1;
+    }
+
+    // --- Background Image ---
+    function loadReferenceImage(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        refImage.setAttribute('href', e.target.result);
+        refImage.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // --- API Calls ---
+    async function saveStroke() {
+      if (!currentKanji) return;
+      
+      // Build final paths
+      const finalPaths = parsedStrokes.map(stroke => buildSvgPath(stroke));
+      
+      const payload = {
+        char: currentKanji.char,
+        grade: currentKanji.grade,
+        paths: finalPaths,
+        numbers: currentKanji.numbers
+      };
+      
+      try {
+        const res = await fetch('/api/save-stroke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+          showToast('保存しました');
+        } else {
+          showToast('保存に失敗しました', true);
+        }
+      } catch (err) {
+        showToast('エラー: サーバーに接続できません', true);
+      }
+    }
+
+    async function refetchChar() {
+      if (!currentKanji) return;
+      
+      try {
+        const res = await fetch('/api/refetch-char', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ char: currentKanji.char })
+        });
+        
+        if (res.ok) {
+          showToast('KanjiVGから再取得しました。リロードします...');
+          const url = new URL(location.href);
+          url.searchParams.set('char', currentKanji.char);
+          url.searchParams.set('grade', currentKanji.grade);
+          setTimeout(() => location.href = url.toString(), 1500);
+        } else {
+          showToast('再取得に失敗しました', true);
+        }
+      } catch (err) {
+        showToast('エラー: サーバーに接続できません', true);
+      }
+    }
+
+    // --- Utils ---
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.backgroundColor = isError ? 'rgba(179, 57, 39, 0.9)' : 'rgba(62, 52, 43, 0.9)';
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // --- Event Listeners Setup ---
+    function setupEventListeners() {
+      // Input actions
+      loadBtn.addEventListener('click', () => {
+        const char = kanjiInput.value.trim();
+        if (char) {
+          // Update URL without reloading
+          const url = new URL(window.location);
+          url.searchParams.set('char', char);
+          window.history.pushState({}, '', url);
+          loadKanji(char);
+        }
+      });
+      
+      kanjiInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') loadBtn.click();
+      });
+      
+      toggleMoveModeBtn.addEventListener('click', () => {
+        isWholeMoveMode = !isWholeMoveMode;
+        if (isWholeMoveMode) {
+          isRotateMode = false; pivotPoint = null;
+          document.getElementById('toggle-rotate-mode').classList.remove('active');
+          document.getElementById('toggle-rotate-mode').textContent = '回転: OFF';
+          toggleMoveModeBtn.classList.add('active');
+          toggleMoveModeBtn.textContent = '全体移動: ON';
+        } else {
+          toggleMoveModeBtn.classList.remove('active');
+          toggleMoveModeBtn.textContent = '全体移動: OFF';
+        }
+        renderEditor();
+      });
+
+      document.getElementById('toggle-rotate-mode').addEventListener('click', () => {
+        isRotateMode = !isRotateMode;
+        const btn = document.getElementById('toggle-rotate-mode');
+        if (isRotateMode) {
+          isWholeMoveMode = false;
+          toggleMoveModeBtn.classList.remove('active');
+          toggleMoveModeBtn.textContent = '全体移動: OFF';
+          pivotPoint = null;
+          btn.classList.add('active');
+          btn.textContent = '回転: ON (支点を選択)';
+        } else {
+          pivotPoint = null;
+          btn.classList.remove('active');
+          btn.textContent = '回転: OFF';
+        }
+        renderEditor();
+      });
+
+      // SVG Dragging
+      window.addEventListener('mousemove', handleDrag);
+      window.addEventListener('mouseup', endDrag);
+      window.addEventListener('touchmove', handleDrag, {passive: false});
+      window.addEventListener('touchend', endDrag);
+      
+      // Editor background click to deselect (optional, skipped for now to keep focus on strokes)
+
+      // History
+      undoBtn.addEventListener('click', undo);
+      redoBtn.addEventListener('click', redo);
+      window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+        if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+          if (e.key === 'ArrowLeft' && e.altKey) { e.preventDefault(); navigateChar(-1); }
+          if (e.key === 'ArrowRight' && e.altKey) { e.preventDefault(); navigateChar(1); }
+          if (e.key === 'Delete') { e.preventDefault(); deleteSegment(); }
+          if (e.key === 'Insert') { e.preventDefault(); addSegment(); }
+        }
+      });
+
+      // Navigation
+      document.getElementById('prev-char-btn').addEventListener('click', () => navigateChar(-1));
+      document.getElementById('next-char-btn').addEventListener('click', () => navigateChar(1));
+
+      // Font overlay
+      document.getElementById('font-overlay-btn').addEventListener('click', toggleFontOverlay);
+      document.getElementById('auto-adjust-btn').addEventListener('click', autoAdjust);
+      
+      // Font settings - live update
+      const fontRefresh = () => { if (fontOverlayActive) renderFontOverlay(); };
+      document.getElementById('font-select').addEventListener('change', fontRefresh);
+      document.getElementById('font-size-adjust').addEventListener('input', (e) => {
+        document.getElementById('font-size-val').textContent = e.target.value + '%';
+        fontRefresh();
+      });
+      document.getElementById('font-y-adjust').addEventListener('input', (e) => {
+        document.getElementById('font-y-val').textContent = e.target.value + '%';
+        fontRefresh();
+      });
+
+      // Zoom & Pan
+      document.getElementById('zoom-in-btn').addEventListener('click', () => zoomAt(1.3, 54.5, 54.5));
+      document.getElementById('zoom-out-btn').addEventListener('click', () => zoomAt(1/1.3, 54.5, 54.5));
+      document.getElementById('zoom-reset-btn').addEventListener('click', resetZoom);
+      
+      svgEditor.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const pt = getMousePosition(e);
+        const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
+        zoomAt(factor, pt.x, pt.y);
+      }, { passive: false });
+      
+      // Right-click drag to pan
+      svgEditor.addEventListener('mousedown', (e) => {
+        if (e.button === 2 || (e.button === 0 && e.altKey)) {
+          e.preventDefault();
+          isPanning = true;
+          panStartX = e.clientX;
+          panStartY = e.clientY;
+          panStartPanX = panX;
+          panStartPanY = panY;
+          svgEditor.style.cursor = 'grabbing';
+        }
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        const CTM = svgEditor.getScreenCTM();
+        const dx = (e.clientX - panStartX) / CTM.a;
+        const dy = (e.clientY - panStartY) / CTM.d;
+        panX = panStartPanX - dx;
+        panY = panStartPanY - dy;
+        updateViewBox();
+      });
+      window.addEventListener('mouseup', (e) => {
+        if (isPanning) {
+          isPanning = false;
+          svgEditor.style.cursor = '';
+        }
+      });
+      svgEditor.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      // --- Touch gestures: 2-finger tap to switch strokes, pinch to zoom, 2-finger drag to pan ---
+      let touchState = {
+        startTouches: null,
+        startTime: 0,
+        moved: false,
+        initialPanX: 0,
+        initialPanY: 0,
+        initialZoom: 1,
+        initialDist: 0
+      };
+
+      function getTouchDist(t1, t2) {
+        return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      }
+      function getTouchCenter(t1, t2) {
+        return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+      }
+
+      svgEditor.addEventListener('touchstart', (e) => {
+        const touches = e.touches;
+        if (touches.length === 2) {
+          e.preventDefault();
+          touchState.startTouches = [
+            { x: touches[0].clientX, y: touches[0].clientY },
+            { x: touches[1].clientX, y: touches[1].clientY }
+          ];
+          touchState.startTime = Date.now();
+          touchState.moved = false;
+          touchState.initialPanX = panX;
+          touchState.initialPanY = panY;
+          touchState.initialZoom = zoomLevel;
+          touchState.initialDist = getTouchDist(touches[0], touches[1]);
+        }
+      }, { passive: false });
+
+      svgEditor.addEventListener('touchmove', (e) => {
+        const touches = e.touches;
+        if (touches.length === 2 && touchState.startTouches) {
+          e.preventDefault();
+          const CTM = svgEditor.getScreenCTM();
+          
+          // Pan: track center movement
+          const startCenter = {
+            x: (touchState.startTouches[0].x + touchState.startTouches[1].x) / 2,
+            y: (touchState.startTouches[0].y + touchState.startTouches[1].y) / 2
+          };
+          const curCenter = getTouchCenter(touches[0], touches[1]);
+          const dx = (curCenter.x - startCenter.x) / CTM.a;
+          const dy = (curCenter.y - startCenter.y) / CTM.d;
+          
+          // Pinch zoom
+          const curDist = getTouchDist(touches[0], touches[1]);
+          const pinchRatio = curDist / touchState.initialDist;
+          
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3 || Math.abs(pinchRatio - 1) > 0.05) {
+            touchState.moved = true;
+          }
+          
+          // Apply pan + pinch
+          zoomLevel = Math.max(1, Math.min(8, touchState.initialZoom * pinchRatio));
+          panX = touchState.initialPanX - dx;
+          panY = touchState.initialPanY - dy;
+          updateViewBox();
+        }
+      }, { passive: false });
+
+      svgEditor.addEventListener('touchend', (e) => {
+        if (touchState.startTouches && !touchState.moved) {
+          const elapsed = Date.now() - touchState.startTime;
+          if (elapsed < 400) {
+            // 2-finger tap detected → switch to next stroke
+            if (parsedStrokes.length > 0) {
+              currentStrokeIndex = (currentStrokeIndex + 1) % parsedStrokes.length;
+              selectedStrokes.clear();
+              updateUI();
+            }
+          }
+        }
+        if (e.touches.length < 2) {
+          touchState.startTouches = null;
+        }
+      });
+
+      // Segment operations
+      document.getElementById('del-segment-btn').addEventListener('click', deleteSegment);
+      document.getElementById('add-segment-btn').addEventListener('click', addSegment);
+
+      // API
+      saveBtn.addEventListener('click', saveStroke);
+      refetchBtn.addEventListener('click', refetchChar);
+      document.getElementById('ref-site-btn').addEventListener('click', () => {
+        if (!currentKanji) return;
+        const c = currentKanji.char;
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(c + ' 書き順 教科書体')}&tbm=isch`, '_blank');
+      });
+
+      // Image
+      imageUploadBtn.addEventListener('click', () => imageFile.click());
+      imageFile.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) loadReferenceImage(e.target.files[0]);
+      });
+      imageClearBtn.addEventListener('click', () => {
+        refImage.style.display = 'none';
+        refImage.removeAttribute('href');
+        imageFile.value = '';
+        fontOverlayActive = false;
+        document.getElementById('font-overlay-btn').style.background = '';
+        document.getElementById('font-overlay-btn').style.color = '';
+      });
+      imageOpacity.addEventListener('input', (e) => {
+        refImage.setAttribute('opacity', e.target.value);
+      });
+      
+      // Drag & Drop Image
+      svgContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        svgContainer.classList.add('dragover');
+      });
+      svgContainer.addEventListener('dragleave', () => {
+        svgContainer.classList.remove('dragover');
+      });
+      svgContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        svgContainer.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          loadReferenceImage(e.dataTransfer.files[0]);
+        }
+      });
+      
+      // Paste Image
+      window.addEventListener('paste', (e) => {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            loadReferenceImage(blob);
+            break;
+          }
+        }
+      });
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Node
+node_modules/
+
+# Backup / temp
+data_backup_*/
+*.bak
+*.tmp
+
+# Docs (textbook photos - do not publish)
+docs/
+
+# Root-level HTML copies (originals now in app/)
+/viewer.html
+/stroke-editor.html
+/batch-adjust.html
+/review-list.html
+
+# Dev server / scripts (local dev only)
+scripts/
+server.js
+
+# Editor artifacts
+.vscode/
+*.swp
+*.swo
