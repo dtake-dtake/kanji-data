@@ -493,15 +493,22 @@
       const opacity = parseFloat(document.getElementById('font-opacity').value);
       const size = parseFloat(document.getElementById('font-size').value);
       const y = parseFloat(document.getElementById('font-y').value);
+
+      // 小文字（促音・拗音）の場合は左下の部屋に配置
+      const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(currentChar.char);
+      const effectiveSize = isSmallKana ? size * 0.62 : size;
+      const effectiveX = isSmallKana ? 32 : 54.5;
+      const effectiveY = isSmallKana ? (y + 25) : y;
       
       textEl.textContent = currentChar.char;
       textEl.setAttribute('font-family', fontName);
       textEl.style.fontFamily = fontName;
-      textEl.setAttribute('font-size', size);
-      textEl.style.fontSize = size + 'px';
+      textEl.setAttribute('x', effectiveX);
+      textEl.setAttribute('y', effectiveY);
+      textEl.setAttribute('font-size', effectiveSize);
+      textEl.style.fontSize = effectiveSize + 'px';
       textEl.setAttribute('opacity', opacity);
       textEl.style.opacity = opacity;
-      textEl.setAttribute('y', y);
       textEl.style.display = fontOverlayActive ? 'block' : 'none';
       
       document.getElementById('font-opacity-val').textContent = `${Math.round(opacity * 100)}%`;
@@ -1440,13 +1447,18 @@
         const fontSize = parseFloat(document.getElementById('font-size').value);
         const fontY = parseFloat(document.getElementById('font-y').value);
 
+        const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(char);
+        const effSize = isSmallKana ? fontSize * 0.62 : fontSize;
+        const effX = isSmallKana ? 32 : 54.5;
+        const effY = isSmallKana ? (fontY + 25) : fontY;
+
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
         ctx.fillStyle = 'black';
-        ctx.font = `${fontSize * scl}px ${fontName}`;
+        ctx.font = `${effSize * scl}px ${fontName}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(char, 54.5 * scl, fontY * scl);
+        ctx.fillText(char, effX * scl, effY * scl);
 
         // Step 2: Binary ink image
         const imgData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -1643,13 +1655,18 @@
         const fontSize = parseFloat(document.getElementById('font-size').value);
         const fontY = parseFloat(document.getElementById('font-y').value);
 
+        const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(char);
+        const effSize = isSmallKana ? fontSize * 0.62 : fontSize;
+        const effX = isSmallKana ? 32 : 54.5;
+        const effY = isSmallKana ? (fontY + 25) : fontY;
+
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
         ctx.fillStyle = 'black';
-        ctx.font = `${fontSize * scl}px ${fontName}`;
+        ctx.font = `${effSize * scl}px ${fontName}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(char, 54.5 * scl, fontY * scl);
+        ctx.fillText(char, effX * scl, effY * scl);
 
         const imgData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
         const W = CANVAS_SIZE, H = CANVAS_SIZE;
