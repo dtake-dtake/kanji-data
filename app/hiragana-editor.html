@@ -262,6 +262,7 @@
           <button id="point-confirm-btn" title="配置したポイントで曲線を生成" style="background:#059669; color:white; border-color:#059669; font-size:0.85rem;">✓ 確定</button>
           <span id="point-count" style="font-size:11px; color:#7c3aed; font-weight:bold;">0点</span>
         </span>
+        <button id="sync-parent-btn" title="親文字（清音）の最新の形を本体に反映します" style="display:none; background:#0284c7; color:white; border-color:#0284c7;">🔄 親文字と同期</button>
         <span id="draw-mode-status" style="font-size:11px; color:#059669; font-weight:bold; display:none;">ドラッグでなぞる / Escで終了</span>
         <span style="margin-left:auto; display:flex; align-items:center; gap:4px;">
           <button id="zoom-out-btn" title="縮小" style="min-width:28px; padding:4px 8px;">−</button>
@@ -607,6 +608,20 @@
       window.history.pushState({}, '', url);
     }
 
+    // 親子（清音 ↔ 濁音・半濁音）マップ
+    const CHAR_PARENT_MAP = {
+      'が': 'か', 'ぎ': 'き', 'ぐ': 'く', 'げ': 'け', 'ご': 'こ',
+      'ざ': 'さ', 'じ': 'し', 'ず': 'す', 'ぜ': 'せ', 'ぞ': 'そ',
+      'だ': 'た', 'ぢ': 'ち', 'づ': 'つ', 'で': 'て', 'ど': 'と',
+      'ば': 'は', 'び': 'ひ', 'ぶ': 'ふ', 'べ': 'へ', 'ぼ': 'ほ',
+      'ぱ': 'は', 'ぴ': 'ひ', 'ぷ': 'ふ', 'ぺ': 'へ', 'ぽ': 'ほ'
+    };
+    const CHAR_CHILDREN_MAP = {};
+    for (const [child, parent] of Object.entries(CHAR_PARENT_MAP)) {
+      if (!CHAR_CHILDREN_MAP[parent]) CHAR_CHILDREN_MAP[parent] = [];
+      CHAR_CHILDREN_MAP[parent].push(child);
+    }
+
     async function saveCurrentChar(isSilent = false) {
       if (!currentChar || !hiraganaData || !parsedStrokes || parsedStrokes.length === 0) return;
       const newPaths = parsedStrokes.map(s => buildSvgPath(s));
@@ -618,6 +633,23 @@
       currentChar.paths = newPaths;
       hiraganaData.characters[currentChar.char] = JSON.parse(JSON.stringify(currentChar));
 
+      // 子文字（濁音・半濁音）の本体も自動同期！
+      let syncedChildren = [];
+      const children = CHAR_CHILDREN_MAP[currentChar.char];
+      if (children && children.length > 0) {
+        children.forEach(childChar => {
+          const cData = hiraganaData.characters[childChar];
+          if (cData) {
+            const isHandaku = ['ぱ','ぴ','ぷ','ぺ','ぽ'].includes(childChar);
+            const dotCount = isHandaku ? 1 : 2;
+            const dots = cData.paths.slice(-dotCount);
+            cData.paths = [...currentChar.paths, ...dots];
+            cData.strokeCount = cData.paths.length;
+            syncedChildren.push(childChar);
+          }
+        });
+      }
+
       try {
         const res = await fetch('/api/save-hiragana', {
           method: 'POST',
@@ -625,8 +657,9 @@
           body: JSON.stringify(hiraganaData)
         });
         if (res.ok) {
-          if (!isSilent) showToast('保存しました');
-          else showToast(`「${currentChar.char}」を自動保存しました`);
+          const syncMsg = syncedChildren.length > 0 ? `（${syncedChildren.join('・')} も自動同期）` : '';
+          if (!isSilent) showToast(`保存しました ${syncMsg}`);
+          else showToast(`「${currentChar.char}」を自動保存 ${syncMsg}`);
         } else {
           showToast('保存に失敗しました', true);
         }
@@ -634,6 +667,28 @@
         console.error('Save error:', e);
         showToast('保存エラーが発生しました', true);
       }
+    }
+
+    function syncWithParent() {
+      if (!currentChar) return;
+      const parentChar = CHAR_PARENT_MAP[currentChar.char];
+      if (!parentChar || !hiraganaData || !hiraganaData.characters[parentChar]) return;
+
+      const pData = hiraganaData.characters[parentChar];
+      const isHandaku = ['ぱ','ぴ','ぷ','ぺ','ぽ'].includes(currentChar.char);
+      const dotCount = isHandaku ? 1 : 2;
+
+      // 現在の濁点（末尾の画）を取得
+      const currentDots = parsedStrokes.slice(-dotCount);
+
+      // 親文字の全画 + 現在の濁点画
+      const parentParsed = pData.paths.map(p => parseSvgPath(p));
+      parsedStrokes = [...parentParsed, ...currentDots];
+      currentStrokeIndex = 0;
+
+      pushHistory();
+      updateUI();
+      showToast(`「${parentChar}」の最新の形と同期しました（濁点は維持）`);
     }
 
     async function loadChar(charStr) {
@@ -654,6 +709,18 @@
       
       const posEl = document.getElementById('char-position');
       if (posEl) posEl.textContent = currentChar.char;
+
+      // 親文字同期ボタンの表示切り替え
+      const syncBtn = document.getElementById('sync-parent-btn');
+      if (syncBtn) {
+        const parentChar = CHAR_PARENT_MAP[currentChar.char];
+        if (parentChar) {
+          syncBtn.style.display = 'inline-block';
+          syncBtn.textContent = `🔄 「${parentChar}」の形を反映`;
+        } else {
+          syncBtn.style.display = 'none';
+        }
+      }
 
       history = [];
       historyIndex = -1;
@@ -2223,6 +2290,8 @@
       document.getElementById('btn-size-plus').addEventListener('click', () => stepFontSetting('font-size', 1));
       document.getElementById('btn-y-minus').addEventListener('click', () => stepFontSetting('font-y', -0.5));
       document.getElementById('btn-y-plus').addEventListener('click', () => stepFontSetting('font-y', 0.5));
+
+      document.getElementById('sync-parent-btn').addEventListener('click', syncWithParent);
 
       document.getElementById('toggle-move-mode').addEventListener('click', (e) => {
         isWholeMoveMode = !isWholeMoveMode;
