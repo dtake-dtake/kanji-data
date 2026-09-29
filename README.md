@@ -12,14 +12,23 @@
 │   ├── grade1.json ... grade6.json  ← 漢字・学年・画数・SVGストロークパス・書き順座標
 │   └── schema.json                  ← JSON Schema（データ仕様定義）
 │
-├── curriculum/                      ← Layer 2: 教科書カリキュラムデータ
-│   └── mitsumura-2020/              ← 光村図書 令和2年度版
-│       ├── grade1.json ... grade6.json
-│       ├── meta.json                ← 出版社・版・年度の情報
-│       └── ../schema.json           ← JSON Schema
+├── curriculum/                      ← Layer 2: 教科書・教材別カリキュラムデータ
+│   ├── mitsumura-2020/              ← 光村図書 令和2年度版
+│   │   ├── grade1.json ... grade6.json
+│   │   ├── meta.json                ← 出版社・版・年度の情報
+│   │   └── ../schema.json           ← JSON Schema
+│   │
+│   └── akaneko-skill/               ← あかねこ漢字スキル（光村図書準拠版）
+│       ├── grade1.json ... grade6.json ← 各学年の学期別スキル番号 ⇄ 配当漢字
+│       ├── meta.json                ← シリーズ・出版社・学年構成
+│       └── schema.json              ← JSON Schema
+│
+├── app/                             ← Webアプリケーション群
+│   └── drill.html                   ← 漢字書き順ドリル（なぞり書き・書き順・読みクイズ）
 │
 └── tools/
-    └── validate.js                  ← データ整合性検証スクリプト
+    ├── validate.js                  ← 教科書データ整合性検証スクリプト
+    └── validate-skill.js            ← スキルデータ整合性検証スクリプト
 ```
 
 ## Layer 1: core/ — ストロークデータ
@@ -72,12 +81,32 @@
 
 教科書出版社ごとに、単元構成・掲載ページ・漢字の読みや用例を収録。
 
-### 対応教科書
+### 対応教材・副教材
 
-- **光村図書** 令和2年度版（`curriculum/mitsumura-2020/`）
+- **教科書**: 光村図書 令和2年度版（`curriculum/mitsumura-2020/`）
+- **漢字スキル**: 光村教育図書「あかねこ漢字スキル」（`curriculum/akaneko-skill/`）
+  - 全6学年・17冊分（小1: 上下、小2〜小6: 1〜3学期）
+  - スキル番号（①、②…）と配当漢字リストのインデックスデータ
 
-> 他社（東京書籍、教育出版など）のデータを追加する際は、  
-> `curriculum/<publisher>-<year>/` フォルダを新設してください。
+## Webアプリケーション (`app/drill.html`)
+
+宿題や自習で活用できる書き順学習Webドリルアプリです。
+- **3つの選定モード**:
+  - 📕 **漢字スキル（宿題）**: 学年・学期・スキル番号を選んで即座に練習開始
+  - 📖 **教科書単元**: 単元別に学習
+  - 🔤 **全漢字一覧**: ピンポイントで練習
+- **3つの学習・テスト機能**:
+  - ✏️ **なぞり書きドリル**: HTML5 Canvas + ペン/タッチ対応。お手本アニメーション、書き順始点ガイド、反復練習判定
+  - 🎯 **書き順クイズ**: 赤く光る画が「何画目か」を答えるクイズ
+  - 📖 **読み方クイズ**: 音声認識（Web Speech API）/ タイピング / 4択ヒント対応
+- **URL共有**: `drill.html?grade=2&book=0&lesson=1` 等のパラメータで特定スキルを直接起動可能
+
+## 検証
+
+```bash
+node tools/validate.js        # 教科書カリキュラム整合性検証
+node tools/validate-skill.js  # あかねこ漢字スキル整合性検証
+```
 
 ### データ形式
 

@@ -251,6 +251,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── API: Save Hiragana Data ────────────────────────────────────────
+  if (pathname === '/api/save-hiragana' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const hiraganaFile = path.join(ROOT_DIR, 'data', 'hiragana.json');
+        fs.writeFileSync(hiraganaFile, JSON.stringify(data, null, 2), 'utf-8');
+        console.log(`[Editor] Saved hiragana.json (${Object.keys(data.characters).length} characters)`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
   // ── Static Files Delivery ───────────────────────────────────────────
   let filePath = path.join(ROOT_DIR, pathname === '/' ? 'viewer.html' : pathname);
   if (!fs.existsSync(filePath)) {

@@ -1,0 +1,15 @@
+{
+  "series": "あかねこ漢字スキル",
+  "publisher": "光村教育図書",
+  "textbook": "光村図書 令和2年度版（2020年版）",
+  "targetCurriculum": "平成29年告示 小学校学習指導要領",
+  "grades": {
+    "1": { "books": ["上", "下"], "totalKanji": 80 },
+    "2": { "books": ["1学期", "2学期", "3学期"], "totalKanji": 160 },
+    "3": { "books": ["1学期", "2学期", "3学期"], "totalKanji": 200 },
+    "4": { "books": ["1学期", "2学期", "3学期"], "totalKanji": 202 },
+    "5": { "books": ["1学期", "2学期", "3学期"], "totalKanji": 193 },
+    "6": { "books": ["1学期", "2学期", "3学期"], "totalKanji": 191 }
+  },
+  "totalKanjiAllGrades": 1026
+}

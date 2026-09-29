@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AkanekoKanjiSkillGradeData",
+  "description": "あかねこ漢字スキル（光村図書準拠版）の学年別スキル番号・配当漢字インデックスデータ",
+  "type": "object",
+  "required": ["grade", "series", "publisher", "textbook", "totalKanji", "books"],
+  "properties": {
+    "grade": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6,
+      "description": "学年 (1-6)"
+    },
+    "series": {
+      "type": "string",
+      "description": "教材シリーズ名（あかねこ漢字スキル）"
+    },
+    "publisher": {
+      "type": "string",
+      "description": "教材出版社（光村教育図書）"
+    },
+    "textbook": {
+      "type": "string",
+      "description": "準拠教科書（光村図書 令和2年度版）"
+    },
+    "totalKanji": {
+      "type": "integer",
+      "description": "当該学年の配当漢字総数"
+    },
+    "books": {
+      "type": "array",
+      "description": "分冊リスト（1年は上・下、2〜6年は1学期・2学期・3学期）",
+      "items": {
+        "type": "object",
+        "required": ["book", "lessons"],
+        "properties": {
+          "book": {
+            "type": "string",
+            "description": "分冊名（上、下、1学期、2学期、3学期）"
+          },
+          "lessons": {
+            "type": "array",
+            "description": "新出漢字を含むスキル回リスト",
+            "items": {
+              "type": "object",
+              "required": ["number", "title", "kanji"],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "description": "スキル番号（①、②...の数字）"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "該当単元名（例: けんかした 山(1)）"
+                },
+                "kanji": {
+                  "type": "array",
+                  "items": { "type": "string", "maxLength": 1, "minLength": 1 },
+                  "description": "そのスキル回で新しく学習する漢字の配列"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

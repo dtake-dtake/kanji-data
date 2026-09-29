@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>ひらがなドリル</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+body { font-family: 'Hiragino Sans','Noto Sans JP','Yu Gothic',sans-serif; background: #fff5f5; color: #333; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+button { font-family: inherit; cursor: pointer; border: none; outline: none; touch-action: manipulation; }
+input { font-family: inherit; outline: none; -webkit-user-select: auto; user-select: auto; }
+
+:root { --char-size: min(92vw, 70vh); }
+@media (min-width: 768px) { :root { --char-size: min(60vw, 78vh); } }
+@media (min-width: 768px) and (orientation: landscape) { :root { --char-size: min(50vw, 80vh); } }
+@media (min-width: 1200px) { :root { --char-size: min(45vw, 82vh); } }
+
+.screen { display: none; width: 100%; max-width: 1100px; padding: 12px 16px; flex-direction: column; align-items: center; }
+.screen.active { display: flex; }
+.header { width: 100%; display: flex; align-items: center; gap: 12px; padding: 6px 0; margin-bottom: 8px; }
+.header .back-btn { width: 44px; height: 44px; border-radius: 50%; background: #fce7f3; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+.header .back-btn:hover { background: #fbcfe8; }
+.header .title { font-size: 1.2rem; font-weight: 700; flex: 1; }
+.header .progress { font-size: 0.9rem; color: #64748b; }
+@media (min-width: 768px) { .header .title { font-size: 1.4rem; } }
+
+/* HOME */
+.unit-badge { background: linear-gradient(135deg, #f472b6 0%, #c084fc 100%); color: #fff; padding: 18px 24px; border-radius: 16px; text-align: center; width: 100%; margin-bottom: 14px; }
+.unit-badge h1 { font-size: 1.4rem; margin-bottom: 2px; }
+.unit-badge p { font-size: 0.9rem; opacity: 0.85; }
+
+/* 50音表 */
+.gojuon-table { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; width: 100%; margin-bottom: 14px; }
+.gojuon-cell { aspect-ratio: 1; background: #fff; border-radius: 12px; font-size: clamp(1.5rem, 5vw, 2.8rem); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: transform 0.15s; cursor: pointer; }
+.gojuon-cell:hover { transform: scale(1.08); box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+.gojuon-cell.empty { background: transparent; box-shadow: none; cursor: default; }
+.gojuon-cell.empty:hover { transform: none; box-shadow: none; }
+
+/* MODE SECTION */
+.section-label { font-size: 0.85rem; font-weight: 700; color: #9d174d; margin: 10px 0 6px; width: 100%; }
+.mode-row { display: flex; gap: 8px; width: 100%; flex-wrap: wrap; margin-bottom: 8px; }
+.mode-btn { flex: 1; min-width: 100px; padding: 14px 10px; border-radius: 12px; font-size: 1rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
+.mode-btn:active { transform: scale(0.97); }
+.mode-btn.practice { background: #fce7f3; color: #9d174d; }
+.mode-btn.test { background: #dbeafe; color: #1e40af; }
+.mode-btn.active { outline: 3px solid #ec4899; outline-offset: 2px; }
+
+/* ROW PICKER */
+.row-picker { display: flex; gap: 6px; width: 100%; flex-wrap: wrap; margin-bottom: 10px; }
+.row-pick-btn { padding: 10px 14px; border-radius: 10px; background: #ede9fe; color: #5b21b6; font-size: 0.95rem; font-weight: 600; transition: all 0.15s; }
+.row-pick-btn:hover { background: #ddd6fe; }
+
+/* NAZORI */
+.nazori-area { width: var(--char-size); height: var(--char-size); position: relative; background: #fff; border-radius: 16px; margin: 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; touch-action: none; flex-shrink: 0; }
+.nazori-area canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.grid-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.grid-lines::before, .grid-lines::after { content: ''; position: absolute; }
+.grid-lines::before { top: 50%; left: 4%; right: 4%; height: 1px; background: repeating-linear-gradient(90deg, #fca5a5 0, #fca5a5 4px, transparent 4px, transparent 8px); }
+.grid-lines::after { left: 50%; top: 4%; bottom: 4%; width: 1px; background: repeating-linear-gradient(180deg, #fca5a5 0, #fca5a5 4px, transparent 4px, transparent 8px); }
+.nazori-status { font-size: 1rem; font-weight: 600; padding: 10px 18px; border-radius: 10px; margin: 8px 0; text-align: center; }
+.nazori-status.good { background: #d1fae5; color: #065f46; }
+.nazori-status.retry { background: #fef3c7; color: #92400e; }
+.nazori-status.info { background: #fce7f3; color: #9d174d; }
+.round-indicator { display: flex; gap: 10px; margin: 6px 0; }
+.round-dot { width: 14px; height: 14px; border-radius: 50%; background: #fce7f3; }
+.round-dot.done { background: #22c55e; }
+.round-dot.current { background: #ec4899; }
+.action-row { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
+.action-row button { flex: 1; padding: 16px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; }
+.btn-secondary { background: #fce7f3; color: #9d174d; }
+.btn-primary { background: #ec4899; color: #fff; }
+.btn-primary:active { background: #db2777; }
+
+/* RESULTS */
+.results-card { background: #fff; border-radius: 20px; padding: 36px; text-align: center; width: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.results-card .score { font-size: 3.5rem; font-weight: 800; color: #ec4899; }
+.results-card .label { font-size: 1.1rem; color: #64748b; margin-top: 4px; }
+.results-card .message { font-size: 1.3rem; font-weight: 600; margin-top: 16px; }
+.results-detail { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+.results-detail .r-item { font-size: 1.5rem; padding: 6px 12px; border-radius: 10px; }
+.results-detail .r-ok { background: #d1fae5; }
+.results-detail .r-ng { background: #fee2e2; }
+.results-hint { font-size: 0.9rem; color: #a1a1aa; margin-top: 16px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease-out; }
+@media (min-width: 768px) and (orientation: landscape) {
+  .tablet-row { display: flex; flex-direction: row; gap: 24px; width: 100%; align-items: center; justify-content: center; }
+  .tablet-row .nazori-area { flex-shrink: 0; }
+  .tablet-row .side-panel { flex: 1; min-width: 220px; max-width: 360px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="unit-badge" style="position:relative;">
+    <h1>🌸 ひらがなドリル</h1>
+    <p>もじを タップして れんしゅう</p>
+    <a href="hiragana-editor.html" style="position:absolute; top:12px; right:12px; color:#fff; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.5); padding:4px 10px; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">✏️ 字形調整</a>
+  </div>
+  <div class="gojuon-table" id="gojuon-table"></div>
+
+  <div class="section-label">📝 テスト（ガイドなし）</div>
+  <div class="mode-row">
+    <button class="mode-btn test" onclick="showRowPicker()">📋 一行ずつ</button>
+    <button class="mode-btn test" onclick="startTestRandom()">🎲 ランダム5</button>
+    <button class="mode-btn test" onclick="startTestListen()" style="background:#fef3c7;color:#92400e;">🔊 聞いて書く</button>
+  </div>
+  <div class="row-picker" id="row-picker" style="display:none;"></div>
+</div>
+
+<!-- NAZORI (practice + test shared) -->
+<div id="screen-nazori" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="title" id="nazori-title"></span>
+    <span class="progress" id="nazori-progress"></span>
+    <a id="btn-edit-char" href="hiragana-editor.html" target="_blank" style="margin-left:auto; text-decoration:none; font-size:0.85rem; padding:6px 12px; border-radius:8px; background:#fce7f3; color:#9d174d; font-weight:600; white-space:nowrap;">✏️ 字形調整</a>
+  </div>
+  <div class="round-indicator" id="nazori-rounds"></div>
+  <div class="nazori-area" id="nazori-area">
+    <canvas id="nazori-canvas"></canvas>
+    <div class="grid-lines" style="z-index:0;"></div>
+  </div>
+  <div class="nazori-status info" id="nazori-status">かいてみよう</div>
+  <div class="action-row" style="max-width:var(--char-size);">
+    <button class="btn-secondary" onclick="resetCurrentStroke()" style="touch-action:manipulation;">やり直し</button>
+    <button class="btn-primary" id="btn-replay" onclick="replayAudio()" style="display:none;touch-action:manipulation;">🔊 もう一回きく</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="title">けっか</span>
+  </div>
+  <div class="results-card fade-in">
+    <div class="score" id="results-score"></div>
+    <div class="label" id="results-label"></div>
+    <div class="message" id="results-message"></div>
+    <div class="results-detail" id="results-detail"></div>
+    <button class="btn-primary" style="margin-top:20px;width:100%;max-width:300px;padding:18px;font-size:1.15rem;" onclick="goHome()">もどる</button>
+    <p class="results-hint">（Enter キーでも もどれます）</p>
+  </div>
+</div>
+
+<script>
+const SVG_VB = 109, TOL = 22, ROUNDS = 3, SW = 5, GW = 9;
+const NS = 'http://www.w3.org/2000/svg';
+
+const GOJUON = [
+  ['わ','ら','や','ま','は','な','た','さ','か','あ'],
+  ['',  'り','',  'み','ひ','に','ち','し','き','い'],
+  ['を','る','ゆ','む','ふ','ぬ','つ','す','く','う'],
+  ['',  'れ','',  'め','へ','ね','て','せ','け','え'],
+  ['ん','ろ','よ','も','ほ','の','と','そ','こ','お'],
+];
+
+const ROWS = {
+  'あ行':['あ','い','う','え','お'], 'か行':['か','き','く','け','こ'],
+  'さ行':['さ','し','す','せ','そ'], 'た行':['た','ち','つ','て','と'],
+  'な行':['な','に','ぬ','ね','の'], 'は行':['は','ひ','ふ','へ','ほ'],
+  'ま行':['ま','み','む','め','も'], 'や行':['や','ゆ','よ'],
+  'ら行':['ら','り','る','れ','ろ'], 'わ行':['わ','を','ん'],
+};
+
+let hData = null;
+
+// State
+const S = {
+  mode: 'practice',
+  chars: [],
+  ci: 0,
+  si: 0,
+  round: 0,
+  results: [],
+  failed: false,
+  listen: false,   // 聞いて書くモード
+};
+
+// ==================== DATA ====================
+async function loadData() {
+  try { hData = await (await fetch('../data/hiragana.json')).json(); renderHome(); }
+  catch (e) { document.body.innerHTML = `<div style="padding:40px;text-align:center"><h2>エラー</h2><p>サーバー起動: <code>node scripts/server.js</code></p></div>`; }
+}
+
+// ==================== SCREENS ====================
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0, 0); }
+function goHome() { show('screen-home'); }
+
+// ==================== HOME ====================
+function renderHome() {
+  const t = document.getElementById('gojuon-table'); t.innerHTML = '';
+  GOJUON.forEach(row => row.forEach(ch => {
+    const c = document.createElement('div');
+    if (ch) {
+      c.className = 'gojuon-cell';
+      c.textContent = ch;
+      c.onclick = () => startPractice(ch);
+    } else { c.className = 'gojuon-cell empty'; }
+    t.appendChild(c);
+  }));
+}
+
+// ==================== PRACTICE ====================
+function startPractice(ch) {
+  S.mode = 'practice'; S.chars = [ch]; S.ci = 0; S.round = 0; S.si = 0;
+  showNazori();
+}
+
+// ==================== TEST MODES ====================
+function showRowPicker() {
+  const rp = document.getElementById('row-picker');
+  if (rp.style.display !== 'none') { rp.style.display = 'none'; return; }
+  rp.style.display = 'flex'; rp.innerHTML = '';
+  Object.entries(ROWS).forEach(([name, chars]) => {
+    const b = document.createElement('button');
+    b.className = 'row-pick-btn';
+    b.textContent = name;
+    b.onclick = () => { rp.style.display = 'none'; startTest(chars, `テスト ${name}`); };
+    rp.appendChild(b);
+  });
+}
+
+function startTestRandom() {
+  const all = []; GOJUON.forEach(r => r.forEach(ch => { if (ch) all.push(ch); }));
+  const picked = all.sort(() => Math.random() - 0.5).slice(0, 5);
+  startTest(picked, 'テスト ランダム5');
+}
+
+function startTestListen() {
+  const all = []; GOJUON.forEach(r => r.forEach(ch => { if (ch) all.push(ch); }));
+  const picked = all.sort(() => Math.random() - 0.5).slice(0, 5);
+  S.mode = 'test'; S.chars = picked; S.ci = 0; S.si = 0; S.results = []; S.failed = false;
+  S._label = '🔊 聞いて書く'; S.listen = true;
+  showNazori();
+}
+
+function startTest(chars, label) {
+  S.mode = 'test'; S.chars = chars; S.ci = 0; S.si = 0; S.results = []; S.failed = false;
+  S._label = label; S.listen = false;
+  showNazori();
+}
+
+// ==================== SPEECH ====================
+function speak(text) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = 0.6;
+  u.pitch = 1.1;
+  speechSynthesis.speak(u);
+}
+
+function speakHint(ch) {
+  speechSynthesis.cancel();
+  const toKata = c => String.fromCharCode(c.charCodeAt(0) + 0x60);
+  let rowText = toKata(ch);
+  for (const [name, chars] of Object.entries(ROWS)) {
+    if (chars.includes(ch)) { rowText = chars.map(toKata).join(''); break; }
+  }
+  // 1回目: 行の5音
+  const u1 = new SpeechSynthesisUtterance(rowText);
+  u1.lang = 'ja-JP'; u1.rate = 0.6; u1.pitch = 1.1;
+  // 2回目: 対象の文字
+  const u2 = new SpeechSynthesisUtterance('の、' + toKata(ch));
+  u2.lang = 'ja-JP'; u2.rate = 0.5; u2.pitch = 1.1;
+  speechSynthesis.speak(u1);
+  speechSynthesis.speak(u2);
+}
+
+function replayAudio() {
+  speakHint(S.chars[S.ci]);
+}
+
+// ==================== NAZORI SCREEN ====================
+function showNazori() {
+  show('screen-nazori');
+  const ch = S.chars[S.ci]; const cd = hData.characters[ch];
+  const isTest = S.mode === 'test';
+
+  // Title — hide character in listen mode
+  if (S.listen) {
+    document.getElementById('nazori-title').textContent = `🔊 きいて 書こう`;
+    document.getElementById('nazori-progress').textContent = `${S.ci + 1} / ${S.chars.length}`;
+    // Play audio
+    setTimeout(() => speakHint(ch), 300);
+  } else if (isTest) {
+    document.getElementById('nazori-title').textContent = `「${ch}」を 書こう`;
+    document.getElementById('nazori-progress').textContent = `${S.ci + 1} / ${S.chars.length}`;
+  } else {
+    document.getElementById('nazori-title').textContent = `「${ch}」 れんしゅう（${cd.strokeCount}画）`;
+    document.getElementById('nazori-progress').textContent = `${S.round + 1} / ${ROUNDS}`;
+  }
+
+  // Replay button (listen mode only)
+  document.getElementById('btn-replay').style.display = S.listen ? 'block' : 'none';
+
+  // Edit char link
+  const editLink = document.getElementById('btn-edit-char');
+  if (editLink) editLink.href = `hiragana-editor.html?char=${encodeURIComponent(ch)}`;
+
+  // Round dots (practice only)
+  const rd = document.getElementById('nazori-rounds'); rd.innerHTML = '';
+  if (!isTest) {
+    for (let i = 0; i < ROUNDS; i++) { const d = document.createElement('div'); d.className = 'round-dot' + (i < S.round ? ' done' : i === S.round ? ' current' : ''); rd.appendChild(d); }
+  }
+
+  setupCanvas(cd, isTest);
+}
+
+function setupCanvas(cd, isTest) {
+  const area = document.getElementById('nazori-area');
+  // Remove leftover animation overlay from previous question
+  const oldSvg = area.querySelector('svg.asvg'); if (oldSvg) oldSvg.remove();
+  const sz = Math.round(area.getBoundingClientRect().width); const sc = sz / SVG_VB;
+  const old = document.getElementById('nazori-canvas'); const canvas = old.cloneNode(false); canvas.id = 'nazori-canvas'; old.parentNode.replaceChild(canvas, old);
+  const dpr = devicePixelRatio || 1; canvas.width = sz * dpr; canvas.height = sz * dpr; canvas.style.width = sz + 'px'; canvas.style.height = sz + 'px';
+  const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  drawCanvas(ctx, cd, sz, sc, isTest);
+
+  const stEl = document.getElementById('nazori-status');
+  if (S.si < cd.paths.length) { stEl.textContent = isTest ? '書いてね' : `${S.si + 1}画目を 書いてね`; stEl.className = 'nazori-status info'; }
+
+  let drawing = false, pts = [], locked = false;
+
+  // Evaluate a completed stroke
+  function evalStroke(userPts) {
+    if (locked || S.si >= cd.paths.length || userPts.length < 3) return;
+    const ref = mp(cd.paths[S.si]).points.map(p => ({ x: p.x * sc, y: p.y * sc }));
+    const pok = avgM(userPts, ref) < TOL * sc;
+    const dok = chkD(userPts, ref);
+
+    if (pok && dok) {
+      S.si++;
+      if (S.si >= cd.paths.length) {
+        locked = true;
+        drawCanvas(ctx, cd, sz, sc, isTest);
+        showFB(ctx, sz, '○', '#22c55e');
+        stEl.textContent = '⭕ よく書けました！'; stEl.className = 'nazori-status good';
+        if (isTest) {
+          S.results.push({ char: S.chars[S.ci], ok: !S.failed });
+          setTimeout(() => advanceTest(), 900);
+        } else {
+          S.round++;
+          if (S.round < ROUNDS) setTimeout(() => { S.si = 0; showNazori(); }, 1000);
+          else setTimeout(() => goHome(), 1000);
+        }
+      } else {
+        drawCanvas(ctx, cd, sz, sc, isTest);
+        stEl.textContent = isTest ? '書いてね' : `${S.si + 1}画目を 書いてね`;
+      }
+    } else {
+      locked = true;
+      S.failed = true;
+      let r = pok && !dok ? '向きが ちがうよ' : findO(userPts, cd, S.si, sc) >= 0 ? '書き順が ちがうよ' : 'もうすこし ていねいに';
+      showFB(ctx, sz, '✕', '#ef4444');
+      const charHint = S.listen ? ` →「${S.chars[S.ci]}」` : '';
+      stEl.textContent = `✕ ${r}${charHint}`; stEl.className = 'nazori-status retry';
+      if (isTest) {
+        S.results.push({ char: S.chars[S.ci], ok: false });
+        setTimeout(() => {
+          animateCorrect(cd.paths);
+          setTimeout(() => advanceTest(), cd.paths.length * 450 + 400);
+        }, 800);
+      } else {
+        setTimeout(() => { S.si = 0; setupCanvas(cd, false); }, 1200);
+      }
+    }
+  }
+
+  function finishStroke() {
+    if (!drawing) return;
+    drawing = false;
+    ctx.beginPath();
+    const p = pts.slice();
+    pts = [];
+    evalStroke(p);
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (locked || S.si >= cd.paths.length) return;
+    // If previous stroke wasn't finished (pointerup missed), evaluate it now
+    if (drawing && pts.length >= 3) { finishStroke(); if (locked) return; }
+    drawing = true;
+    const p = cp(e, canvas); pts = [p];
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = SW * (sc / 2); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  });
+  canvas.addEventListener('pointermove', e => {
+    e.preventDefault(); if (!drawing) return;
+    const p = cp(e, canvas); pts.push(p);
+    ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  });
+  canvas.addEventListener('pointerup', e => { e.preventDefault(); finishStroke(); });
+  canvas.addEventListener('pointercancel', e => { e.preventDefault(); finishStroke(); });
+  canvas.addEventListener('pointerleave', e => { e.preventDefault(); if (drawing) finishStroke(); });
+}
+
+function advanceTest() {
+  S.ci++;
+  if (S.ci < S.chars.length) { S.si = 0; S.failed = false; showNazori(); }
+  else showTestResults();
+}
+
+function animateCorrect(paths) {
+  const area = document.getElementById('nazori-area');
+  const old = area.querySelector('svg.asvg'); if (old) old.remove();
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 109 109'); svg.setAttribute('class', 'asvg');
+  svg.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:5;background:rgba(255,255,255,0.85);border-radius:16px;';
+  area.appendChild(svg);
+  paths.forEach((d, i) => {
+    const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', '#1e293b'); p.setAttribute('stroke-width', '4'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+    const { length } = mp(d); p.style.strokeDasharray = length; p.style.strokeDashoffset = length;
+    p.style.transition = `stroke-dashoffset ${Math.max(0.3, length / 180)}s ease ${i * 0.4}s`;
+    svg.appendChild(p);
+    requestAnimationFrame(() => requestAnimationFrame(() => { p.style.strokeDashoffset = '0'; }));
+  });
+}
+
+function drawCanvas(ctx, cd, sz, sc, isTest) {
+  ctx.clearRect(0, 0, sz, sz);
+  for (let i = 0; i < cd.paths.length; i++) {
+    if (i < S.si) {
+      drawP(ctx, cd.paths[i], sc, '#1e293b', SW * (sc / 2));
+    } else if (!isTest) {
+      // Practice: show blue guide
+      drawP(ctx, cd.paths[i], sc, 'rgba(236,72,153,0.18)', GW * (sc / 2));
+    }
+    // Test: no guide for unwritten strokes
+  }
+}
+
+function resetCurrentStroke() {
+  S.si = 0;
+  const ch = S.chars[S.ci]; const cd = hData.characters[ch];
+  setupCanvas(cd, S.mode === 'test');
+}
+
+// ==================== RESULTS ====================
+function showTestResults() {
+  show('screen-results');
+  const ok = S.results.filter(r => r.ok).length;
+  document.getElementById('results-score').textContent = `${ok} / ${S.results.length}`;
+  document.getElementById('results-label').textContent = S._label || 'テスト';
+  const p = S.results.length > 0 ? ok / S.results.length : 0;
+  document.getElementById('results-message').textContent =
+    p === 1 ? '🎉 パーフェクト！' : p >= 0.8 ? '👏 よくできました！' : p >= 0.5 ? '💪 もうすこし！' : '📝 もういちど！';
+  const det = document.getElementById('results-detail'); det.innerHTML = '';
+  S.results.forEach(r => {
+    const sp = document.createElement('span');
+    sp.className = 'r-item ' + (r.ok ? 'r-ok' : 'r-ng');
+    sp.textContent = r.ok ? `${r.char} ○` : `${r.char} ✕`;
+    det.appendChild(sp);
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('screen-results').classList.contains('active')) goHome();
+});
+
+// ==================== SVG HELPERS ====================
+let _ms = null;
+function ms() { if (_ms) return _ms; _ms = document.createElementNS(NS, 'svg'); _ms.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;'; document.body.appendChild(_ms); return _ms; }
+function mp(d) { const s = ms(), p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.appendChild(p); const l = p.getTotalLength(); const pts = []; const n = Math.max(20, Math.ceil(l / 2)); for (let i = 0; i <= n; i++) { const pt = p.getPointAtLength(i / n * l); pts.push({ x: pt.x, y: pt.y }); } s.removeChild(p); return { length: l, points: pts }; }
+function cp(e, c) { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function drawP(ctx, d, sc, col, w) { const { points } = mp(d); ctx.beginPath(); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; points.forEach((p, i) => { const x = p.x * sc, y = p.y * sc; i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }); ctx.stroke(); }
+function avgM(u, r) { let t = 0; for (const rp of r) { let m = Infinity; for (const up of u) { const d = Math.hypot(rp.x - up.x, rp.y - up.y); if (d < m) m = d; } t += m; } return t / r.length; }
+function chkD(u, r) { const us = u[0], ue = u[u.length - 1], rs = r[0], re = r[r.length - 1]; return (Math.hypot(us.x - rs.x, us.y - rs.y) + Math.hypot(ue.x - re.x, ue.y - re.y)) <= (Math.hypot(us.x - re.x, us.y - re.y) + Math.hypot(ue.x - rs.x, ue.y - rs.y)) * 1.3; }
+function showFB(ctx, sz, txt, col) { ctx.save(); ctx.globalAlpha = 0.55; ctx.font = `bold ${sz * 0.5}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = col; ctx.fillText(txt, sz / 2, sz / 2); ctx.restore(); }
+function findO(u, cd, ci, sc) { for (let i = 0; i < cd.paths.length; i++) { if (i === ci || i < S.si) continue; const r = mp(cd.paths[i]).points.map(p => ({ x: p.x * sc, y: p.y * sc })); if (avgM(u, r) < TOL * sc && chkD(u, r)) return i; } return -1; }
+
+loadData();
+</script>
+</body>
+</html>

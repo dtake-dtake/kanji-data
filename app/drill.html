@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>漢字書き順ドリル — あかねこ漢字スキル ＆ 教科書対応</title>
+<style>
+/* ============ RESET & BASE ============ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+}
+body {
+  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  background: #f0f4f8; color: #1e293b;
+  min-height: 100dvh; display: flex; flex-direction: column; align-items: center;
+  overflow-x: hidden;
+}
+button { font-family: inherit; cursor: pointer; border: none; outline: none; -webkit-user-select: none; user-select: none; }
+input { font-family: inherit; outline: none; -webkit-user-select: auto; user-select: auto; }
+
+/* ============ RESPONSIVE KANJI SIZE ============ */
+:root {
+  --kanji-size: min(90vw, 68vh);
+}
+@media (min-width: 768px) {
+  :root { --kanji-size: min(58vw, 75vh); }
+}
+@media (min-width: 768px) and (orientation: landscape) {
+  :root { --kanji-size: min(48vw, 78vh); }
+}
+@media (min-width: 1200px) {
+  :root { --kanji-size: min(42vw, 80vh); }
+}
+
+/* ============ SCREEN MANAGEMENT ============ */
+.screen { display: none; width: 100%; max-width: 1100px; padding: 12px 16px; flex-direction: column; align-items: center; }
+.screen.active { display: flex; }
+@media (min-width: 768px) {
+  .screen { padding: 16px 24px; }
+}
+
+/* ============ TOP APP HEADER ============ */
+.app-header {
+  width: 100%; max-width: 1100px; padding: 14px 16px 8px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.app-title-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.app-title {
+  font-size: 1.25rem; font-weight: 800; color: #1e293b;
+  display: flex; align-items: center; gap: 8px;
+}
+.app-title span.badge {
+  font-size: 0.75rem; font-weight: 700; background: #e0e7ff; color: #4338ca;
+  padding: 3px 8px; border-radius: 9999px;
+}
+
+/* ============ GRADE SELECTOR ============ */
+.grade-bar {
+  display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;
+}
+.grade-btn {
+  flex: 1; min-width: 52px; padding: 8px 12px; border-radius: 12px;
+  background: #ffffff; color: #64748b; font-weight: 700; font-size: 0.95rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.15s;
+  text-align: center;
+}
+.grade-btn:hover { background: #f8fafc; color: #334155; }
+.grade-btn.active {
+  background: #3b82f6; color: #ffffff; box-shadow: 0 3px 8px rgba(59,130,246,0.3);
+}
+
+/* ============ SCREEN HEADER ============ */
+.header {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 6px 0; margin-bottom: 8px;
+}
+.header .back-btn {
+  width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0;
+  font-size: 22px; display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s; flex-shrink: 0;
+}
+.header .back-btn:hover { background: #cbd5e1; }
+.header .title { font-size: 1.2rem; font-weight: 700; flex: 1; }
+.header .progress { font-size: 0.9rem; color: #64748b; white-space: nowrap; }
+
+/* ============ HOME TABS ============ */
+.source-tabs {
+  display: flex; gap: 8px; width: 100%; margin-bottom: 12px;
+}
+.source-tab {
+  flex: 1; padding: 10px 14px; border-radius: 12px; font-weight: 700;
+  font-size: 0.95rem; background: #ffffff; color: #64748b;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.15s;
+}
+.source-tab.active {
+  background: #1e293b; color: #ffffff;
+}
+
+/* ============ SUB SELECTOR (BOOK/TERM) ============ */
+.book-bar {
+  display: flex; gap: 8px; width: 100%; margin-bottom: 14px;
+}
+.book-btn {
+  flex: 1; padding: 8px 12px; border-radius: 10px; background: #e2e8f0;
+  color: #475569; font-weight: 700; font-size: 0.9rem; transition: all 0.15s;
+}
+.book-btn.active {
+  background: #6366f1; color: #ffffff;
+}
+
+/* ============ LESSON CARD LIST (SKILL / UNIT) ============ */
+.lesson-list {
+  display: flex; flex-direction: column; gap: 10px; width: 100%;
+  max-height: 48vh; overflow-y: auto; padding-right: 4px; margin-bottom: 16px;
+}
+.lesson-card {
+  background: #ffffff; border-radius: 14px; padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer;
+  display: flex; align-items: center; gap: 14px; transition: all 0.15s;
+  border: 2px solid transparent;
+}
+.lesson-card:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+.lesson-card.active {
+  border-color: #3b82f6; background: #eff6ff;
+}
+.lesson-num {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #f1f5f9; color: #1e293b; font-weight: 800; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.lesson-card.active .lesson-num {
+  background: #3b82f6; color: #ffffff;
+}
+.lesson-info { flex: 1; min-width: 0; }
+.lesson-title {
+  font-size: 0.95rem; font-weight: 700; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lesson-chars {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.char-tag {
+  display: inline-block; background: #f1f5f9; color: #334155;
+  padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.95rem;
+  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+}
+.lesson-card.active .char-tag {
+  background: #dbeafe; color: #1e40af;
+}
+
+/* ============ ACTIVE LESSON PREVIEW & ACTION ============ */
+.active-preview-card {
+  width: 100%; background: #ffffff; border-radius: 16px; padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px;
+}
+.active-preview-title {
+  font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.active-preview-count {
+  font-size: 0.85rem; font-weight: 600; color: #64748b;
+}
+.active-kanji-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 8px;
+  margin-bottom: 16px;
+}
+.kanji-tile {
+  aspect-ratio: 1; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;
+  font-size: 1.8rem; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+  transition: all 0.15s;
+}
+.kanji-tile:hover {
+  background: #e0f2fe; border-color: #38bdf8; transform: scale(1.06);
+}
+
+/* ============ MODE BUTTONS ============ */
+.mode-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.mode-btn {
+  padding: 16px 20px; border-radius: 14px; font-size: 1.05rem; font-weight: 700;
+  display: flex; align-items: center; gap: 12px; transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+.mode-btn:active { transform: scale(0.98); }
+.mode-btn .icon { font-size: 1.5rem; }
+.mode-btn.drill { background: #3b82f6; color: #ffffff; }
+.mode-btn.quiz-kakijun { background: #f59e0b; color: #ffffff; }
+.mode-btn.quiz-yomi { background: #8b5cf6; color: #ffffff; }
+@media (min-width: 768px) {
+  .mode-buttons { flex-direction: row; }
+  .mode-btn { flex: 1; justify-content: center; padding: 20px 16px; font-size: 1.1rem; }
+}
+
+/* ============ KANJI DISPLAY AREA ============ */
+.kanji-display-area {
+  width: var(--kanji-size); height: var(--kanji-size);
+  background: #fff; border-radius: 16px;
+  position: relative; margin: 8px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden; flex-shrink: 0;
+}
+.kanji-display-area svg { width: 100%; height: 100%; }
+.grid-lines {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1;
+}
+.grid-lines::before, .grid-lines::after {
+  content: ''; position: absolute; background: #e5e7eb;
+}
+.grid-lines::before {
+  top: 50%; left: 4%; right: 4%; height: 1px;
+  background: repeating-linear-gradient(90deg, #cbd5e1 0, #cbd5e1 4px, transparent 4px, transparent 8px);
+}
+.grid-lines::after {
+  left: 50%; top: 4%; bottom: 4%; width: 1px;
+  background: repeating-linear-gradient(180deg, #cbd5e1 0, #cbd5e1 4px, transparent 4px, transparent 8px);
+}
+
+/* ============ NAZORI AREA ============ */
+.nazori-area {
+  width: var(--kanji-size); height: var(--kanji-size);
+  background: #fff; border-radius: 16px;
+  position: relative; margin: 8px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  touch-action: none; overflow: hidden; flex-shrink: 0;
+}
+.nazori-area canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+
+/* ============ STATUS & INDICATOR ============ */
+.nazori-status {
+  padding: 10px 16px; border-radius: 10px; font-size: 0.95rem; font-weight: 700;
+  text-align: center; margin: 6px 0; width: 100%; transition: all 0.2s;
+}
+.nazori-status.info { background: #e0f2fe; color: #0369a1; }
+.nazori-status.good { background: #dcfce7; color: #15803d; }
+.nazori-status.retry { background: #fee2e2; color: #b91c1c; }
+
+.round-indicator { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.round-dot { width: 14px; height: 14px; border-radius: 50%; background: #cbd5e1; transition: background 0.3s; }
+.round-dot.done { background: #22c55e; }
+.round-dot.current { background: #3b82f6; transform: scale(1.2); }
+
+/* ============ READING INFO ============ */
+.reading-info {
+  background: #fff; border-radius: 12px; padding: 14px 18px; width: 100%;
+  margin: 10px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.reading-info .label { font-size: 0.8rem; color: #94a3b8; margin-bottom: 2px; }
+.reading-info .readings { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+.reading-info .examples { font-size: 0.95rem; color: #475569; line-height: 1.8; }
+.reading-info .examples span {
+  display: inline-block; background: #f1f5f9; padding: 3px 10px;
+  border-radius: 6px; margin: 2px 4px 2px 0;
+}
+
+/* ============ ACTION BUTTONS ============ */
+.action-row { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
+.action-row button {
+  flex: 1; padding: 16px; border-radius: 12px; font-size: 1.05rem; font-weight: 700;
+  transition: opacity 0.15s;
+}
+.action-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: #3b82f6; color: #fff; }
+.btn-secondary { background: #e2e8f0; color: #334155; }
+
+/* ============ QUIZ AREA ============ */
+.quiz-question { font-size: 1.2rem; font-weight: 700; text-align: center; margin: 10px 0; }
+.quiz-input-area { display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; margin: 12px 0; }
+.quiz-input-area input {
+  padding: 12px 16px; font-size: 1.3rem; border: 2px solid #cbd5e1; border-radius: 12px;
+  text-align: center; width: 160px; font-weight: 700;
+}
+.quiz-input-area input:focus { border-color: #3b82f6; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin: 12px 0; }
+.choice-btn {
+  padding: 16px 12px; border-radius: 12px; font-size: 1.15rem; font-weight: 700;
+  background: #f8fafc; border: 2px solid #e2e8f0; color: #1e293b; transition: all 0.15s;
+}
+.choice-btn:hover { background: #f1f5f9; }
+.choice-btn.correct { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+.choice-btn.wrong { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+
+.mic-btn {
+  width: 50px; height: 50px; border-radius: 50%; background: #ede9fe; color: #7c3aed;
+  font-size: 22px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.mic-btn.listening { background: #ef4444; color: #fff; animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+.hint-btn {
+  background: #fef3c7; color: #92400e; padding: 10px 16px; border-radius: 10px;
+  font-size: 0.9rem; font-weight: 700; margin: 4px 0; width: 100%;
+}
+.feedback {
+  padding: 12px; border-radius: 12px; font-size: 1.1rem; font-weight: 700;
+  text-align: center; width: 100%; margin: 8px 0;
+}
+.feedback.correct { background: #dcfce7; color: #15803d; }
+.feedback.wrong { background: #fee2e2; color: #b91c1c; }
+
+/* ============ RESULTS ============ */
+.results-card {
+  background: #fff; border-radius: 20px; padding: 36px;
+  text-align: center; width: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.results-card .score { font-size: 3.5rem; font-weight: 800; color: #3b82f6; }
+.results-card .label { font-size: 1.1rem; color: #64748b; margin-top: 4px; }
+.results-card .message { font-size: 1.3rem; font-weight: 600; margin-top: 16px; }
+
+/* ============ TABLET LANDSCAPE ============ */
+@media (min-width: 768px) and (orientation: landscape) {
+  .tablet-row {
+    display: flex; flex-direction: row; gap: 24px; width: 100%;
+    align-items: center; justify-content: center;
+  }
+  .tablet-row .kanji-display-area,
+  .tablet-row .nazori-area { flex-shrink: 0; }
+  .tablet-row .side-panel { flex: 1; min-width: 240px; max-width: 380px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP APP HEADER -->
+<header class="app-header">
+  <div class="app-title-row">
+    <div class="app-title">
+      <span>✏️ 漢字書き順ドリル</span>
+      <span class="badge" id="header-curriculum-badge">あかねこスキル対応</span>
+    </div>
+  </div>
+  <nav class="grade-bar" id="grade-bar">
+    <button class="grade-btn" data-grade="1" onclick="changeGrade(1)">小1</button>
+    <button class="grade-btn" data-grade="2" onclick="changeGrade(2)">小2</button>
+    <button class="grade-btn" data-grade="3" onclick="changeGrade(3)">小3</button>
+    <button class="grade-btn" data-grade="4" onclick="changeGrade(4)">小4</button>
+    <button class="grade-btn" data-grade="5" onclick="changeGrade(5)">小5</button>
+    <button class="grade-btn" data-grade="6" onclick="changeGrade(6)">小6</button>
+  </nav>
+</header>
+
+<!-- ==================== HOME SCREEN ==================== -->
+<main id="screen-home" class="screen active">
+  <div class="source-tabs">
+    <button class="source-tab active" id="tab-skill" onclick="switchSourceMode('skill')">
+      📕 漢字スキル（宿題）
+    </button>
+    <button class="source-tab" id="tab-textbook" onclick="switchSourceMode('textbook')">
+      📖 教科書単元
+    </button>
+    <button class="source-tab" id="tab-all" onclick="switchSourceMode('all')">
+      🔤 全漢字
+    </button>
+  </div>
+
+  <div class="book-bar" id="book-bar"></div>
+
+  <div class="lesson-list" id="lesson-list"></div>
+
+  <section class="active-preview-card" id="active-preview-card">
+    <div class="active-preview-title">
+      <span id="preview-lesson-title">単元を選択してください</span>
+      <span class="active-preview-count" id="preview-kanji-count"></span>
+    </div>
+    <div class="active-kanji-grid" id="preview-kanji-grid"></div>
+    <div class="mode-buttons">
+      <button class="mode-btn drill" onclick="startDrill()">
+        <span class="icon">✏️</span> なぞり書きドリル
+      </button>
+      <button class="mode-btn quiz-kakijun" onclick="startQuizKakijun()">
+        <span class="icon">🎯</span> 書き順クイズ
+      </button>
+      <button class="mode-btn quiz-yomi" onclick="startQuizYomi()">
+        <span class="icon">📖</span> 読み方クイズ
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== OTEHON SCREEN ==================== -->
+<section id="screen-otehon" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="title" id="otehon-title"></span>
+    <span class="progress" id="otehon-progress"></span>
+  </div>
+  <div class="tablet-row">
+    <div class="kanji-display-area" id="otehon-svg-area">
+      <div class="grid-lines"></div>
+    </div>
+    <div class="side-panel">
+      <div class="reading-info" id="otehon-reading-info"></div>
+      <div class="action-row">
+        <button class="btn-secondary" onclick="replayOtehon()">▶ もう一回</button>
+        <button class="btn-primary" onclick="goToNazori()">なぞり書きへ →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== NAZORI SCREEN ==================== -->
+<section id="screen-nazori" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="title" id="nazori-title"></span>
+    <span class="progress" id="nazori-progress"></span>
+  </div>
+  <div class="round-indicator" id="nazori-rounds"></div>
+  <div class="tablet-row">
+    <div class="nazori-area" id="nazori-area">
+      <canvas id="nazori-canvas"></canvas>
+      <div class="grid-lines" style="z-index:0;"></div>
+    </div>
+    <div class="side-panel">
+      <div class="nazori-status info" id="nazori-status">始点（🔴）からなぞってね</div>
+      <div class="action-row">
+        <button class="btn-secondary" onclick="resetNazoriStroke()">やり直し</button>
+        <button class="btn-primary" id="nazori-next-btn" onclick="nextNazoriAction()" disabled>次の画 →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== QUIZ: KAKIJUN ==================== -->
+<section id="screen-quiz-kakijun" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="title">🎯 書き順クイズ</span>
+    <span class="progress" id="kakijun-progress"></span>
+  </div>
+  <div class="tablet-row">
+    <div class="kanji-display-area" id="kakijun-svg-area">
+      <div class="grid-lines"></div>
+    </div>
+    <div class="side-panel">
+      <div class="quiz-question">赤い画は 何画目？</div>
+      <div class="quiz-input-area">
+        <input type="number" id="kakijun-input" class="stroke-num-input" min="1" max="30"
+               placeholder="?" inputmode="numeric"
+               onkeydown="if(event.key==='Enter') checkKakijunAnswer()">
+        <span style="font-size:1.3rem; font-weight:700; color:#64748b;">画目</span>
+        <button class="btn-primary" style="width:auto;padding:12px 20px;font-size:1.1rem;" onclick="checkKakijunAnswer()">→</button>
+      </div>
+      <div class="feedback" id="kakijun-feedback" style="display:none;"></div>
+      <button class="btn-primary" id="kakijun-next-btn" style="display:none;width:100%;margin-top:8px;font-size:1.05rem;"
+              onclick="nextKakijunQuestion()">次の問題 →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== QUIZ: YOMI ==================== -->
+<section id="screen-quiz-yomi" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="title">📖 読み方クイズ</span>
+    <span class="progress" id="yomi-progress"></span>
+  </div>
+  <div class="tablet-row">
+    <div class="kanji-display-area" id="yomi-svg-area">
+      <div class="grid-lines"></div>
+    </div>
+    <div class="side-panel">
+      <div class="quiz-question" id="yomi-question">この漢字の読み方は？</div>
+      <div class="quiz-input-area">
+        <input type="text" id="yomi-input" placeholder="ひらがなで入力"
+               onkeydown="if(event.key==='Enter') checkYomiAnswer()">
+        <button class="mic-btn" id="mic-btn" onclick="toggleSpeech()">🎤</button>
+      </div>
+      <button class="hint-btn" id="yomi-hint-btn" onclick="showYomiHint()">💡 ヒント（4択を表示）</button>
+      <div class="choices" id="yomi-choices" style="display:none;"></div>
+      <div class="feedback" id="yomi-feedback" style="display:none;"></div>
+      <button class="btn-primary" id="yomi-next-btn" style="display:none;width:100%;margin-top:8px;font-size:1.05rem;"
+              onclick="nextYomiQuestion()">次の問題 →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== RESULTS SCREEN ==================== -->
+<section id="screen-results" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="title">けっか</span>
+  </div>
+  <div class="results-card">
+    <div class="score" id="results-score"></div>
+    <div class="label" id="results-label"></div>
+    <div class="message" id="results-message"></div>
+  </div>
+  <div class="action-row" style="margin-top:24px;">
+    <button class="btn-secondary" onclick="goHome()">ホームへ</button>
+    <button class="btn-primary" id="results-retry-btn" onclick="retryQuiz()">もう一回</button>
+  </div>
+</section>
+
+<!-- FALLBACK SCRIPTS (offline support) -->
+<script src="../data/kanji/all_grades.js"></script>
+<script src="../data/akaneko-skill/all_skills.js"></script>
+
+<script>
+// ================================================================
+// CONFIG & APP STATE
+// ================================================================
+const SVG_VIEWBOX = 109;
+const TRACE_TOLERANCE = 22; // SVG units — lenient
+const NAZORI_ROUNDS = 3;
+const STROKE_W = 5;
+const GUIDE_W = 9;
+
+let currentGrade = 1;
+let currentSourceMode = 'skill'; // 'skill' | 'textbook' | 'all'
+let currentBookIndex = 0;
+let currentLessonIndex = 0;
+
+let strokeData = {};        // key: char -> { char, grade, paths, ... }
+let textbookData = null;    // { units, kanjiDetails, ... }
+let skillData = null;       // { books: [ { book, lessons: [...] } ] }
+
+let activeKanjiList = [];   // Current set of kanji to practice
+let activeLessonTitle = ''; // Title of current practice set
+
+const state = {
+  kanjiIndex: 0,
+  nazoriRound: 0,
+  nazoriStrokeIndex: 0,
+  userPoints: [],
+  isTracing: false,
+  tracePassed: false,
+  quizIndex: 0,
+  quizScore: 0,
+  quizTotal: 0,
+  quizKakijunAnswer: 0,
+  quizTargetIndex: 0,
+  lastQuizMode: null,
+};
+
+// ================================================================
+// DATA LOADING
+// ================================================================
+async function loadGradeData(grade) {
+  currentGrade = grade;
+  updateGradeBarUI();
+
+  // Try fetch first, fallback to window global data if running offline
+  try {
+    const [sRes, tRes, skRes] = await Promise.all([
+      fetch(`../data/kanji/grade${grade}.json`),
+      fetch(`../data/textbook/grade${grade}.json`),
+      fetch(`../data/akaneko-skill/grade${grade}.json`)
+    ]);
+    strokeData = await sRes.json();
+    textbookData = await tRes.json();
+    skillData = await skRes.json();
+  } catch (e) {
+    console.warn('Fetch failed, using global window data if available:', e);
+    if (window.ALL_GRADES_KANJI) {
+      strokeData = {};
+      Object.keys(window.ALL_GRADES_KANJI).forEach(k => {
+        if (window.ALL_GRADES_KANJI[k].grade === grade) {
+          strokeData[k] = window.ALL_GRADES_KANJI[k];
+        }
+      });
+    }
+    if (window.ALL_SKILLS && window.ALL_SKILLS[grade]) {
+      skillData = window.ALL_SKILLS[grade];
+    }
+    if (window[`GRADE${grade}_TEXTBOOK`]) {
+      textbookData = window[`GRADE${grade}_TEXTBOOK`];
+    }
+  }
+
+  currentBookIndex = 0;
+  currentLessonIndex = 0;
+  renderSourceTabs();
+  renderBookBar();
+  renderLessonList();
+  selectLesson(0);
+}
+
+function updateGradeBarUI() {
+  document.querySelectorAll('.grade-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.grade, 10) === currentGrade);
+  });
+}
+
+function changeGrade(grade) {
+  if (currentGrade === grade && Object.keys(strokeData).length > 0) return;
+  loadGradeData(grade);
+}
+
+function switchSourceMode(mode) {
+  currentSourceMode = mode;
+  document.querySelectorAll('.source-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${mode}`).classList.add('active');
+
+  currentBookIndex = 0;
+  currentLessonIndex = 0;
+  renderBookBar();
+  renderLessonList();
+  selectLesson(0);
+}
+
+// ================================================================
+// UI RENDERING: TABS, BOOKS, LESSONS
+// ================================================================
+function renderSourceTabs() {
+  document.querySelectorAll('.source-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${currentSourceMode}`).classList.add('active');
+}
+
+function renderBookBar() {
+  const bar = document.getElementById('book-bar');
+  bar.innerHTML = '';
+
+  if (currentSourceMode === 'all') {
+    bar.style.display = 'none';
+    return;
+  }
+
+  bar.style.display = 'flex';
+  let books = [];
+  if (currentSourceMode === 'skill' && skillData && skillData.books) {
+    books = skillData.books.map(b => b.book);
+  } else if (currentSourceMode === 'textbook' && textbookData) {
+    books = currentGrade === 1 ? ['上', '下'] : ['1学期', '2学期', '3学期'];
+  }
+
+  books.forEach((bName, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'book-btn' + (idx === currentBookIndex ? ' active' : '');
+    btn.textContent = bName;
+    btn.onclick = () => {
+      currentBookIndex = idx;
+      renderBookBar();
+      renderLessonList();
+      selectLesson(0);
+    };
+    bar.appendChild(btn);
+  });
+}
+
+function renderLessonList() {
+  const container = document.getElementById('lesson-list');
+  container.innerHTML = '';
+
+  if (currentSourceMode === 'all') {
+    container.style.display = 'none';
+    const allChars = Object.keys(strokeData);
+    activeKanjiList = allChars;
+    activeLessonTitle = `小学${currentGrade}年生 全漢字 (${allChars.length}字)`;
+    renderActivePreview();
+    return;
+  }
+
+  container.style.display = 'flex';
+
+  if (currentSourceMode === 'skill') {
+    if (!skillData || !skillData.books || !skillData.books[currentBookIndex]) return;
+    const lessons = skillData.books[currentBookIndex].lessons;
+    lessons.forEach((l, idx) => {
+      const card = document.createElement('div');
+      card.className = 'lesson-card' + (idx === currentLessonIndex ? ' active' : '');
+      card.onclick = () => selectLesson(idx);
+
+      const num = document.createElement('div');
+      num.className = 'lesson-num';
+      num.textContent = l.number;
+
+      const info = document.createElement('div');
+      info.className = 'lesson-info';
+
+      const title = document.createElement('div');
+      title.className = 'lesson-title';
+      title.textContent = l.title;
+
+      const chars = document.createElement('div');
+      chars.className = 'lesson-chars';
+      l.kanji.forEach(ch => {
+        const tag = document.createElement('span');
+        tag.className = 'char-tag';
+        tag.textContent = ch;
+        chars.appendChild(tag);
+      });
+
+      info.appendChild(title);
+      info.appendChild(chars);
+      card.appendChild(num);
+      card.appendChild(info);
+      container.appendChild(card);
+    });
+  } else if (currentSourceMode === 'textbook') {
+    if (!textbookData || !textbookData.units) return;
+    const bookName = currentGrade === 1 ? (currentBookIndex === 0 ? '上' : '下') :
+                     (currentBookIndex === 0 ? '上' : '下'); // Textbook usually has 上/下
+    const units = textbookData.units;
+    units.forEach((u, idx) => {
+      const card = document.createElement('div');
+      card.className = 'lesson-card' + (idx === currentLessonIndex ? ' active' : '');
+      card.onclick = () => selectLesson(idx);
+
+      const num = document.createElement('div');
+      num.className = 'lesson-num';
+      num.textContent = idx + 1;
+
+      const info = document.createElement('div');
+      info.className = 'lesson-info';
+
+      const title = document.createElement('div');
+      title.className = 'lesson-title';
+      title.textContent = (u.book ? `[${u.book}] ` : '') + u.name;
+
+      const chars = document.createElement('div');
+      chars.className = 'lesson-chars';
+      u.kanji.forEach(ch => {
+        const tag = document.createElement('span');
+        tag.className = 'char-tag';
+        tag.textContent = ch;
+        chars.appendChild(tag);
+      });
+
+      info.appendChild(title);
+      info.appendChild(chars);
+      card.appendChild(num);
+      card.appendChild(info);
+      container.appendChild(card);
+    });
+  }
+}
+
+function selectLesson(idx) {
+  currentLessonIndex = idx;
+  document.querySelectorAll('.lesson-card').forEach((c, i) => {
+    c.classList.toggle('active', i === idx);
+  });
+
+  if (currentSourceMode === 'skill') {
+    const book = skillData.books[currentBookIndex];
+    if (book && book.lessons[idx]) {
+      const l = book.lessons[idx];
+      activeKanjiList = l.kanji;
+      activeLessonTitle = `小${currentGrade} ${book.book} スキル${l.number}番「${l.title}」`;
+    }
+  } else if (currentSourceMode === 'textbook') {
+    if (textbookData && textbookData.units[idx]) {
+      const u = textbookData.units[idx];
+      activeKanjiList = u.kanji;
+      activeLessonTitle = `小${currentGrade} 教科書「${u.name}」`;
+    }
+  }
+  renderActivePreview();
+}
+
+function renderActivePreview() {
+  document.getElementById('preview-lesson-title').textContent = activeLessonTitle;
+  document.getElementById('preview-kanji-count').textContent = `${activeKanjiList.length}字`;
+
+  const grid = document.getElementById('preview-kanji-grid');
+  grid.innerHTML = '';
+  activeKanjiList.forEach((k, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'kanji-tile';
+    tile.textContent = k;
+    tile.onclick = () => {
+      state.kanjiIndex = i;
+      showOtehon();
+    };
+    grid.appendChild(tile);
+  });
+}
+
+// ================================================================
+// SCREEN NAVIGATION
+// ================================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function goHome() {
+  showScreen('screen-home');
+  stopSpeechRecognition();
+}
+
+// ================================================================
+// DRILL MODE START
+// ================================================================
+function startDrill() {
+  if (activeKanjiList.length === 0) return;
+  state.mode = 'drill';
+  state.kanjiIndex = 0;
+  showOtehon();
+}
+
+// ================================================================
+// SVG HELPERS — Path measurement via temp SVG
+// ================================================================
+const _svgNS = 'http://www.w3.org/2000/svg';
+let _measureSvg = null;
+
+function ensureMeasureSvg() {
+  if (_measureSvg) return _measureSvg;
+  _measureSvg = document.createElementNS(_svgNS, 'svg');
+  _measureSvg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;';
+  document.body.appendChild(_measureSvg);
+  return _measureSvg;
+}
+
+function measurePath(d) {
+  const svg = ensureMeasureSvg();
+  const p = document.createElementNS(_svgNS, 'path');
+  p.setAttribute('d', d);
+  svg.appendChild(p);
+  const len = p.getTotalLength();
+  const points = [];
+  const numPts = Math.max(20, Math.ceil(len / 2));
+  for (let i = 0; i <= numPts; i++) {
+    const pt = p.getPointAtLength((i / numPts) * len);
+    points.push({ x: pt.x, y: pt.y });
+  }
+  svg.removeChild(p);
+  return { length: len, points };
+}
+
+function getPathStart(d) {
+  return measurePath(d).points[0];
+}
+
+// ================================================================
+// OTEHON (DEMO) SCREEN
+// ================================================================
+function showOtehon() {
+  showScreen('screen-otehon');
+  const kanji = activeKanjiList[state.kanjiIndex];
+  const kData = strokeData[kanji];
+  if (!kData) return;
+
+  const detail = textbookData && textbookData.kanjiDetails ? textbookData.kanjiDetails[kanji] : null;
+
+  document.getElementById('otehon-title').textContent = `${kanji}（${kData.strokeCount}画）`;
+  document.getElementById('otehon-progress').textContent = `${state.kanjiIndex + 1} / ${activeKanjiList.length}`;
+
+  const infoDiv = document.getElementById('otehon-reading-info');
+  let readingsHtml = '';
+  let examplesHtml = '';
+
+  if (detail && detail.readings) {
+    const onR = (detail.readings.on || []).join('・');
+    const kunR = (detail.readings.kun || []).join('・');
+    readingsHtml = `
+      ${onR ? `<span style="color:#3b82f6;">【${onR}】</span> ` : ''}
+      ${kunR ? `<span style="color:#059669;">${kunR}</span>` : ''}
+    `;
+    if (detail.examples && detail.examples.length > 0) {
+      examplesHtml = `<div class="label" style="margin-top:8px;">つかい方</div>
+      <div class="examples">${detail.examples.map(e => `<span>${e}</span>`).join('')}</div>`;
+    }
+  } else {
+    readingsHtml = `<span style="color:#64748b;">小学${currentGrade}年配当漢字</span>`;
+  }
+
+  infoDiv.innerHTML = `
+    <div class="label">読み方</div>
+    <div class="readings">${readingsHtml}</div>
+    ${examplesHtml}
+  `;
+
+  animateStrokes('otehon-svg-area', kData.paths);
+}
+
+function replayOtehon() {
+  const kanji = activeKanjiList[state.kanjiIndex];
+  if (strokeData[kanji]) {
+    animateStrokes('otehon-svg-area', strokeData[kanji].paths);
+  }
+}
+
+function animateStrokes(containerId, paths) {
+  const container = document.getElementById(containerId);
+  const old = container.querySelector('svg.anim-svg');
+  if (old) old.remove();
+
+  const svg = document.createElementNS(_svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 109 109');
+  svg.setAttribute('class', 'anim-svg');
+  svg.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:2;';
+  container.appendChild(svg);
+
+  paths.forEach((d, i) => {
+    const path = document.createElementNS(_svgNS, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#1e293b');
+    path.setAttribute('stroke-width', '3.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+
+    const { length } = measurePath(d);
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+    path.style.transition = `stroke-dashoffset ${Math.max(0.3, length / 180)}s ease ${i * 0.45}s`;
+    svg.appendChild(path);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
+    });
+  });
+}
+
+// ================================================================
+// NAZORI (TRACING) SCREEN — Pointer Events
+// ================================================================
+function goToNazori() {
+  state.nazoriRound = 0;
+  state.nazoriStrokeIndex = 0;
+  showNazori();
+}
+
+function showNazori() {
+  showScreen('screen-nazori');
+  const kanji = activeKanjiList[state.kanjiIndex];
+  const kData = strokeData[kanji];
+
+  document.getElementById('nazori-title').textContent = `${kanji} なぞり書き`;
+  document.getElementById('nazori-progress').textContent = `${state.kanjiIndex + 1}/${activeKanjiList.length}`;
+
+  const roundDiv = document.getElementById('nazori-rounds');
+  roundDiv.innerHTML = '';
+  for (let i = 0; i < NAZORI_ROUNDS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'round-dot' + (i < state.nazoriRound ? ' done' : i === state.nazoriRound ? ' current' : '');
+    roundDiv.appendChild(dot);
+  }
+
+  setupNazoriCanvas(kData);
+}
+
+function setupNazoriCanvas(kData) {
+  const area = document.getElementById('nazori-area');
+  const rect = area.getBoundingClientRect();
+  const areaSize = Math.round(rect.width);
+  const scale = areaSize / SVG_VIEWBOX;
+
+  const oldCanvas = document.getElementById('nazori-canvas');
+  const canvas = oldCanvas.cloneNode(false);
+  canvas.id = 'nazori-canvas';
+  oldCanvas.parentNode.replaceChild(canvas, oldCanvas);
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = areaSize * dpr;
+  canvas.height = areaSize * dpr;
+  canvas.style.width = areaSize + 'px';
+  canvas.style.height = areaSize + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  redrawNazori(ctx, kData, areaSize, scale);
+
+  const isComplete = state.nazoriStrokeIndex >= kData.paths.length;
+  const statusEl = document.getElementById('nazori-status');
+  const nextBtn = document.getElementById('nazori-next-btn');
+  if (isComplete) {
+    statusEl.textContent = '✅ すべての画をなぞりました！';
+    statusEl.className = 'nazori-status good';
+    nextBtn.disabled = false;
+    nextBtn.textContent =
+      state.nazoriRound < NAZORI_ROUNDS - 1 ? 'もう一回 →' :
+      state.kanjiIndex < activeKanjiList.length - 1 ? '次の漢字 →' : 'けっかを見る';
+  } else {
+    statusEl.textContent = `第${state.nazoriStrokeIndex + 1}画を 始点（🔴）からなぞってね`;
+    statusEl.className = 'nazori-status info';
+    nextBtn.disabled = true;
+    nextBtn.textContent = '次の画 →';
+  }
+
+  canvas.onpointerdown = (e) => handlePointerDown(e, canvas, ctx, kData, scale, areaSize);
+  canvas.onpointermove = (e) => handlePointerMove(e, canvas, ctx, kData, scale, areaSize);
+  canvas.onpointerup = (e) => handlePointerUp(e, canvas, ctx, kData, scale, areaSize);
+  canvas.onpointercancel = (e) => handlePointerUp(e, canvas, ctx, kData, scale, areaSize);
+}
+
+function redrawNazori(ctx, kData, areaSize, scale) {
+  ctx.clearRect(0, 0, areaSize, areaSize);
+
+  // 1. All guide strokes (faint)
+  kData.paths.forEach((d, i) => {
+    if (i < state.nazoriStrokeIndex) return; // Completed
+    ctx.save();
+    ctx.scale(scale, scale);
+    const p = new Path2D(d);
+    ctx.strokeStyle = i === state.nazoriStrokeIndex ? 'rgba(59, 130, 246, 0.25)' : 'rgba(203, 213, 225, 0.5)';
+    ctx.lineWidth = GUIDE_W;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke(p);
+    ctx.restore();
+  });
+
+  // 2. Completed strokes
+  for (let i = 0; i < state.nazoriStrokeIndex; i++) {
+    ctx.save();
+    ctx.scale(scale, scale);
+    const p = new Path2D(kData.paths[i]);
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = STROKE_W;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke(p);
+    ctx.restore();
+  }
+
+  // 3. Start dot for current stroke
+  if (state.nazoriStrokeIndex < kData.paths.length) {
+    const curPath = kData.paths[state.nazoriStrokeIndex];
+    const startPt = getPathStart(curPath);
+    ctx.beginPath();
+    ctx.arc(startPt.x * scale, startPt.y * scale, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // 4. Current user live drawing
+  if (state.userPoints.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(state.userPoints[0].x * scale, state.userPoints[0].y * scale);
+    for (let i = 1; i < state.userPoints.length; i++) {
+      ctx.lineTo(state.userPoints[i].x * scale, state.userPoints[i].y * scale);
+    }
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = STROKE_W * scale;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+}
+
+function getCanvasPoint(e, canvas, scale) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) / scale,
+    y: (e.clientY - rect.top) / scale,
+  };
+}
+
+function handlePointerDown(e, canvas, ctx, kData, scale, areaSize) {
+  if (state.nazoriStrokeIndex >= kData.paths.length) return;
+  canvas.setPointerCapture(e.pointerId);
+  state.isTracing = true;
+  state.userPoints = [getCanvasPoint(e, canvas, scale)];
+  redrawNazori(ctx, kData, areaSize, scale);
+}
+
+function handlePointerMove(e, canvas, ctx, kData, scale, areaSize) {
+  if (!state.isTracing) return;
+  state.userPoints.push(getCanvasPoint(e, canvas, scale));
+  redrawNazori(ctx, kData, areaSize, scale);
+}
+
+function handlePointerUp(e, canvas, ctx, kData, scale, areaSize) {
+  if (!state.isTracing) return;
+  state.isTracing = false;
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+
+  const curPath = kData.paths[state.nazoriStrokeIndex];
+  const { passed, reason } = checkTraceAccuracy(curPath, state.userPoints);
+  const statusEl = document.getElementById('nazori-status');
+
+  if (passed) {
+    state.nazoriStrokeIndex++;
+    state.userPoints = [];
+    const isComplete = state.nazoriStrokeIndex >= kData.paths.length;
+    statusEl.textContent = isComplete ? '🎉 じょうずに かけました！' : '✨ いいね！つぎの画へ';
+    statusEl.className = 'nazori-status good';
+    setupNazoriCanvas(kData);
+  } else {
+    statusEl.textContent = reason;
+    statusEl.className = 'nazori-status retry';
+    state.userPoints = [];
+    redrawNazori(ctx, kData, areaSize, scale);
+  }
+}
+
+function checkTraceAccuracy(pathD, userPts) {
+  if (userPts.length < 3) return { passed: false, reason: 'もっと しっかり なぞってね' };
+
+  const { points: pathPts } = measurePath(pathD);
+  const startPt = pathPts[0];
+  const endPt = pathPts[pathPts.length - 1];
+
+  // 1. Start point check
+  const startDist = Math.hypot(userPts[0].x - startPt.x, userPts[0].y - startPt.y);
+  if (startDist > TRACE_TOLERANCE * 1.5) {
+    return { passed: false, reason: '🔴 あかい丸の ところから 書きはじめてね' };
+  }
+
+  // 2. End point check
+  const userEnd = userPts[userPts.length - 1];
+  const endDist = Math.hypot(userEnd.x - endPt.x, userEnd.y - endPt.y);
+  if (endDist > TRACE_TOLERANCE * 2) {
+    return { passed: false, reason: 'さいごまで しっかり なぞってね' };
+  }
+
+  // 3. Path coverage check
+  let hitCount = 0;
+  const step = Math.max(1, Math.floor(pathPts.length / 10));
+  const samplePts = [];
+  for (let i = 0; i < pathPts.length; i += step) samplePts.push(pathPts[i]);
+
+  samplePts.forEach(pt => {
+    const minDist = Math.min(...userPts.map(u => Math.hypot(u.x - pt.x, u.y - pt.y)));
+    if (minDist <= TRACE_TOLERANCE) hitCount++;
+  });
+
+  const coverage = hitCount / samplePts.length;
+  if (coverage < 0.6) {
+    return { passed: false, reason: 'おてほんの 線にそって なぞってね' };
+  }
+
+  return { passed: true };
+}
+
+function resetNazoriStroke() {
+  state.userPoints = [];
+  const kData = strokeData[activeKanjiList[state.kanjiIndex]];
+  setupNazoriCanvas(kData);
+}
+
+function nextNazoriAction() {
+  const kData = strokeData[activeKanjiList[state.kanjiIndex]];
+  const isComplete = state.nazoriStrokeIndex >= kData.paths.length;
+  if (!isComplete) return;
+
+  if (state.nazoriRound < NAZORI_ROUNDS - 1) {
+    state.nazoriRound++;
+    state.nazoriStrokeIndex = 0;
+    state.userPoints = [];
+    showNazori();
+  } else if (state.kanjiIndex < activeKanjiList.length - 1) {
+    state.kanjiIndex++;
+    state.nazoriRound = 0;
+    state.nazoriStrokeIndex = 0;
+    state.userPoints = [];
+    showOtehon();
+  } else {
+    showResults('なぞり書き練習', activeKanjiList.length, activeKanjiList.length, '🌟 すべての漢字のなぞり書きをクリアしました！');
+  }
+}
+
+// ================================================================
+// KAKIJUN QUIZ
+// ================================================================
+function startQuizKakijun() {
+  if (activeKanjiList.length === 0) return;
+  state.lastQuizMode = 'quiz-kakijun';
+  state.quizScore = 0;
+  state.quizIndex = 0;
+  state.quizTotal = Math.min(activeKanjiList.length, 10);
+  showScreen('screen-quiz-kakijun');
+  nextKakijunQuestion();
+}
+
+function nextKakijunQuestion() {
+  if (state.quizIndex >= state.quizTotal) {
+    showResults('書き順クイズ', state.quizScore, state.quizTotal);
+    return;
+  }
+
+  const kanji = activeKanjiList[state.quizIndex];
+  const kData = strokeData[kanji];
+  if (!kData || kData.paths.length === 0) {
+    state.quizIndex++;
+    nextKakijunQuestion();
+    return;
+  }
+
+  state.quizTargetIndex = Math.floor(Math.random() * kData.paths.length);
+  state.quizKakijunAnswer = state.quizTargetIndex + 1;
+
+  document.getElementById('kakijun-progress').textContent = `${state.quizIndex + 1} / ${state.quizTotal}`;
+  document.getElementById('kakijun-input').value = '';
+  document.getElementById('kakijun-feedback').style.display = 'none';
+  document.getElementById('kakijun-next-btn').style.display = 'none';
+
+  renderKakijunQuizKanji(kData, state.quizTargetIndex);
+  document.getElementById('kakijun-input').focus();
+}
+
+function renderKakijunQuizKanji(kData, targetIdx) {
+  const container = document.getElementById('kakijun-svg-area');
+  const old = container.querySelector('svg.quiz-svg');
+  if (old) old.remove();
+
+  const svg = document.createElementNS(_svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 109 109');
+  svg.setAttribute('class', 'quiz-svg');
+  svg.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:2;';
+  container.appendChild(svg);
+
+  kData.paths.forEach((d, i) => {
+    const path = document.createElementNS(_svgNS, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', i === targetIdx ? '#ef4444' : '#1e293b');
+    path.setAttribute('stroke-width', i === targetIdx ? '5.5' : '3.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  });
+}
+
+function checkKakijunAnswer() {
+  const input = document.getElementById('kakijun-input');
+  const val = parseInt(input.value, 10);
+  if (isNaN(val)) return;
+
+  const fb = document.getElementById('kakijun-feedback');
+  const nextBtn = document.getElementById('kakijun-next-btn');
+  fb.style.display = 'block';
+
+  if (val === state.quizKakijunAnswer) {
+    fb.className = 'feedback correct';
+    fb.textContent = `⭕ 正解！ 第${state.quizKakijunAnswer}画目 です！`;
+    state.quizScore++;
+  } else {
+    fb.className = 'feedback wrong';
+    fb.textContent = `❌ おしい！ 正解は 第${state.quizKakijunAnswer}画目 でした`;
+  }
+  nextBtn.style.display = 'block';
+  state.quizIndex++;
+}
+
+// ================================================================
+// YOMI QUIZ
+// ================================================================
+let currentYomiAnswers = [];
+let yomiAnswered = false;
+
+function startQuizYomi() {
+  if (activeKanjiList.length === 0) return;
+  state.lastQuizMode = 'quiz-yomi';
+  state.quizScore = 0;
+  state.quizIndex = 0;
+  state.quizTotal = Math.min(activeKanjiList.length, 10);
+  showScreen('screen-quiz-yomi');
+  nextYomiQuestion();
+}
+
+function nextYomiQuestion() {
+  if (state.quizIndex >= state.quizTotal) {
+    showResults('読み方クイズ', state.quizScore, state.quizTotal);
+    return;
+  }
+
+  const kanji = activeKanjiList[state.quizIndex];
+  const kData = strokeData[kanji];
+  const detail = textbookData && textbookData.kanjiDetails ? textbookData.kanjiDetails[kanji] : null;
+
+  if (!detail || !detail.readings) {
+    state.quizIndex++;
+    nextYomiQuestion();
+    return;
+  }
+
+  currentYomiAnswers = [...(detail.readings.on || []), ...(detail.readings.kun || [])];
+  if (currentYomiAnswers.length === 0) {
+    state.quizIndex++;
+    nextYomiQuestion();
+    return;
+  }
+
+  yomiAnswered = false;
+  document.getElementById('yomi-progress').textContent = `${state.quizIndex + 1} / ${state.quizTotal}`;
+  document.getElementById('yomi-input').value = '';
+  document.getElementById('yomi-choices').style.display = 'none';
+  document.getElementById('yomi-hint-btn').style.display = 'block';
+  document.getElementById('yomi-feedback').style.display = 'none';
+  document.getElementById('yomi-next-btn').style.display = 'none';
+
+  renderStaticKanji('yomi-svg-area', kData.paths);
+  document.getElementById('yomi-input').focus();
+}
+
+function checkYomiAnswer(userText) {
+  if (yomiAnswered) return;
+  const input = userText !== undefined ? userText : document.getElementById('yomi-input').value.trim();
+  if (!input) return;
+
+  yomiAnswered = true;
+  const cleanInput = toHiragana(input.replace(/[\s・-]/g, ''));
+  const isCorrect = currentYomiAnswers.some(a => {
+    const cleanAns = toHiragana(a.replace(/[\s・-]/g, ''));
+    return cleanAns === cleanInput;
+  });
+
+  const fb = document.getElementById('yomi-feedback');
+  const nextBtn = document.getElementById('yomi-next-btn');
+  fb.style.display = 'block';
+
+  if (isCorrect) {
+    fb.className = 'feedback correct';
+    fb.textContent = `⭕ せいかい！ (${currentYomiAnswers.join('、')})`;
+    state.quizScore++;
+  } else {
+    fb.className = 'feedback wrong';
+    fb.textContent = `❌ おしい！ 正解は「${currentYomiAnswers.join('、')}」でした`;
+  }
+  nextBtn.style.display = 'block';
+  state.quizIndex++;
+}
+
+function showYomiHint() {
+  const choicesDiv = document.getElementById('yomi-choices');
+  choicesDiv.innerHTML = '';
+  choicesDiv.style.display = 'grid';
+  document.getElementById('yomi-hint-btn').style.display = 'none';
+
+  const correctAnswer = currentYomiAnswers[0].replace(/-/g, '');
+  const allReadings = [];
+  if (textbookData && textbookData.kanjiDetails) {
+    Object.values(textbookData.kanjiDetails).forEach(d => {
+      if (d.readings) {
+        (d.readings.on || []).forEach(r => allReadings.push(r.replace(/-/g, '')));
+        (d.readings.kun || []).forEach(r => allReadings.push(r.replace(/-/g, '')));
+      }
+    });
+  }
+
+  const distractors = [...new Set(allReadings)]
+    .filter(r => !currentYomiAnswers.includes(r) && r !== toHiragana(correctAnswer))
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+
+  const options = [correctAnswer, ...distractors].sort(() => Math.random() - 0.5);
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = opt;
+    btn.onclick = () => {
+      if (yomiAnswered) return;
+      choicesDiv.querySelectorAll('.choice-btn').forEach(b => {
+        const isCorrectOpt = currentYomiAnswers.some(a => toHiragana(a.replace(/-/g, '')) === toHiragana(b.textContent.replace(/-/g, '')));
+        if (isCorrectOpt) b.classList.add('correct');
+        else if (b === btn) b.classList.add('wrong');
+      });
+      checkYomiAnswer(opt);
+    };
+    choicesDiv.appendChild(btn);
+  });
+}
+
+function toHiragana(str) {
+  return str.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+}
+
+// ================================================================
+// SPEECH RECOGNITION (Stylus-friendly: voice as alternative)
+// ================================================================
+let recognition = null;
+let isListening = false;
+
+function toggleSpeech() {
+  isListening ? stopSpeechRecognition() : startSpeechRecognition();
+}
+
+function startSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('このブラウザは音声入力に対応していません。Chrome / Edge をお使いください。'); return; }
+
+  recognition = new SR();
+  recognition.lang = 'ja-JP';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 3;
+
+  recognition.onresult = (e) => {
+    const results = e.results[0];
+    for (let i = 0; i < results.length; i++) {
+      const t = results[i].transcript.trim();
+      document.getElementById('yomi-input').value = t;
+      const n = toHiragana(t.replace(/\s/g, ''));
+      if (currentYomiAnswers.some(a => toHiragana(a.replace(/-/g, '')) === n)) break;
+    }
+    checkYomiAnswer(document.getElementById('yomi-input').value.trim());
+    stopSpeechUI();
+  };
+  recognition.onerror = () => stopSpeechUI();
+  recognition.onend = () => stopSpeechUI();
+  recognition.start();
+  isListening = true;
+  document.getElementById('mic-btn').classList.add('listening');
+  document.getElementById('mic-btn').textContent = '⏹';
+}
+
+function stopSpeechRecognition() {
+  if (recognition) { try { recognition.abort(); } catch (e) {} recognition = null; }
+  stopSpeechUI();
+}
+
+function stopSpeechUI() {
+  isListening = false;
+  const btn = document.getElementById('mic-btn');
+  if (btn) { btn.classList.remove('listening'); btn.textContent = '🎤'; }
+}
+
+// ================================================================
+// STATIC KANJI RENDER
+// ================================================================
+function renderStaticKanji(containerId, paths) {
+  const container = document.getElementById(containerId);
+  const old = container.querySelector('svg.anim-svg');
+  if (old) old.remove();
+
+  const svg = document.createElementNS(_svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 109 109');
+  svg.setAttribute('class', 'anim-svg');
+  svg.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:2;';
+  container.appendChild(svg);
+
+  paths.forEach(d => {
+    const path = document.createElementNS(_svgNS, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#1e293b');
+    path.setAttribute('stroke-width', '3.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  });
+}
+
+// ================================================================
+// RESULTS
+// ================================================================
+function showResults(quizName, score, total, message) {
+  showScreen('screen-results');
+  document.getElementById('results-score').textContent = `${score} / ${total}`;
+  document.getElementById('results-label').textContent = quizName;
+  const pct = total > 0 ? score / total : 0;
+  document.getElementById('results-message').textContent = message || (
+    pct === 1 ? '🎉 パーフェクト！すごい！' :
+    pct >= 0.8 ? '👏 よくできました！' :
+    pct >= 0.5 ? '💪 もうすこし！がんばろう！' :
+    '📝 もういちど れんしゅうしよう！'
+  );
+}
+
+function retryQuiz() {
+  if (state.lastQuizMode === 'quiz-kakijun') startQuizKakijun();
+  else if (state.lastQuizMode === 'quiz-yomi') startQuizYomi();
+  else if (state.lastQuizMode === 'drill') startDrill();
+  else goHome();
+}
+
+// ================================================================
+// URL PARAMETER PARSING & INITIALIZATION
+// ================================================================
+function initFromUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const g = parseInt(params.get('grade') || '1', 10);
+  const targetGrade = (g >= 1 && g <= 6) ? g : 1;
+
+  const mode = params.get('mode');
+  if (mode === 'textbook' || mode === 'all' || mode === 'skill') {
+    currentSourceMode = mode;
+  }
+
+  const b = parseInt(params.get('book') || '0', 10);
+  currentBookIndex = b;
+
+  loadGradeData(targetGrade).then(() => {
+    const lesson = parseInt(params.get('lesson'), 10);
+    if (!isNaN(lesson)) {
+      selectLesson(lesson - 1);
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initFromUrlParams();
+});
+</script>
+</body>
+</html>

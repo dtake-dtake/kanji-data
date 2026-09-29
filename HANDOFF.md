@@ -6,8 +6,8 @@
 
 ## 最終更新
 
-- **日時**: 2026-09-06
-- **セッション概要**: 小1〜小6 全1,026字の漢字データ（ストローク＋教科書カリキュラム）の抽出・検証・2層アーキテクチャ整備・GitHub公開
+- **日時**: 2026-09-08
+- **セッション概要**: あかねこ漢字スキル（光村図書準拠版）全6学年17冊分の目次画像データ化（全1,026字100%突合検証）・スキル対応書き順ドリルアプリ（app/drill.html）への刷新
 
 ---
 
@@ -17,6 +17,10 @@
 
 | 完了日 | 内容 |
 |---|---|
+| 2026-09-08 | **あかねこ漢字スキルのデータ化（全6学年17冊分・全1,026字完全網羅）** (`curriculum/akaneko-skill/`) |
+| 2026-09-08 | `tools/validate-skill.js` — スキルデータ整合性検証スクリプト（全学年エラー0件・過不足0字） |
+| 2026-09-08 | `scripts/sync-data.js` — スキルおよび教科書データのJSラッパー・配信用自動同期 |
+| 2026-09-08 | `app/drill.html` — **全学年・あかねこ漢字スキル（宿題）・教科書単元対応ドリルアプリへ刷新** |
 | 2026-09-06 | 小1〜小6 全1,026字の教科書写真からの手動読み取り（光村図書 2020年版） |
 | 2026-09-06 | `data/kanji/grade[1-6].json` — KanjiVG由来ストロークデータ 全1,026字 |
 | 2026-09-06 | `data/textbook/grade[1-6].json` — 教科書カリキュラムデータ 全1,026字 |
@@ -56,25 +60,33 @@ C:\Users\theea\Desktop\漢字　書き順アプリ\
 │   ├── grade1.json〜grade6.json
 │   └── schema.json
 │
-├── curriculum/             ← Layer 2: 教科書カリキュラムデータ
+├── curriculum/             ← Layer 2: 教科書・副教材カリキュラムデータ
 │   ├── schema.json
-│   └── mitsumura-2020/     ← 光村図書 2020年版
+│   ├── mitsumura-2020/     ← 光村図書 令和2年版（全1,026字）
+│   │   ├── grade1.json〜grade6.json
+│   │   └── meta.json
+│   └── akaneko-skill/      ← あかねこ漢字スキル 光村図書準拠版（全1,026字）
 │       ├── grade1.json〜grade6.json
-│       └── meta.json
+│       ├── meta.json
+│       └── schema.json
 │
 ├── app/                    ← リファレンス実装（HTMLアプリ）
+│   ├── drill.html          ← **漢字ドリル（全学年・スキル宿題・教科書対応）**
+│   ├── hiragana-drill.html ← ひらがなドリル
 │   ├── viewer.html         ← 書き順ビューア
 │   ├── stroke-editor.html  ← 書き順エディタ
 │   ├── batch-adjust.html   ← 一括調整ツール
 │   └── review-list.html    ← 要確認リスト
 │
 ├── data/                   ← アプリ用マスターデータ（app/から参照）
-│   ├── kanji/              ← grade[1-6].json + all_grades.js
-│   ├── textbook/           ← grade[1-6].json（curriculum/と同一）
+│   ├── kanji/              ← grade[1-6].json/js + all_grades.js
+│   ├── textbook/           ← grade[1-6].json/js
+│   ├── akaneko-skill/      ← grade[1-6].json/js + all_skills.js
 │   └── review_status.json
 │
 ├── tools/
-│   └── validate.js         ← 整合性検証スクリプト
+│   ├── validate.js         ← 教科書整合性検証スクリプト
+│   └── validate-skill.js   ← スキル整合性検証スクリプト
 │
 ├── scripts/
 │   ├── server.js           ← ローカル開発サーバー（port 3000）

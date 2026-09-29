@@ -1392,6 +1392,14 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// ── Open Stroke Editor ──────────────────────────────────────────────────
+const btnOpenEditor = document.getElementById('btn-open-editor');
+if (btnOpenEditor) {
+  btnOpenEditor.onclick = () => {
+    window.open(`stroke-editor.html?kanji=${encodeURIComponent(currentKey)}`, '_blank');
+  };
+}
+
 // ── Export Checked Kanji List ──────────────────────────────────────────
 const btnExportList = document.getElementById('btn-export-list');
 btnExportList.onclick = () => {

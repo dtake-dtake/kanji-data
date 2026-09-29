@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>漢字スキル なぞり書き練習</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+body {
+  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  background: #f5f3ef; color: #1e293b;
+  min-height: 100dvh; display: flex; flex-direction: column; align-items: center;
+}
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+
+:root { --kanji-size: min(85vw, 55vh); }
+@media (min-width: 768px) { :root { --kanji-size: min(50vw, 65vh); } }
+
+.screen { display: none; width: 100%; max-width: 540px; padding: 12px 16px; flex-direction: column; align-items: center; }
+.screen.active { display: flex; }
+
+#screen-home {
+  max-width: 1260px;
+  width: 100%;
+}
+.home-header {
+  text-align: center;
+  padding: 24px 0 28px;
+}
+.home-app-title {
+  font-size: 2.5rem; font-weight: 900; letter-spacing: 0.22em; color: #292524;
+}
+.home-app-sub {
+  font-size: 1rem; font-weight: 700; color: #78716c; margin-top: 8px;
+}
+
+/* ============ 6 GRADE WIDGETS (LARGE & BOLD) ============ */
+.grade-widgets-grid {
+  display: flex; justify-content: center; gap: 20px; width: 100%;
+  padding: 20px 0 110px; flex-wrap: wrap;
+}
+.grade-widget {
+  position: relative; overflow: hidden;
+  width: 184px; height: 420px;
+  background: linear-gradient(160deg, #ffffff 0%, #fafaf9 100%);
+  border: 2px solid #e7e5e4; border-radius: 22px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 22px 14px 18px; cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s, border-color 0.2s;
+  user-select: none;
+}
+.grade-widget:hover {
+  transform: translateY(-8px);
+  border-color: var(--theme-color, #292524);
+  box-shadow: 0 16px 36px rgba(41,37,36,0.14);
+}
+.grade-widget.cleared {
+  border-color: #a3e635;
+  background: linear-gradient(160deg, #fefce8 0%, #ffffff 100%);
+}
+.grade-widget.mastered {
+  border-color: #eab308;
+  box-shadow: 0 6px 24px rgba(234,179,8,0.28);
+  background: linear-gradient(160deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.grade-top-bar {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 6px;
+}
+
+/* 学年ヘッダー（円形エンブレム ＋ 学年名） */
+.grade-widget-header {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;
+  margin-top: 4px;
+}
+.grade-badge-circle {
+  width: 58px; height: 58px; border-radius: 50%;
+  background: var(--theme-light, #f5f5f4);
+  border: 2.5px solid var(--theme-border, #e7e5e4);
+  color: var(--theme-color, #292524);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 900; line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform 0.2s;
+}
+.grade-widget:hover .grade-badge-circle {
+  transform: scale(1.08);
+}
+.grade-title-text {
+  font-size: 1.15rem; font-weight: 900; color: #292524; letter-spacing: 0.05em;
+}
+
+/* 進捗カード（文字数メインの清潔なカウンター ＋ バー） */
+.grade-prog-card {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 10px 8px; background: #ffffff; border-radius: 12px;
+  border: 1.5px solid #f0eeec;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+}
+.grade-prog-main {
+  display: flex; align-items: baseline; gap: 4px;
+}
+.grade-prog-num {
+  font-size: 1.45rem; font-weight: 900; color: #292524;
+}
+.grade-prog-denom {
+  font-size: 0.88rem; font-weight: 800; color: #78716c;
+}
+.grade-prog-sub {
+  font-size: 0.72rem; font-weight: 700; color: #a8a29e;
+}
+.grade-widget-prog-bar {
+  width: 100%; height: 7px; background: #e7e5e4; border-radius: 4px; overflow: hidden;
+}
+.grade-widget-prog-fill {
+  height: 100%; background: #65a30d; border-radius: 4px; transition: width 0.3s;
+}
+.grade-widget.mastered .grade-widget-prog-fill {
+  background: linear-gradient(90deg, #eab308, #f59e0b) !important;
+}
+
+/* 学期ボタン（配当文字数つき） */
+.grade-terms-inline {
+  width: 100%; display: flex; flex-direction: column; gap: 6px;
+  margin-top: 2px;
+}
+.term-btn-inline {
+  width: 100%; min-height: 38px;
+  background: #ffffff;
+  border: 1.5px solid #e7e5e4; border-radius: 10px;
+  padding: 8px 12px; font-size: 0.9rem; font-weight: 800; color: #44403c;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: all 0.16s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.term-btn-inline:hover {
+  background: var(--theme-color, #292524); color: #ffffff !important;
+  border-color: var(--theme-color, #292524); transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.term-btn-inline:active { transform: scale(0.97); }
+.term-btn-inline.cleared {
+  background: #f7fee7; border-color: #d9f99d; color: #365314;
+}
+.grade-terms-inline.two-terms .term-btn-inline {
+  min-height: 44px; padding: 10px 14px; font-size: 0.95rem;
+}
+.term-btn-badge {
+  font-size: 0.76rem; font-weight: 800; color: #78716c;
+}
+.term-btn-badge.active {
+  color: #ca8a04;
+}
+.term-btn-inline:hover .term-btn-badge {
+  color: #ffffff;
+}
+
+/* ============ SELECT TERM SCREEN ============ */
+#screen-select-term {
+  max-width: 900px; width: 100%; padding: 16px;
+}
+.select-term-sub {
+  font-size: 0.95rem; font-weight: 700; color: #78716c; margin-top: 2px; margin-bottom: 6px;
+}
+.term-choice-cards {
+  display: flex; justify-content: center; gap: 24px; width: 100%;
+  padding: 30px 0 40px; flex-wrap: wrap;
+}
+.term-choice-card {
+  position: relative; overflow: hidden;
+  width: 210px; height: 320px;
+  background: linear-gradient(150deg, #ffffff 0%, #fafaf9 100%);
+  border: 2.5px solid #e7e5e4; border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 32px 18px 24px; cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+}
+.term-choice-top-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 6px;
+}
+.term-choice-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--card-theme, #292524);
+  box-shadow: 0 16px 36px rgba(41,37,36,0.14);
+}
+.term-choice-card.cleared {
+  border-color: var(--card-theme, #a3e635);
+  background: linear-gradient(150deg, #fefce8 0%, #ffffff 100%);
+}
+.term-choice-card.mastered {
+  border-color: #facc15;
+  background: linear-gradient(150deg, #fffbeb 0%, #ffffff 100%);
+}
+.term-choice-label {
+  writing-mode: vertical-rl; text-orientation: upright;
+  font-size: 2.3rem; font-weight: 900; letter-spacing: 0.12em;
+  color: #292524;
+  white-space: nowrap;
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.term-choice-count {
+  font-size: 0.95rem; font-weight: 800; color: #78716c;
+  background: #f5f5f4; padding: 5px 16px; border-radius: 10px;
+}
+.term-choice-prog {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.term-choice-prog-text {
+  font-size: 1.05rem; font-weight: 900; color: #292524;
+}
+.term-choice-prog-sub {
+  font-size: 0.76rem; font-weight: 700; color: #78716c;
+}
+.term-choice-bar {
+  width: 100%; height: 8px; background: #e7e5e4; border-radius: 4px; overflow: hidden;
+}
+.term-choice-fill {
+  height: 100%; background: #65a30d; border-radius: 4px; transition: width 0.3s;
+}
+
+/* ============ HOME TOTAL PROGRESS ============ */
+.home-total-progress {
+  width: 100%; text-align: center; padding: 16px 0 8px;
+  font-size: 1.05rem; font-weight: 800; color: #57534e;
+}
+.home-total-bar {
+  width: 60%; max-width: 520px; height: 10px; background: #e7e5e4;
+  border-radius: 5px; margin: 8px auto 0; overflow: hidden;
+}
+.home-total-fill {
+  height: 100%; background: linear-gradient(90deg, #65a30d, #84cc16);
+  border-radius: 5px; transition: width 0.3s;
+}
+
+/* ============ NAV HEADER ============ */
+.nav-header {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 0 12px;
+}
+.nav-back {
+  width: 44px; height: 44px; border-radius: 12px; background: #e7e5e4;
+  font-size: 1.25rem; font-weight: 800; color: #44403c;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+}
+.nav-back:hover { background: #d6d3d1; transform: scale(1.04); }
+.nav-back:active { transform: scale(0.96); }
+.nav-title { font-size: 1.35rem; font-weight: 900; color: #292524; }
+
+#screen-term {
+  max-width: min(94vw, 1440px);
+  width: 100%;
+  padding: 12px 16px;
+}
+.term-header-area {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.term-scroll-hint {
+  font-size: 0.88rem; font-weight: 800; color: #78716c;
+}
+
+/* ============ TERM: VERTICAL SCROLL DRILL (1-COLUMN AUTHENTIC DRILL) ============ */
+.term-scroll {
+  direction: rtl; /* Right-to-left layout like Japanese books */
+  display: flex; align-items: stretch; gap: 14px;
+  overflow-x: auto; overflow-y: hidden;
+  width: 100%; height: min(78vh, 590px); min-height: 500px;
+  padding: 20px 24px 28px 24px;
+  background: #ffffff;
+  border: 2.5px solid #e7e5e4;
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.05);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.term-scroll.centered {
+  justify-content: center;
+}
+@media (max-width: 768px) {
+  .term-scroll.centered {
+    justify-content: flex-start;
+  }
+}
+
+.lesson-col {
+  direction: ltr; flex-shrink: 0;
+  min-width: 118px; width: fit-content;
+  display: flex; flex-direction: column;
+  padding: 14px 12px 20px 12px;
+  background: #fafaf9;
+  border: 2px solid #e7e5e4;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16,1,0.3,1), box-shadow 0.18s, border-color 0.18s;
+  user-select: none;
+}
+.lesson-col:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(41,37,36,0.12);
+  border-color: var(--card-theme, #292524);
+}
+.lesson-col:active { transform: scale(0.98); }
+
+/* Cleared / Mastered states */
+.lesson-col.cleared {
+  background: linear-gradient(160deg, #f7fee7 0%, #ffffff 100%);
+  border-color: #bef264;
+}
+.lesson-col.mastered {
+  background: linear-gradient(160deg, #fffbeb 0%, #ffffff 100%);
+  border-color: #facc15;
+  box-shadow: 0 4px 16px rgba(234,179,8,0.15);
+}
+
+/* 1. Header (中央ぞろえのスキル番号) */
+.lesson-col-header {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  min-height: 28px;
+}
+.lesson-col-num {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #44403c;
+  line-height: 1;
+  text-align: center;
+}
+.lesson-col.cleared .lesson-col-num { color: #65a30d; }
+.lesson-col.mastered .lesson-col-num { color: #ca8a04; }
+
+.lesson-col-status {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+.lesson-col-badge {
+  font-size: 0.78rem; font-weight: 800; color: #ca8a04;
+  background: #fefce8; padding: 1.5px 5px; border-radius: 5px;
+  border: 1px solid #fef08a;
+}
+.lesson-col-badge.badge-master {
+  color: #b45309; background: #fef3c7; border-color: #fde68a;
+  font-size: 0.82rem;
+}
+
+/* 2. Divider */
+.lesson-col-divider {
+  width: 100%; height: 1.5px; background: #e7e5e4;
+  margin-bottom: 12px; flex-shrink: 0;
+}
+.lesson-col.cleared .lesson-col-divider { background: #d9f99d; }
+.lesson-col.mastered .lesson-col-divider { background: #fef08a; }
+
+/* 3. Body: Title on Right + 1-Column Kanji on Left */
+.lesson-col-body {
+  width: 100%; display: flex; flex-direction: row-reverse;
+  justify-content: flex-start; align-items: flex-start;
+  gap: 12px; flex: 1; min-height: 0;
+}
+
+/* 3a. Vertical Title on Right */
+.lesson-col-title-wrap {
+  writing-mode: vertical-rl; text-orientation: upright;
+  width: auto; min-width: 20px; max-width: 72px; height: 100%; max-height: 480px;
+  display: flex; align-items: flex-start; justify-content: flex-start;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.lesson-col-title {
+  font-size: 0.78rem; font-weight: 700; color: #44403c;
+  line-height: 1.35; letter-spacing: 0.04em;
+  white-space: pre-wrap; word-break: break-all;
+}
+
+/* 3b. 1-Column Kanji on Left */
+.lesson-col-chars {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 5px; width: 48px; flex-shrink: 0;
+  overflow-y: auto; scrollbar-width: none;
+}
+.lesson-col-chars::-webkit-scrollbar { display: none; }
+
+.lesson-col-char-box {
+  width: 48px; height: 48px; border-radius: 9px;
+  background: #ffffff;
+  border: 1.5px solid #e7e5e4;
+  font-size: 1.8rem; font-weight: 900; color: #292524;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  flex-shrink: 0;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.lesson-col.cleared .lesson-col-char-box {
+  border-color: #d9f99d;
+  color: #365314;
+}
+.lesson-col.mastered .lesson-col-char-box {
+  border-color: #fde047;
+  color: #713f12;
+  background: #fffdf5;
+}
+
+/* 9-10文字用のコンパクト調整 (3〜6年生) */
+.lesson-col.compact-10 .lesson-col-chars {
+  gap: 3.5px; width: 40px;
+}
+.lesson-col.compact-10 .lesson-col-char-box {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  font-size: 1.55rem;
+}
+
+.term-progress-footer {
+  width: 100%; text-align: center; padding: 16px 0 6px;
+  font-size: 1.05rem; font-weight: 800; color: #44403c;
+}
+
+/* ============ PREVIEW ============ */
+.preview-sub { font-size: 0.85rem; color: #78716c; text-align: center; margin-bottom: 16px; }
+.preview-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 24px; }
+.preview-tile {
+  width: 68px; height: 68px; background: #fff; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.1rem; font-weight: 700; color: #292524;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 2px solid #e7e5e4;
+}
+.btn-start {
+  padding: 14px 48px; border-radius: 14px; font-size: 1.1rem; font-weight: 800;
+  background: #292524; color: #fafaf9;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.15s;
+}
+.btn-start:active { transform: scale(0.96); }
+
+/* ============ PRACTICE ============ */
+.practice-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 4px 0 4px; }
+.practice-info { text-align: center; }
+.practice-kanji-label { font-size: 1.4rem; font-weight: 800; }
+.practice-progress-text { font-size: 0.75rem; color: #78716c; font-weight: 600; }
+.round-dots { display: flex; gap: 5px; align-items: center; }
+.round-dot { width: 10px; height: 10px; border-radius: 50%; background: #e7e5e4; transition: all 0.3s; }
+.round-dot.done { background: #65a30d; }
+.round-dot.current { background: #292524; box-shadow: 0 0 0 3px rgba(41,37,36,0.2); }
+.round-dot.order { background: #93c5fd; }
+.round-dot.order.current { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+.round-dot.recall { background: #fdba74; }
+.round-dot.recall.current { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
+
+/* Progress strip */
+.progress-strip { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; padding: 4px 0; }
+.strip-char {
+  width: 28px; height: 28px; border-radius: 6px; font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  background: #f5f5f4; color: #a8a29e; transition: all 0.3s;
+}
+.strip-char.done { background: #ecfccb; color: #365314; }
+.strip-char.current { background: #292524; color: #fafaf9; box-shadow: 0 0 0 2px rgba(41,37,36,0.25); }
+.progress-bar-wrap { width: 100%; padding: 2px 0 6px; }
+.progress-bar { width: 100%; height: 4px; background: #e7e5e4; border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: #65a30d; border-radius: 2px; transition: width 0.4s; }
+
+/* Canvas */
+.canvas-area {
+  width: var(--kanji-size); height: var(--kanji-size);
+  position: relative; background: #fff; border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06); overflow: hidden; touch-action: none;
+  border: 2px solid #e7e5e4;
+}
+.canvas-area canvas { position: absolute; top: 0; left: 0; z-index: 2; }
+.grid-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+.grid-lines::before, .grid-lines::after { content: ''; position: absolute; background: #e7e5e4; }
+.grid-lines::before { left: 50%; top: 8%; width: 1px; height: 84%; }
+.grid-lines::after { top: 50%; left: 8%; height: 1px; width: 84%; }
+
+.status-msg { font-size: 0.85rem; font-weight: 600; padding: 6px 0; min-height: 28px; text-align: center; }
+.status-msg.good { color: #65a30d; }
+.status-msg.retry { color: #d97706; }
+.status-msg.info { color: #78716c; }
+
+.practice-controls { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 4px 0; }
+.round-label { font-size: 0.85rem; font-weight: 700; color: #57534e; }
+.btn-hint {
+  padding: 7px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+  background: #f5f5f4; color: #78716c;
+}
+
+/* ============ CLEAR ============ */
+.clear-content { display: flex; flex-direction: column; align-items: center; padding: 28px 16px; }
+.hanamaru { font-size: 4.5rem; animation: pop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards; opacity: 0; }
+@keyframes pop { 0% { transform: scale(0) rotate(-30deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.clear-title { font-size: 1.3rem; font-weight: 800; color: #292524; margin-top: 10px; }
+.clear-sub { font-size: 0.9rem; color: #78716c; font-weight: 600; margin-top: 4px; }
+.clear-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 20px 0; }
+.clear-tile {
+  width: 50px; height: 50px; background: #ecfccb; border-radius: 10px; border: 2px solid #bef264;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 700; color: #365314;
+}
+.clear-count { font-size: 1rem; font-weight: 800; color: #ca8a04; margin-bottom: 16px; }
+.clear-btns { display: flex; gap: 10px; }
+.btn-sec { padding: 10px 24px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; background: #e7e5e4; color: #57534e; }
+.btn-pri { padding: 10px 24px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; background: #292524; color: #fafaf9; }
+
+/* ============ MASTERED TRANSITION ============ */
+.mastered-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(250,250,249,0.92); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+.mastered-char { font-size: 5rem; font-weight: 900; color: #292524; }
+.mastered-label { font-size: 1.2rem; font-weight: 800; color: #65a30d; margin-top: 8px; }
+
+.fade-in { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<!-- ====== HOME ====== -->
+<section id="screen-home" class="screen active">
+  <div class="home-header">
+    <div class="home-app-title">漢字スキル</div>
+    <div class="home-app-sub">あかねこ漢字スキル なぞり書き練習</div>
+  </div>
+  <div class="grade-widgets-grid" id="grade-widgets-grid"></div>
+  <div class="home-total-progress" id="home-total-progress"></div>
+  <div class="home-total-bar"><div class="home-total-fill" id="home-total-fill"></div></div>
+</section>
+
+<!-- ====== SELECT TERM ====== -->
+<section id="screen-select-term" class="screen">
+  <div class="nav-header">
+    <button class="nav-back" onclick="goHome()">←</button>
+    <span class="nav-title" id="select-term-nav-title">学期をえらぶ</span>
+  </div>
+  <div class="select-term-sub" id="select-term-sub">練習する学期をえらんでね</div>
+  <div class="term-choice-cards" id="term-choice-cards"></div>
+</section>
+
+<!-- ====== TERM ====== -->
+<section id="screen-term" class="screen">
+  <div class="term-header-area">
+    <div class="nav-header" style="width:auto;padding:0;">
+      <button class="nav-back" onclick="goHome()">←</button>
+      <span class="nav-title" id="term-nav-title"></span>
+    </div>
+    <span class="term-scroll-hint">◀ 右から左へスクロール</span>
+  </div>
+  <div class="term-scroll" id="term-scroll"></div>
+  <div class="term-progress-footer" id="term-progress-footer"></div>
+</section>
+
+<!-- ====== PREVIEW ====== -->
+<section id="screen-preview" class="screen">
+  <div class="nav-header">
+    <button class="nav-back" onclick="goTerm()">←</button>
+    <span class="nav-title" id="preview-nav-title"></span>
+  </div>
+  <div class="preview-sub" id="preview-sub"></div>
+  <div class="preview-grid" id="preview-grid"></div>
+  <button class="btn-start" onclick="startPractice()">はじめる</button>
+</section>
+
+<!-- ====== PRACTICE ====== -->
+<section id="screen-practice" class="screen">
+  <div class="practice-header">
+    <button class="nav-back" onclick="confirmExit()">←</button>
+    <div class="practice-info">
+      <div class="practice-kanji-label" id="prac-kanji"></div>
+      <div class="practice-progress-text" id="prac-progress"></div>
+    </div>
+    <div class="round-dots" id="prac-dots"></div>
+  </div>
+  <div class="progress-strip" id="prac-strip"></div>
+  <div class="progress-bar-wrap"><div class="progress-bar"><div class="progress-bar-fill" id="prac-bar-fill"></div></div></div>
+  <div class="canvas-area" id="canvas-area">
+    <canvas id="practice-canvas"></canvas>
+    <div class="grid-lines"></div>
+  </div>
+  <div class="status-msg info" id="status-msg"></div>
+  <div class="practice-controls">
+    <span class="round-label" id="round-label"></span>
+    <button class="btn-hint" id="btn-hint" onclick="playHint()">👁 お手本</button>
+  </div>
+</section>
+
+<!-- ====== CLEAR ====== -->
+<section id="screen-clear" class="screen">
+  <div class="clear-content">
+    <div class="hanamaru" id="hanamaru">🌸</div>
+    <div class="clear-title">たいへんよくできました！</div>
+    <div class="clear-sub" id="clear-sub"></div>
+    <div class="clear-grid" id="clear-grid"></div>
+    <div class="clear-count" id="clear-count"></div>
+    <div class="clear-btns">
+      <button class="btn-sec" onclick="goTerm()">もどる</button>
+      <button class="btn-pri" onclick="retryLesson()">もういちど</button>
+    </div>
+  </div>
+</section>
+
+<script src="../data/kanji/all_grades.js"></script>
+<script src="../data/akaneko-skill/all_skills.js"></script>
+<script>
+// ================================================================
+// CONFIG
+// ================================================================
+const SVG_VB = 109, TOL = 14, TOL_ORDER = 18, TOL_RECALL = 22, ROUNDS = 3, SW = 4, GW = 8, LS_KEY = 'skill-clear';
+const GK = ['','一','二','三','四','五','六'];
+
+let grade = 1, bookIdx = 0, lessonIdx = 0;
+let strokeData = {}, skillData = null;
+let kanjiList = [], lessonTitle = '', lessonKey = '';
+const st = { ki: 0, round: 0, si: 0, pts: [], tracing: false, hinting: false };
+
+// ================================================================
+// DATA
+// ================================================================
+async function loadGrade(g) {
+  grade = g;
+  try {
+    const [s, k] = await Promise.all([
+      fetch(`../data/kanji/grade${g}.json`), fetch(`../data/akaneko-skill/grade${g}.json`)
+    ]);
+    strokeData = await s.json(); skillData = await k.json();
+  } catch {
+    if (window.ALL_GRADES_KANJI) {
+      strokeData = {};
+      Object.keys(window.ALL_GRADES_KANJI).forEach(k => {
+        if (window.ALL_GRADES_KANJI[k].grade === g) strokeData[k] = window.ALL_GRADES_KANJI[k];
+      });
+    }
+    if (window.ALL_SKILLS && window.ALL_SKILLS[g]) skillData = window.ALL_SKILLS[g];
+  }
+  bookIdx = 0;
+}
+
+// ================================================================
+// CLEAR COUNTS
+// ================================================================
+function clears() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
+function clearCount(k) { return clears()[k] || 0; }
+function incClear(k) { const c = clears(); c[k] = (c[k]||0)+1; localStorage.setItem(LS_KEY, JSON.stringify(c)); return c[k]; }
+
+// ================================================================
+// ================================================================
+// THEMES & MASTERY HELPER
+// ================================================================
+const GRADE_THEMES = {
+  1: { name: '桜色', primary: '#f43f5e', light: '#fff1f2', border: '#fecdd3' },
+  2: { name: '山吹色', primary: '#f59e0b', light: '#fffbeb', border: '#fde68a' },
+  3: { name: '若草色', primary: '#65a30d', light: '#f7fee7', border: '#d9f99d' },
+  4: { name: '露草色', primary: '#0284c7', light: '#f0f9ff', border: '#bae6fd' },
+  5: { name: '桔梗色', primary: '#4f46e5', light: '#eef2ff', border: '#c7d2fe' },
+  6: { name: '古代紫', primary: '#9333ea', light: '#faf5ff', border: '#e9d5ff' },
+};
+
+function getMastery(cnt) {
+  if (cnt >= 5) return { level: 3, icon: '👑', badge: `👑×${cnt}`, className: 'mastered' };
+  if (cnt >= 3) return { level: 2, icon: '🌸', badge: `🌸×${cnt}`, className: 'cleared' };
+  if (cnt >= 1) return { level: 1, icon: '🌸', badge: `🌸×${cnt}`, className: 'cleared' };
+  return { level: 0, icon: '', badge: '', className: '' };
+}
+
+// 縦書き用タイトル整形（(1)や（２）などの括弧数字を縦書き1マスに収まる⑴〜⒇に変換）
+const PARENTHESIZED_NUMS = {
+  '1': '⑴', '2': '⑵', '3': '⑶', '4': '⑷', '5': '⑸',
+  '6': '⑹', '7': '⑺', '8': '⑻', '9': '⑼', '10': '⑽',
+  '11': '⑾', '12': '⑿', '13': '⒀', '14': '⒁', '15': '⒂',
+  '16': '⒃', '17': '⒄', '18': '⒅', '19': '⒆', '20': '⒇'
+};
+
+function formatVerticalTitle(title) {
+  if (!title) return '';
+  return title
+    .replace(/[\(（]([0-9]{1,2}|[０-９]{1,2})[\)）]/g, (match, p1) => {
+      const n = p1.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+      return PARENTHESIZED_NUMS[n] || match;
+    })
+    .replace(/\s*\/\s*/g, '\n');
+}
+
+// ================================================================
+// HOME SCREEN
+// ================================================================
+function renderHome() {
+  const container = document.getElementById('grade-widgets-grid');
+  container.innerHTML = '';
+
+  const cc = clears();
+  let grandTotalLessons = 0;
+  let grandClearedLessons = 0;
+  let grandMasteredLessons = 0;
+  let grandTotalKanji = 0;
+  let grandClearedKanji = 0;
+  let grandMasteredKanji = 0;
+
+  // 1年生から6年生までループ
+  for (let g = 1; g <= 6; g++) {
+    const sData = (window.ALL_SKILLS && window.ALL_SKILLS[g]) || (grade === g ? skillData : null);
+    const books = sData ? sData.books : (g === 1 ? [{book:'上', lessons:[]}, {book:'下', lessons:[]}] : [{book:'1学期', lessons:[]}, {book:'2学期', lessons:[]}, {book:'3学期', lessons:[]}]);
+    const kanjiCount = sData ? sData.totalKanji : (g===1?80:g===2?160:g===3?200:g===4?202:g===5?193:191);
+    const theme = GRADE_THEMES[g] || GRADE_THEMES[1];
+
+    let gLessons = 0, gCleared = 0, gMastered = 0;
+    let gTotalKanji = 0, gClearedKanji = 0, gMasteredKanji = 0;
+    let nextKanji = [];
+    let nextLessonFound = false;
+
+    if (sData && sData.books) {
+      sData.books.forEach((b, bi) => {
+        gLessons += b.lessons.length;
+        b.lessons.forEach(l => {
+          const kLen = l.kanji ? l.kanji.length : 0;
+          gTotalKanji += kLen;
+          const cnt = cc[`${g}-${bi}-${l.number}`] || 0;
+          if (cnt >= 1) { gCleared++; gClearedKanji += kLen; }
+          if (cnt >= 5) { gMastered++; gMasteredKanji += kLen; }
+        });
+      });
+    }
+    const maxK = kanjiCount || gTotalKanji;
+    grandTotalKanji += maxK;
+    grandClearedKanji += gClearedKanji;
+    grandMasteredKanji += gMasteredKanji;
+    grandTotalLessons += gLessons;
+    grandClearedLessons += gCleared;
+    grandMasteredLessons += gMastered;
+
+    const isAllMaster = maxK > 0 && gMasteredKanji === maxK;
+    const isAllClear = maxK > 0 && gClearedKanji === maxK;
+
+    // ウィジェット本体（クリックで学期選択画面へ）
+    const widget = document.createElement('div');
+    widget.className = 'grade-widget' + (isAllMaster ? ' mastered' : isAllClear ? ' cleared' : '');
+    widget.style.setProperty('--theme-color', isAllMaster ? '#eab308' : theme.primary);
+    widget.style.setProperty('--theme-light', theme.light);
+    widget.style.setProperty('--theme-border', theme.border);
+    widget.onclick = async () => {
+      await loadGrade(g);
+      navigateTo('select-term', { grade: g });
+    };
+
+    // 1. 学年テーマカラーの上部バー
+    const topBar = document.createElement('div');
+    topBar.className = 'grade-top-bar';
+    topBar.style.background = isAllMaster ? 'linear-gradient(90deg, #eab308, #f59e0b)' : theme.primary;
+
+    // 2. 学年ヘッダー（円形エンブレム ＋ 学年名）
+    const header = document.createElement('div');
+    header.className = 'grade-widget-header';
+    const circle = document.createElement('div');
+    circle.className = 'grade-badge-circle';
+    circle.textContent = GK[g];
+    const titleText = document.createElement('div');
+    titleText.className = 'grade-title-text';
+    titleText.textContent = `${GK[g]}年生`;
+    header.appendChild(circle);
+    header.appendChild(titleText);
+
+    // 3. 進捗カード（文字数メインの清潔なカウンター ＋ バー）
+    const progCard = document.createElement('div');
+    progCard.className = 'grade-prog-card';
+    const progMain = document.createElement('div');
+    progMain.className = 'grade-prog-main';
+    const num = document.createElement('span');
+    num.className = 'grade-prog-num';
+    num.textContent = gClearedKanji;
+    const denom = document.createElement('span');
+    denom.className = 'grade-prog-denom';
+    denom.textContent = ` / ${maxK}字`;
+    progMain.appendChild(num);
+    progMain.appendChild(denom);
+
+    const bar = document.createElement('div');
+    bar.className = 'grade-widget-prog-bar';
+    const fill = document.createElement('div');
+    fill.className = 'grade-widget-prog-fill';
+    fill.style.width = maxK ? `${(gClearedKanji / maxK) * 100}%` : '0%';
+    fill.style.background = isAllMaster ? 'linear-gradient(90deg, #eab308, #f59e0b)' : theme.primary;
+    bar.appendChild(fill);
+
+    const sub = document.createElement('div');
+    sub.className = 'grade-prog-sub';
+    sub.textContent = isAllMaster ? '👑 完全マスター' : isAllClear ? '🌸 全字クリア' : `全${gLessons}スキル`;
+
+    progCard.appendChild(progMain);
+    progCard.appendChild(bar);
+    progCard.appendChild(sub);
+
+    // 4. 初めから表示する学期ボタン（直接ジャンプ）
+    const termsContainer = document.createElement('div');
+    termsContainer.className = 'grade-terms-inline' + (books.length === 2 ? ' two-terms' : '');
+
+    books.forEach((b, bi) => {
+      let bDone = 0, bMaster = 0;
+      let bTotalK = 0, bDoneK = 0, bMasterK = 0;
+      if (b.lessons) {
+        b.lessons.forEach(l => {
+          const kLen = l.kanji ? l.kanji.length : 0;
+          bTotalK += kLen;
+          const cnt = cc[`${g}-${bi}-${l.number}`] || 0;
+          if (cnt >= 1) { bDone++; bDoneK += kLen; }
+          if (cnt >= 5) { bMaster++; bMasterK += kLen; }
+        });
+      }
+
+      let badgeStr = '';
+      if (bMasterK > 0 && bMasterK === bTotalK) badgeStr = '👑 マスター';
+      else if (bDoneK > 0 && bDoneK === bTotalK) badgeStr = '🌸 クリア';
+      else if (bDoneK > 0) badgeStr = `${bDoneK}/${bTotalK}字`;
+      else badgeStr = `${bTotalK}字`;
+
+      const btn = document.createElement('button');
+      btn.className = 'term-btn-inline' + (bDone > 0 ? ' cleared' : '');
+      btn.innerHTML = `<span class="term-btn-name">${b.book}</span><span class="term-btn-badge ${bDoneK > 0 ? 'active' : ''}">${badgeStr}</span>`;
+      btn.onclick = async (e) => {
+        e.stopPropagation(); // 学年カード全体のクリックを発火させない
+        await loadGrade(g);
+        bookIdx = bi;
+        navigateTo('term', { grade: g, bookIdx: bi });
+      };
+      termsContainer.appendChild(btn);
+    });
+
+    widget.appendChild(topBar);
+    widget.appendChild(header);
+    widget.appendChild(progCard);
+    widget.appendChild(termsContainer);
+    container.appendChild(widget);
+  }
+
+  // 全体進捗（文字数メイン）
+  const grandPct = grandTotalKanji ? Math.round((grandClearedKanji / grandTotalKanji) * 100) : 0;
+  const crownTotal = grandMasteredKanji > 0 ? ` ｜ 👑マスター ${grandMasteredKanji}字` : '';
+  document.getElementById('home-total-progress').textContent =
+    `全1,026字 ｜ ${grandClearedKanji} / 1,026字 習得 (${grandPct}%)${crownTotal}  [${grandClearedLessons}/${grandTotalLessons}スキル完了]`;
+  document.getElementById('home-total-fill').style.width = `${grandPct}%`;
+
+  show('screen-home');
+}
+
+// ================================================================
+// SELECT TERM SCREEN
+// ================================================================
+function renderSelectTerm(g) {
+  const sData = (window.ALL_SKILLS && window.ALL_SKILLS[g]) || (grade === g ? skillData : null);
+  const books = sData ? sData.books : (g === 1 ? [{book:'上', lessons:[]}, {book:'下', lessons:[]}] : [{book:'1学期', lessons:[]}, {book:'2学期', lessons:[]}, {book:'3学期', lessons:[]}]);
+  const theme = GRADE_THEMES[g] || GRADE_THEMES[1];
+  const cc = clears();
+
+  document.getElementById('select-term-nav-title').textContent = `${GK[g]}年生 — 学期をえらぶ`;
+
+  const container = document.getElementById('term-choice-cards');
+  container.innerHTML = '';
+
+  books.forEach((b, bi) => {
+    let bDone = 0, bMaster = 0;
+    let bTotalKanji = 0, bDoneKanji = 0, bMasterKanji = 0;
+    if (b.lessons) {
+      b.lessons.forEach(l => {
+        const kLen = l.kanji ? l.kanji.length : 0;
+        bTotalKanji += kLen;
+        const cnt = cc[`${g}-${bi}-${l.number}`] || 0;
+        if (cnt >= 1) { bDone++; bDoneKanji += kLen; }
+        if (cnt >= 5) { bMaster++; bMasterKanji += kLen; }
+      });
+    }
+
+    const totalLessons = b.lessons ? b.lessons.length : 0;
+    const isAllClear = bTotalKanji > 0 && bDoneKanji === bTotalKanji;
+    const isAllMaster = bTotalKanji > 0 && bMasterKanji === bTotalKanji;
+
+    const card = document.createElement('div');
+    card.className = 'term-choice-card' + (isAllMaster ? ' mastered' : isAllClear ? ' cleared' : '');
+    card.style.setProperty('--card-theme', isAllMaster ? '#eab308' : theme.primary);
+    card.onclick = async () => {
+      await loadGrade(g);
+      bookIdx = bi;
+      navigateTo('term', { grade: g, bookIdx: bi });
+    };
+
+    // 上部カラーバー
+    const topBar = document.createElement('div');
+    topBar.className = 'term-choice-top-bar';
+    topBar.style.background = isAllMaster ? 'linear-gradient(90deg, #ca8a04, #eab308)' : theme.primary;
+
+    // 学期名（縦書き1列・全角数字で美しい直立表示）
+    const label = document.createElement('div');
+    label.className = 'term-choice-label';
+    label.textContent = b.book.replace(/[0-9]/g, s => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
+
+    // スキル数
+    const count = document.createElement('div');
+    count.className = 'term-choice-count';
+    count.textContent = `全${totalLessons}スキル`;
+
+    // 進捗（文字数メイン ＋ スキル数サブ）
+    const prog = document.createElement('div');
+    prog.className = 'term-choice-prog';
+
+    const progText = document.createElement('div');
+    progText.className = 'term-choice-prog-text';
+    const crownStr = bMasterKanji > 0 ? ` 👑${bMasterKanji}字` : '';
+    progText.textContent = `${bDoneKanji} / ${bTotalKanji}字${crownStr}`;
+
+    const progSub = document.createElement('div');
+    progSub.className = 'term-choice-prog-sub';
+    progSub.textContent = `(${bDone}/${totalLessons} スキル完了)`;
+
+    const bar = document.createElement('div');
+    bar.className = 'term-choice-bar';
+    const fill = document.createElement('div');
+    fill.className = 'term-choice-fill';
+    fill.style.width = bTotalKanji ? `${(bDoneKanji / bTotalKanji) * 100}%` : '0%';
+    fill.style.background = isAllMaster ? 'linear-gradient(90deg, #ca8a04, #eab308)' : theme.primary;
+    bar.appendChild(fill);
+
+    prog.appendChild(progText);
+    prog.appendChild(progSub);
+    prog.appendChild(bar);
+
+    card.appendChild(topBar);
+    card.appendChild(label);
+    card.appendChild(count);
+    card.appendChild(prog);
+    container.appendChild(card);
+  });
+}
+
+// ================================================================
+// TERM SCREEN
+// ================================================================
+function renderTerm() {
+  const bk = skillData.books[bookIdx];
+  const theme = GRADE_THEMES[grade] || GRADE_THEMES[1];
+  document.getElementById('term-nav-title').textContent = `${GK[grade]}年生 ${bk.book}`;
+
+  const list = document.getElementById('term-scroll');
+  list.innerHTML = '';
+  const cc = clears();
+  let done = 0, mastered = 0;
+  let termTotalKanji = 0, termClearedKanji = 0, termMasteredKanji = 0;
+
+  bk.lessons.forEach((l, li) => {
+    const kLen = l.kanji ? l.kanji.length : 0;
+    termTotalKanji += kLen;
+    const key = `${grade}-${bookIdx}-${l.number}`;
+    const cnt = cc[key] || 0;
+    if (cnt >= 1) { done++; termClearedKanji += kLen; }
+    if (cnt >= 5) { mastered++; termMasteredKanji += kLen; }
+
+    const m = getMastery(cnt);
+
+    const isCompact = (l.kanji && l.kanji.length >= 9);
+    const col = document.createElement('div');
+    col.className = 'lesson-col ' + m.className + (isCompact ? ' compact-10' : '');
+    col.style.setProperty('--card-theme', theme.primary);
+    col.onclick = () => {
+      lessonIdx = li;
+      navigateTo('practice', { grade, bookIdx, lessonIdx: li });
+    };
+
+    // 1. Header (中央ぞろえの番号 ＋ クリア時のみ右端ステータスバッジ)
+    const header = document.createElement('div');
+    header.className = 'lesson-col-header';
+
+    const num = document.createElement('span');
+    num.className = 'lesson-col-num';
+    num.textContent = l.number;
+    header.appendChild(num);
+
+    if (cnt > 0) {
+      const statusWrap = document.createElement('div');
+      statusWrap.className = 'lesson-col-status';
+      const badge = document.createElement('span');
+      badge.className = 'lesson-col-badge' + (m.level >= 3 ? ' badge-master' : '');
+      badge.textContent = m.badge;
+      statusWrap.appendChild(badge);
+      header.appendChild(statusWrap);
+    }
+
+    // 2. 区切り線
+    const div = document.createElement('div');
+    div.className = 'lesson-col-divider';
+
+    // 3. メインボディ (右: 縦書き単元名, 左: 1列漢字マス)
+    const body = document.createElement('div');
+    body.className = 'lesson-col-body';
+
+    // 3a. 縦書き単元名 (右側)
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'lesson-col-title-wrap';
+    const title = document.createElement('div');
+    title.className = 'lesson-col-title';
+    title.textContent = formatVerticalTitle(l.title);
+    titleWrap.appendChild(title);
+
+    // 3b. 1列の漢字マス (左側: 上から下へ一直線)
+    const charsCol = document.createElement('div');
+    charsCol.className = 'lesson-col-chars';
+    (l.kanji || []).forEach(ch => {
+      const box = document.createElement('div');
+      box.className = 'lesson-col-char-box';
+      box.textContent = ch;
+      charsCol.appendChild(box);
+    });
+
+    body.appendChild(titleWrap);
+    body.appendChild(charsCol);
+
+    col.appendChild(header);
+    col.appendChild(div);
+    col.appendChild(body);
+    list.appendChild(col);
+  });
+
+  const crownText = termMasteredKanji > 0 ? ` ｜ 👑${termMasteredKanji}字 マスター` : '';
+  const footer = document.getElementById('term-progress-footer');
+  footer.textContent = `${bk.book} — ${termClearedKanji} / ${termTotalKanji}字 クリア (${done}/${bk.lessons.length}スキル)${crownText}`;
+
+  // 全カードがスクロール枠内に収まる場合は中央ぞろえ、はみ出す場合は右からスクロール開始
+  requestAnimationFrame(() => {
+    if (list.scrollWidth <= list.clientWidth + 4) {
+      list.classList.add('centered');
+    } else {
+      list.classList.remove('centered');
+      list.scrollLeft = list.scrollWidth;
+    }
+  });
+}
+
+// ================================================================
+// LESSON PREPARATION (データ準備)
+// ================================================================
+function prepareLesson() {
+  const bk = skillData.books[bookIdx];
+  const l = bk.lessons[lessonIdx];
+  kanjiList = l.kanji.filter(ch => strokeData[ch]);
+  lessonTitle = `スキル${l.number}「${l.title}」`;
+  lessonKey = `${grade}-${bookIdx}-${l.number}`;
+}
+
+function openPreview() {
+  prepareLesson();
+  document.getElementById('preview-nav-title').textContent = `スキル${skillData.books[bookIdx].lessons[lessonIdx].number}`;
+  document.getElementById('preview-sub').textContent = `「${skillData.books[bookIdx].lessons[lessonIdx].title}」— ${kanjiList.length}字 × ${ROUNDS}回`;
+
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = '';
+  kanjiList.forEach(ch => {
+    const tile = document.createElement('div');
+    tile.className = 'preview-tile'; tile.textContent = ch;
+    grid.appendChild(tile);
+  });
+  show('screen-preview');
+}
+
+// ================================================================
+// PRACTICE
+// ================================================================
+function startPractice(push = true) {
+  if (!kanjiList.length) return;
+  st.ki = 0; st.round = 0; st.si = 0; st.pts = []; st.tracing = false; st.hinting = false;
+  if (push) {
+    history.pushState({ screen: 'practice', grade, bookIdx, lessonIdx }, '', location.href);
+  }
+  showPractice();
+}
+
+function showPractice() {
+  show('screen-practice');
+  const ch = kanjiList[st.ki], kd = strokeData[ch];
+  if (!kd) return;
+
+  document.getElementById('prac-kanji').textContent = ch;
+  document.getElementById('prac-progress').textContent = `${st.ki+1} / ${kanjiList.length}`;
+
+  // Round dots
+  const dots = document.getElementById('prac-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < ROUNDS; i++) {
+    const d = document.createElement('div');
+    const isRecall = (i >= ROUNDS - 1);
+    const isOrder = (i >= 1 && !isRecall);
+    d.className = 'round-dot'
+      + (i < st.round ? ' done' : i === st.round ? ' current' : '')
+      + (isRecall ? ' recall' : isOrder ? ' order' : '');
+    dots.appendChild(d);
+  }
+
+  // Progress strip
+  const strip = document.getElementById('prac-strip');
+  strip.innerHTML = '';
+  kanjiList.forEach((c, i) => {
+    const s = document.createElement('div');
+    s.className = 'strip-char' + (i < st.ki ? ' done' : i === st.ki ? ' current' : '');
+    s.textContent = c;
+    strip.appendChild(s);
+  });
+
+  // Progress bar
+  const total = kanjiList.length * ROUNDS;
+  const done = st.ki * ROUNDS + st.round;
+  document.getElementById('prac-bar-fill').style.width = `${(done/total)*100}%`;
+
+  const labels = ['1回目', '2回目', 'テスト！'];
+  document.getElementById('round-label').textContent = labels[st.round] || `${st.round+1}回目`;
+  const msg = document.getElementById('status-msg');
+  if (st.round === 0) {
+    msg.textContent = `${kd.strokeCount}画`; msg.className = 'status-msg info';
+  } else if (st.round < ROUNDS - 1) {
+    msg.textContent = '書き順をおぼえて！'; msg.className = 'status-msg info';
+  } else {
+    msg.textContent = 'おぼえて かいてみよう！'; msg.className = 'status-msg info';
+  }
+
+  setupCanvas(kd);
+}
+
+// ================================================================
+// CANVAS
+// ================================================================
+function setupCanvas(kd) {
+  const area = document.getElementById('canvas-area');
+  const sz = Math.round(area.getBoundingClientRect().width);
+  const sc = sz / SVG_VB;
+  const old = document.getElementById('practice-canvas');
+  const cv = old.cloneNode(false); cv.id = 'practice-canvas';
+  old.parentNode.replaceChild(cv, old);
+  const dpr = devicePixelRatio || 1;
+  cv.width = sz*dpr; cv.height = sz*dpr;
+  cv.style.width = sz+'px'; cv.style.height = sz+'px';
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw(ctx, kd, sz, sc);
+  cv.onpointerdown = e => pDown(e,cv,ctx,kd,sc,sz);
+  cv.onpointermove = e => pMove(e,cv,ctx,kd,sc,sz);
+  cv.onpointerup = e => pUp(e,cv,ctx,kd,sc,sz);
+  cv.onpointercancel = e => pUp(e,cv,ctx,kd,sc,sz);
+}
+
+function draw(ctx, kd, sz, sc) {
+  ctx.clearRect(0,0,sz,sz);
+
+  // ガイド線（未書きの画）— ラウンドに応じて段階的に変化
+  kd.paths.forEach((d,i) => {
+    if (i < st.si) return;
+    // 3回目: 全ガイド非表示（白紙テスト）
+    if (st.round >= ROUNDS - 1) return;
+
+    ctx.save(); ctx.scale(sc,sc);
+    // 1回目: 今の画=濃いグレー / 先の画=薄いグレー
+    // 2回目: 全て同じ薄さ（どれが次の画か自分で判断）
+    ctx.strokeStyle = (st.round === 0 && i === st.si)
+      ? 'rgba(120,113,108,0.35)' : 'rgba(214,211,209,0.4)';
+    ctx.lineWidth = GW; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke(new Path2D(d)); ctx.restore();
+  });
+
+  // 書き終わった画（スナップ済み）— 全モードで表示
+  for (let i = 0; i < st.si; i++) {
+    ctx.save(); ctx.scale(sc,sc);
+    ctx.strokeStyle = '#292524'; ctx.lineWidth = SW;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke(new Path2D(kd.paths[i])); ctx.restore();
+  }
+  // ユーザーが今書いている線
+  if (st.pts.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(st.pts[0].x*sc, st.pts[0].y*sc);
+    for (let i=1;i<st.pts.length;i++) ctx.lineTo(st.pts[i].x*sc, st.pts[i].y*sc);
+    ctx.strokeStyle = '#57534e'; ctx.lineWidth = SW*sc;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+  }
+}
+
+function flashHint(ctx, d, sc, sz, kd) {
+  ctx.save(); ctx.scale(sc,sc);
+  ctx.strokeStyle = 'rgba(249,115,22,0.45)';
+  ctx.lineWidth = GW; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke(new Path2D(d)); ctx.restore();
+  setTimeout(() => draw(ctx, kd, sz, sc), 800);
+}
+
+function pt(e,cv,sc) { const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/sc, y:(e.clientY-r.top)/sc}; }
+
+function pDown(e,cv,ctx,kd,sc,sz) {
+  if (st.si >= kd.paths.length || st.hinting) return;
+  cv.setPointerCapture(e.pointerId);
+  st.tracing = true; st.pts = [pt(e,cv,sc)]; draw(ctx,kd,sz,sc);
+}
+function pMove(e,cv,ctx,kd,sc,sz) {
+  if (!st.tracing) return;
+  st.pts.push(pt(e,cv,sc)); draw(ctx,kd,sz,sc);
+}
+function pUp(e,cv,ctx,kd,sc,sz) {
+  if (!st.tracing) return;
+  st.tracing = false;
+  try { cv.releasePointerCapture(e.pointerId); } catch{}
+  const msg = document.getElementById('status-msg');
+  const tol = st.round >= ROUNDS - 1 ? TOL_RECALL : st.round >= 1 ? TOL_ORDER : TOL;
+  if (check(kd.paths[st.si], st.pts, tol)) {
+    st.si++; st.pts = [];
+    if (st.si >= kd.paths.length) { draw(ctx,kd,sz,sc); onRoundDone(); }
+    else { msg.textContent='✨'; msg.className='status-msg good'; draw(ctx,kd,sz,sc); }
+  } else {
+    msg.textContent='もういっかい'; msg.className='status-msg retry';
+    st.pts = [];
+    draw(ctx,kd,sz,sc);
+    // 2回目以降（ガイドが見えない画）: 正解を一瞬フラッシュ
+    if (st.round >= 1) flashHint(ctx, kd.paths[st.si], sc, sz, kd);
+  }
+}
+
+// ================================================================
+// PROGRESSION
+// ================================================================
+function onRoundDone() {
+  st.round++;
+  const msg = document.getElementById('status-msg');
+  if (st.round >= ROUNDS) {
+    showMastered(kanjiList[st.ki], () => {
+      if (st.ki < kanjiList.length - 1) {
+        st.ki++; st.round = 0; st.si = 0; st.pts = [];
+        showPractice();
+      } else {
+        showClear();
+      }
+    });
+  } else {
+    msg.textContent = `✅ ${st.round}/${ROUNDS}`; msg.className = 'status-msg good';
+    setTimeout(() => { st.si = 0; st.pts = []; showPractice(); }, 500);
+  }
+}
+
+function showMastered(ch, cb) {
+  const ov = document.createElement('div');
+  ov.className = 'mastered-overlay';
+  ov.innerHTML = `<div class="mastered-char">${ch}</div><div class="mastered-label">✨ マスター！</div>`;
+  document.body.appendChild(ov);
+  setTimeout(() => { ov.remove(); cb(); }, 900);
+}
+
+// ================================================================
+// SVG HELPERS & ACCURACY
+// ================================================================
+const NS = 'http://www.w3.org/2000/svg';
+let _svg = null;
+function mSvg() {
+  if (_svg) return _svg;
+  _svg = document.createElementNS(NS,'svg');
+  _svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden';
+  document.body.appendChild(_svg); return _svg;
+}
+function mPath(d) {
+  const svg = mSvg(), p = document.createElementNS(NS,'path');
+  p.setAttribute('d',d); svg.appendChild(p);
+  const len = p.getTotalLength(), pts = [];
+  const n = Math.max(20, Math.ceil(len/2));
+  for (let i=0;i<=n;i++) { const pt=p.getPointAtLength((i/n)*len); pts.push({x:pt.x,y:pt.y}); }
+  svg.removeChild(p); return {length:len, points:pts};
+}
+function check(d, up, tol = TOL) {
+  if (up.length < 3) return false;
+  const {points:pp} = mPath(d);
+  const s0=pp[0], e0=pp[pp.length-1];
+  if (Math.hypot(up[0].x-s0.x, up[0].y-s0.y) > tol) return false;
+  const ue = up[up.length-1];
+  if (Math.hypot(ue.x-e0.x, ue.y-e0.y) > tol*1.3) return false;
+  let hit=0; const step=Math.max(1,Math.floor(pp.length/10));
+  const smp=[]; for(let i=0;i<pp.length;i+=step) smp.push(pp[i]);
+  smp.forEach(p => { if(Math.min(...up.map(u=>Math.hypot(u.x-p.x,u.y-p.y))) <= tol) hit++; });
+  return hit/smp.length >= 0.7;
+}
+
+// ================================================================
+// HINT ANIMATION
+// ================================================================
+function playHint() {
+  if (st.hinting) return;
+  const kd = strokeData[kanjiList[st.ki]]; if (!kd) return;
+  st.hinting = true;
+  const btn = document.getElementById('btn-hint'); btn.disabled=true; btn.textContent='▶ …';
+  const area = document.getElementById('canvas-area');
+  const svg = document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox','0 0 109 109');
+  svg.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:10;background:rgba(250,250,249,0.93);border-radius:14px';
+  area.appendChild(svg);
+  let delay = 0;
+  kd.paths.forEach(d => {
+    const path = document.createElementNS(NS,'path');
+    path.setAttribute('d',d); path.setAttribute('fill','none');
+    path.setAttribute('stroke','#292524'); path.setAttribute('stroke-width','3.5');
+    path.setAttribute('stroke-linecap','round'); path.setAttribute('stroke-linejoin','round');
+    const {length}=mPath(d); const dur=Math.max(0.3,length/180);
+    path.style.strokeDasharray=length; path.style.strokeDashoffset=length;
+    path.style.transition=`stroke-dashoffset ${dur}s ease ${delay}s`;
+    svg.appendChild(path); delay+=dur+0.15;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{path.style.strokeDashoffset='0';}));
+  });
+  setTimeout(()=>{ svg.remove(); st.hinting=false; btn.disabled=false; btn.textContent='👁 お手本'; }, (delay+0.5)*1000);
+}
+
+// ================================================================
+// CLEAR
+// ================================================================
+function showClear() {
+  show('screen-clear');
+  const cnt = incClear(lessonKey);
+  document.getElementById('clear-sub').textContent = lessonTitle;
+
+  const h = document.getElementById('hanamaru');
+  const titleEl = document.querySelector('.clear-title');
+  const countEl = document.getElementById('clear-count');
+
+  if (cnt >= 5) {
+    h.textContent = '👑';
+    titleEl.textContent = '完全マスター達成！';
+    countEl.textContent = `👑 マスタークリア ${cnt}回目！ 完ぺきです！`;
+  } else if (cnt >= 3) {
+    h.textContent = '🌸';
+    titleEl.textContent = 'たいへんよくできました！';
+    countEl.textContent = `🌸 練習 ${cnt}回目クリア！ しっかり覚えたね！`;
+  } else {
+    h.textContent = '🌸';
+    titleEl.textContent = 'よくできました！';
+    countEl.textContent = `クリア ${cnt}回目！ つぎは3回クリアをめざそう！`;
+  }
+
+  h.style.animation = 'none';
+  requestAnimationFrame(() => { h.style.animation = ''; });
+
+  const g = document.getElementById('clear-grid');
+  g.innerHTML = '';
+  kanjiList.forEach(ch => {
+    const t = document.createElement('div');
+    t.className = 'clear-tile';
+    t.textContent = ch;
+    g.appendChild(t);
+  });
+}
+
+function retryLesson() { st.ki=0; st.round=0; st.si=0; st.pts=[]; showPractice(); }
+
+// ================================================================
+// NAV & ROUTER (BROWSER BACK/FORWARD SUPPORT)
+// ================================================================
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById(id);
+  s.classList.add('active', 'fade-in');
+  setTimeout(() => s.classList.remove('fade-in'), 250);
+  window.scrollTo(0, 0);
+}
+
+// 共通画面遷移ヘルパー
+async function navigateTo(screen, data = {}, push = true) {
+  if (push) {
+    history.pushState({ screen, ...data }, '', location.href);
+  }
+
+  if (screen === 'home') {
+    renderHome();
+  } else if (screen === 'select-term') {
+    if (data.grade && data.grade !== grade) await loadGrade(data.grade);
+    renderSelectTerm(grade);
+    show('screen-select-term');
+  } else if (screen === 'term') {
+    if (data.grade && data.grade !== grade) await loadGrade(data.grade);
+    if (data.bookIdx !== undefined) bookIdx = data.bookIdx;
+    renderTerm();
+    show('screen-term');
+  } else if (screen === 'preview' || screen === 'practice') {
+    if (data.grade && data.grade !== grade) await loadGrade(data.grade);
+    if (data.bookIdx !== undefined) bookIdx = data.bookIdx;
+    if (data.lessonIdx !== undefined) lessonIdx = data.lessonIdx;
+    prepareLesson();
+    startPractice(false);
+  }
+}
+
+// アプリ内「←」戻るボタンの処理
+function goHome() {
+  if (history.state && history.state.screen !== 'home') {
+    history.back();
+  } else {
+    navigateTo('home', {}, false);
+  }
+}
+
+function goTerm() {
+  if (history.state && (history.state.screen === 'preview' || history.state.screen === 'practice' || history.state.screen === 'clear')) {
+    history.back();
+  } else {
+    navigateTo('term', { grade, bookIdx }, false);
+  }
+}
+
+function confirmExit() {
+  if (st.ki > 0 || st.round > 0 || st.si > 0) {
+    if (!confirm('練習をやめてもどりますか？')) return;
+  }
+  history.back();
+}
+
+// ブラウザの戻る／進むボタンイベント検知
+window.addEventListener('popstate', async (e) => {
+  const s = e.state;
+  if (!s || s.screen === 'home') {
+    renderHome();
+  } else if (s.screen === 'select-term') {
+    if (s.grade && s.grade !== grade) await loadGrade(s.grade);
+    renderSelectTerm(grade);
+    show('screen-select-term');
+  } else if (s.screen === 'term') {
+    if (s.grade && s.grade !== grade) await loadGrade(s.grade);
+    if (s.bookIdx !== undefined) bookIdx = s.bookIdx;
+    renderTerm();
+    show('screen-term');
+  } else if (s.screen === 'preview' || s.screen === 'practice') {
+    if (s.grade && s.grade !== grade) await loadGrade(s.grade);
+    if (s.bookIdx !== undefined) bookIdx = s.bookIdx;
+    if (s.lessonIdx !== undefined) lessonIdx = s.lessonIdx;
+    prepareLesson();
+    startPractice(false);
+  }
+});
+
+// ================================================================
+// URL PARAMS & INIT
+// ================================================================
+async function init() {
+  const p = new URLSearchParams(location.search);
+  const pg = parseInt(p.get('grade')) || 1;
+  const pb = parseInt(p.get('book')) || 0;
+  const pl = parseInt(p.get('lesson'));
+  const pr = parseInt(p.get('rounds'));
+  if (pr > 0) { /* future: override ROUNDS */ }
+
+  await loadGrade(pg);
+
+  // ブラウザ再読み込み時のステート復帰
+  if (history.state && history.state.screen) {
+    const s = history.state;
+    if (s.screen === 'select-term') {
+      if (s.grade && s.grade !== grade) await loadGrade(s.grade);
+      renderSelectTerm(grade);
+      show('screen-select-term');
+      return;
+    } else if (s.screen === 'term') {
+      if (s.grade && s.grade !== grade) await loadGrade(s.grade);
+      if (s.bookIdx !== undefined) bookIdx = s.bookIdx;
+      renderTerm();
+      show('screen-term');
+      return;
+    } else if (s.screen === 'preview' || s.screen === 'practice') {
+      if (s.grade && s.grade !== grade) await loadGrade(s.grade);
+      if (s.bookIdx !== undefined) bookIdx = s.bookIdx;
+      if (s.lessonIdx !== undefined) lessonIdx = s.lessonIdx;
+      prepareLesson();
+      startPractice(false);
+      return;
+    }
+  }
+
+  const ps = p.get('screen');
+  if (ps === 'select-term') {
+    history.replaceState({ screen: 'select-term', grade: pg }, '', location.href);
+    renderSelectTerm(pg);
+    show('screen-select-term');
+    return;
+  }
+  if (ps === 'term' && skillData && skillData.books[pb]) {
+    bookIdx = pb;
+    history.replaceState({ screen: 'term', grade: pg, bookIdx: pb }, '', location.href);
+    renderTerm();
+    show('screen-term');
+    return;
+  }
+
+  if (!isNaN(pl) && skillData && skillData.books[pb]) {
+    bookIdx = pb;
+    const li = skillData.books[pb].lessons.findIndex(l => l.number === pl);
+    if (li >= 0) {
+      lessonIdx = li;
+      history.replaceState({ screen: 'practice', grade: pg, bookIdx: pb, lessonIdx: li }, '', location.href);
+      prepareLesson();
+      startPractice(false);
+      return;
+    }
+  }
+
+  history.replaceState({ screen: 'home' }, '', location.href);
+  renderHome();
+}
+window.addEventListener('resize', () => {
+  const list = document.getElementById('term-scroll');
+  const termScreen = document.getElementById('screen-term');
+  if (list && termScreen && termScreen.classList.contains('active')) {
+    if (list.scrollWidth <= list.clientWidth + 4) {
+      list.classList.add('centered');
+    } else {
+      list.classList.remove('centered');
+    }
+  }
+});
+
+init();
+</script>
+</body>
+</html>
