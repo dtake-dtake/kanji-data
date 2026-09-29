@@ -867,9 +867,64 @@
       ctx.restore();
     }
 
-    function getCharPaths(ch) {
+    // ─── 濁音・半濁音・長音符・促音のストローク合成 ───
+    const DAKUTEN_MAP = {
+      'が': 'か', 'ぎ': 'き', 'ぐ': 'く', 'げ': 'け', 'ご': 'こ',
+      'ざ': 'さ', 'じ': 'し', 'ず': 'す', 'ぜ': 'せ', 'ぞ': 'そ',
+      'だ': 'た', 'ぢ': 'ち', 'づ': 'つ', 'で': 'て', 'ど': 'と',
+      'ば': 'は', 'び': 'ひ', 'ぶ': 'ふ', 'べ': 'へ', 'ぼ': 'ほ'
+    };
+    const HANDAKUTEN_MAP = {
+      'ぱ': 'は', 'ぴ': 'ひ', 'ぷ': 'ふ', 'ぺ': 'へ', 'ぽ': 'ほ'
+    };
+    const SMALL_KANA_MAP = {
+      'っ': 'つ', 'ゃ': 'や', 'ゅ': 'ゆ', 'ょ': 'よ', 'ぁ': 'あ', 'ぃ': 'い', 'ぅ': 'う', 'ぇ': 'え', 'ぉ': 'お'
+    };
+
+    // 濁点の2画（右上）
+    const DAKUTEN_STROKES = [
+      'M74,15c2.5,2 6,5 8.5,7.5',
+      'M82,20c2.5,2 6,5 8.5,7.5'
+    ];
+    // 半濁点の丸（右上）
+    const HANDAKUTEN_STROKES = [
+      'M82,14c-4,0 -7,3 -7,7c0,4 3,7 7,7c4,0 7,-3 7,-7c0,-4 -3,-7 -7,-7'
+    ];
+    // 長音符（ー）
+    const CHOONPU_STROKES = [
+      'M22,54.5c18,-0.5 45,-0.5 65,0'
+    ];
+
+    function getBasePaths(ch) {
       if (!window.HIRAGANA_DATA || !window.HIRAGANA_DATA.characters[ch]) return [];
       return window.HIRAGANA_DATA.characters[ch].paths || [];
+    }
+
+    function getCharPaths(ch) {
+      if (!ch) return [];
+
+      // 長音符（ー）
+      if (ch === 'ー') return CHOONPU_STROKES;
+
+      // 濁点文字（が、ぎ、ぐ...）
+      if (DAKUTEN_MAP[ch]) {
+        const base = DAKUTEN_MAP[ch];
+        return [...getBasePaths(base), ...DAKUTEN_STROKES];
+      }
+
+      // 半濁点文字（ぱ、ぴ、ぷ...）
+      if (HANDAKUTEN_MAP[ch]) {
+        const base = HANDAKUTEN_MAP[ch];
+        return [...getBasePaths(base), ...HANDAKUTEN_STROKES];
+      }
+
+      // 小さい文字（っ、ゃ、ゅ、ょ...）
+      if (SMALL_KANA_MAP[ch]) {
+        const base = SMALL_KANA_MAP[ch];
+        return getBasePaths(base);
+      }
+
+      return getBasePaths(ch);
     }
 
     // ─── ポインターイベント（入力処理） ───
