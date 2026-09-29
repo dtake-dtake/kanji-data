@@ -247,8 +247,7 @@
     }
 
     .char-slot-box {
-      flex: 1;
-      max-width: min(30vw, 320px);
+      width: 100%;
       aspect-ratio: 1;
       background: #ffffff;
       border: 3.5px solid var(--border);
@@ -318,19 +317,24 @@
       cursor: crosshair;
     }
 
+    /* マスと下ラベルをまとめるラッパー */
+    .slot-item {
+      flex: 1;
+      max-width: min(30vw, 320px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
     /* マス下部のラベルバッジ（なぞり書き / じぶん） */
     .slot-label-badge {
-      position: absolute;
-      bottom: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 900;
-      padding: 3px 10px;
-      border-radius: 10px;
+      padding: 5px 16px;
+      border-radius: 12px;
       white-space: nowrap;
-      pointer-events: none;
-      z-index: 5;
+      flex-shrink: 0;
     }
     .slot-label-badge.trace {
       background: #fed7aa;
@@ -340,7 +344,7 @@
       background: #f3f4f6;
       color: #6b7280;
     }
-    .char-slot-box.active-slot .slot-label-badge.self {
+    .slot-item.active-item .slot-label-badge.self {
       background: var(--primary);
       color: white;
     }
@@ -721,11 +725,16 @@
       wordChars.forEach((ch, idx) => {
         const isFirst = (idx === 0);
 
+        // slot-item: マス + ラベルをまとめるラッパー
+        const item = document.createElement('div');
+        item.className = 'slot-item';
+        item.id = `slotItem_${idx}`;
+
         const box = document.createElement('div');
         box.className = 'char-slot-box';
         box.id = `slotBox_${idx}`;
 
-        // 十字リーダー
+        // 十字リーダー（ラベルはbox外に出す）
         box.innerHTML = `
           <svg class="slot-grid" viewBox="0 0 109 109">
             <line x1="54.5" y1="0" x2="54.5" y2="109" />
@@ -735,12 +744,17 @@
           </svg>
           <canvas class="slot-canvas" id="slotCanvas_${idx}"></canvas>
           <button class="slot-clear-btn" onclick="clearSlot(${idx})">消す</button>
-          <div class="slot-label-badge ${isFirst ? 'trace' : 'self'}">
-            ${isFirst ? '① なぞり' : 'じぶんで！'}
-          </div>
         `;
 
-        wrapper.appendChild(box);
+        // ラベルはbox外・item内に配置
+        const label = document.createElement('div');
+        label.className = `slot-label-badge ${isFirst ? 'trace' : 'self'}`;
+        label.id = `slotLabel_${idx}`;
+        label.textContent = isFirst ? '① なぞり' : 'じぶんで！';
+
+        item.appendChild(box);
+        item.appendChild(label);
+        wrapper.appendChild(item);
 
         const canvasEl = box.querySelector('.slot-canvas');
         const ctxEl = canvasEl.getContext('2d');
@@ -782,9 +796,13 @@
       activeSlotIdx = idx;
       slotsState.forEach((s, i) => {
         const box = document.getElementById(`slotBox_${i}`);
+        const item = document.getElementById(`slotItem_${i}`);
         if (box) {
           box.classList.toggle('active-slot', i === activeSlotIdx && !s.isDone);
           box.classList.toggle('done-slot', s.isDone);
+        }
+        if (item) {
+          item.classList.toggle('active-item', i === activeSlotIdx && !s.isDone);
         }
       });
     }
