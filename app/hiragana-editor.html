@@ -254,7 +254,7 @@
         <button id="toggle-move-mode" title="ストローク全体を移動します">全体移動: OFF</button>
         <button id="toggle-all-move-mode" title="全ての画を同時にドラッグで移動します" style="background:#0891b2; color:white; border-color:#0891b2;">全画移動: OFF</button>
         <button id="toggle-rotate-mode" title="支点を選択してドラッグで回転">回転: OFF</button>
-        <button id="small-kana-btn" title="全ストロークを0.60倍に縮小して左下の部屋（小文字の位置）に配置します" style="background:#7c3aed; color:white; border-color:#7c3aed;">🔡 小文字化</button>
+        <button id="small-kana-btn" title="" style="display:none; background:#7c3aed; color:white; border-color:#7c3aed;">🔡 小文字化</button>
         <button id="toggle-draw-mode" title="クリックで点を置いてストロークを描画 (D)" style="background:#059669; color:white; border-color:#059669;">✏️ 描画</button>
         <button id="clear-stroke-btn" title="選択中の画のパスをクリアします">🗑️ 画クリア</button>
         <button id="clear-all-btn" title="全ての画をクリアします" style="background:#dc2626; color:white; border-color:#dc2626;">🗑️ 全クリア</button>
@@ -632,6 +632,14 @@
       CHAR_CHILDREN_MAP[parent].push(child);
     }
 
+    // 清音→小文字マップ（小文字化ボタン用）
+    const CHAR_SMALL_MAP = {
+      'や': 'ゃ',
+      'ゆ': 'ゅ',
+      'よ': 'ょ',
+      'つ': 'っ',
+    };
+
     async function saveCurrentChar(isSilent = false) {
       if (!currentChar || !hiraganaData || !parsedStrokes || parsedStrokes.length === 0) return;
       const newPaths = parsedStrokes.map(s => buildSvgPath(s));
@@ -729,6 +737,19 @@
           syncBtn.textContent = `🔄 「${parentChar}」の形を反映`;
         } else {
           syncBtn.style.display = 'none';
+        }
+      }
+
+      // 小文字化ボタンの表示切り替え（や・ゆ・よ・つ を編集中のときのみ表示）
+      const smallKanaBtn = document.getElementById('small-kana-btn');
+      if (smallKanaBtn) {
+        const smallChar = CHAR_SMALL_MAP[currentChar.char];
+        if (smallChar) {
+          smallKanaBtn.style.display = 'inline-block';
+          smallKanaBtn.textContent = `🔡 →「${smallChar}」に小文字化`;
+          smallKanaBtn.title = `「${currentChar.char}」を0.60倍に縮小して左下の部屋に配置し、「${smallChar}」として保存します`;
+        } else {
+          smallKanaBtn.style.display = 'none';
         }
       }
 
@@ -2448,19 +2469,62 @@
         }
       });
 
-      // 小文字化ボタン: 全ストロークを左下の部屋(27.25, 81.75)に縮小配置
-      document.getElementById('small-kana-btn').addEventListener('click', () => {
+      // 小文字化ボタン: 現在の清音を変換して対応する小文字として保存
+      document.getElementById('small-kana-btn').addEventListener('click', async () => {
+        if (!currentChar) return;
+        const smallChar = CHAR_SMALL_MAP[currentChar.char];
+        if (!smallChar) return;
+
         if (parsedStrokes.length === 0 || !parsedStrokes.some(s => s.length > 1)) {
           showToast('ストロークデータがありません', true);
           return;
         }
-        if (!confirm('全ストロークを0.60倍に縮小して左下の部屋（小文字の位置）に配置します。\n元に戻すにはCtrl+Zで戻せます。\nよろしいですか？')) return;
-        // scale=0.60, dx=-5.45, dy=49.05
+
+        if (!confirm(`「${currentChar.char}」を0.60倍に縮小して「${smallChar}」として保存します。\n既存の「${smallChar}」のデータは上書きされます。よろしいですか？`)) return;
+
+        // 現在のストロークを変換
         const SCALE = 0.60;
         const DX = 27.25 - 54.5 * SCALE;  // -5.45
         const DY = 81.75 - 54.5 * SCALE;  // 49.05
-        transformAllStrokes(SCALE, DX, DY);
-        showToast('小文字化しました（左下の部屋に配置）');
+
+        // 変換済みパスを生成（parsedStrokes は変更せず、コピーを変換）
+        const transformedPaths = parsedStrokes.map(segs => {
+          const copy = JSON.parse(JSON.stringify(segs));
+          for (const seg of copy) {
+            if (seg.type === 'M') {
+              seg.x = seg.x * SCALE + DX;
+              seg.y = seg.y * SCALE + DY;
+            } else {
+              if (seg.abs_cp1x !== undefined) { seg.abs_cp1x = seg.abs_cp1x * SCALE + DX; seg.abs_cp1y = seg.abs_cp1y * SCALE + DY; }
+              if (seg.abs_cp2x !== undefined) { seg.abs_cp2x = seg.abs_cp2x * SCALE + DX; seg.abs_cp2y = seg.abs_cp2y * SCALE + DY; }
+              if (seg.abs_x   !== undefined) { seg.abs_x   = seg.abs_x   * SCALE + DX; seg.abs_y   = seg.abs_y   * SCALE + DY; }
+            }
+          }
+          return buildSvgPath(copy);
+        });
+
+        // 小文字データを更新
+        if (!hiraganaData.characters[smallChar]) {
+          hiraganaData.characters[smallChar] = { char: smallChar, strokeCount: transformedPaths.length, paths: [] };
+        }
+        hiraganaData.characters[smallChar].paths = transformedPaths;
+        hiraganaData.characters[smallChar].strokeCount = transformedPaths.length;
+
+        // サーバーに保存
+        try {
+          const res = await fetch('/api/save-hiragana', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(hiraganaData)
+          });
+          if (res.ok) {
+            showToast(`「${currentChar.char}」→「${smallChar}」に小文字化して保存しました`);
+          } else {
+            showToast('保存に失敗しました', true);
+          }
+        } catch (err) {
+          showToast('保存エラーが発生しました', true);
+        }
       });
       
       document.getElementById('toggle-rotate-mode').addEventListener('click', (e) => {
