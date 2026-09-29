@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ひらがな ことばドリル</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbf8f2;
+      --card-bg: #ffffff;
+      --primary: #ea580c;
+      --primary-light: #fff7ed;
+      --accent-green: #10b981;
+      --accent-blue: #3b82f6;
+      --text: #292524;
+      --text-sub: #78716c;
+      --border: #e7ded0;
+      --shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      --font-main: 'Zen Maru Gothic', sans-serif;
+      --font-hand: 'UD デジタル 教科書体 NK-B', 'Klee One', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* ─── ヘッダー ─── */
+    header {
+      background: #ffffff;
+      border-bottom: 2px solid var(--border);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 54px;
+      flex-shrink: 0;
+    }
+    .header-btn {
+      background: #f5f5f4;
+      border: 1.5px solid #d6d3d1;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-family: var(--font-main);
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .header-btn:active { transform: scale(0.96); background: #e7e5e4; }
+    .header-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ─── 画面共通 ─── */
+    .screen {
+      display: none;
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 54px);
+      overflow: hidden;
+    }
+    .screen.active { display: flex; }
+
+    /* ─── ホーム画面（50音表） ─── */
+    #screenHome {
+      flex-direction: column;
+      padding: 16px 24px;
+      max-width: 960px;
+      margin: 0 auto;
+      overflow-y: auto;
+    }
+    .home-banner {
+      background: linear-gradient(135deg, #fef3c7, #fed7aa);
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 2px solid #fbd38d;
+      flex-shrink: 0;
+    }
+    .home-banner h2 { font-size: 19px; font-weight: 900; color: #9a3412; }
+    .home-banner p { font-size: 13px; color: #7c2d12; font-weight: 700; }
+    .badge-count {
+      background: var(--primary);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .gojuon-board {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 12px;
+      border: 2px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .gojuon-row { display: flex; gap: 6px; justify-content: space-between; }
+    .gojuon-row-label {
+      width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      color: #a8a29e;
+    }
+    .char-card {
+      flex: 1;
+      aspect-ratio: 1;
+      max-width: 52px;
+      background: #fdfbf7;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s;
+    }
+    .char-card:active { transform: scale(0.92); }
+    .char-card.empty { background: transparent; border-color: transparent; pointer-events: none; }
+    .char-card-char { font-family: var(--font-hand); font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+    .char-card-emoji { font-size: 10px; margin-top: 1px; }
+    .char-card.completed { background: #fefce8; border-color: #facc15; }
+    .char-card.completed::after {
+      content: '💮'; position: absolute; top: -5px; right: -5px; font-size: 13px;
+    }
+
+    /* ─── GIGA端末向け 練習画面（横一列レイアウト） ─── */
+    #screenPractice {
+      align-items: center;
+      justify-content: center;
+      padding: 16px 24px;
+      position: relative;
+    }
+
+    .word-train-container {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 1100px;
+      height: min(78vh, 420px);
+    }
+
+    /* ─── 左端：イラスト・ことばカード ─── */
+    .word-illustration-card {
+      flex: 0 0 min(26vw, 240px);
+      background: linear-gradient(180deg, #ffffff, #fff7ed);
+      border: 3px solid #fdba74;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 16px;
+      position: relative;
+    }
+    .word-badge {
+      background: #fed7aa;
+      color: #9a3412;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 14px;
+    }
+    .word-emoji-box {
+      font-size: min(14vh, 84px);
+      line-height: 1;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
+      animation: gentle-bob 2.5s infinite ease-in-out;
+    }
+    @keyframes gentle-bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .word-name-text {
+      font-size: 28px;
+      font-weight: 900;
+      color: #9a3412;
+      letter-spacing: 2px;
+    }
+    .demo-play-btn {
+      width: 100%;
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+      transition: all 0.15s;
+    }
+    .demo-play-btn:active { transform: scale(0.96); }
+
+    /* ─── 文字マス列 ─── */
+    .word-slots-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .char-slot-box {
+      flex: 1;
+      max-width: min(30vw, 320px);
+      aspect-ratio: 1;
+      background: #ffffff;
+      border: 3.5px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      touch-action: none;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* 現在入力中のマス（フォーカス） */
+    .char-slot-box.active-slot {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.2), var(--shadow);
+      transform: scale(1.02);
+    }
+    /* 書き終わったマス（合格） */
+    .char-slot-box.done-slot {
+      border-color: var(--accent-green);
+      background: #f0fdf4;
+    }
+    .char-slot-box.done-slot::after {
+      content: '✓';
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: var(--accent-green);
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 900;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+    }
+
+    /* マス目の田の字点線リーダー */
+    .slot-grid {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .slot-grid line {
+      stroke: #cbd5e1;
+      stroke-width: 1.5;
+      stroke-dasharray: 6 6;
+    }
+    .slot-grid line.diag {
+      stroke: #e2e8f0;
+      stroke-width: 1;
+      stroke-dasharray: 4 4;
+    }
+
+    /* 各マスのCanvas */
+    .slot-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* マス下部のラベルバッジ（なぞり書き / じぶん） */
+    .slot-label-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 900;
+      padding: 3px 10px;
+      border-radius: 10px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .slot-label-badge.trace {
+      background: #fed7aa;
+      color: #9a3412;
+    }
+    .slot-label-badge.self {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .char-slot-box.active-slot .slot-label-badge.self {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* 各マスのツールボタン（消す/ヒント） */
+    .slot-clear-btn {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #d6d3d1;
+      border-radius: 8px;
+      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #57534e;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.15s;
+    }
+    .slot-clear-btn:active { transform: scale(0.92); }
+
+    /* ─── クリア・花丸モーダル ─── */
+    .clear-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .clear-modal.show { display: flex; }
+    .clear-card {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 32px 28px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+      border: 4px solid #fde047;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.2);
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .clear-hanamaru {
+      font-size: 80px;
+      line-height: 1;
+      margin-bottom: 12px;
+      animation: stamp 0.5s ease-out;
+    }
+    @keyframes stamp {
+      0% { transform: scale(2.2) rotate(-20deg); opacity: 0; }
+      70% { transform: scale(0.9) rotate(5deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .clear-card h2 { font-size: 26px; font-weight: 900; color: var(--primary); margin-bottom: 8px; }
+    .clear-card p { font-size: 16px; font-weight: 700; color: #57534e; margin-bottom: 22px; }
+    .clear-btn-row { display: flex; gap: 12px; }
+    .clear-btn {
+      flex: 1;
+      padding: 14px 18px;
+      border-radius: 18px;
+      font-family: var(--font-main);
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .clear-btn:active { transform: scale(0.96); }
+    .clear-btn.next {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+    }
+    .clear-btn.again { background: #f5f5f4; color: #57534e; }
+  </style>
+</head>
+<body>
+
+  <!-- ─── ヘッダー ─── -->
+  <header>
+    <button class="header-btn" id="backBtn" onclick="handleBack()">← もどる</button>
+    <div class="header-title" id="headerTitle">ひらがな ことばドリル</div>
+    <div class="header-actions">
+      <button class="header-btn" id="hintToggleBtn" onclick="toggleHint()" style="display:none;">💡 ヒント</button>
+    </div>
+  </header>
+
+  <!-- ─── 画面1: ホーム（50音表） ─── -->
+  <div class="screen active" id="screenHome">
+    <div class="home-banner">
+      <div>
+        <h2>すきな ことば を えらんでね！</h2>
+        <p>ひらがな を なぞって、ことば を かんせいさせよう</p>
+      </div>
+      <div class="badge-count" id="clearedBadge">0 / 46</div>
+    </div>
+    <div class="gojuon-board" id="gojuonBoard"></div>
+  </div>
+
+  <!-- ─── 画面2: GIGA向け 練習画面（横一列レイアウト） ─── -->
+  <div class="screen" id="screenPractice">
+    <div class="word-train-container">
+      
+      <!-- 左端：イラストカード -->
+      <div class="word-illustration-card">
+        <div class="word-badge" id="introBadge">ことばの れんしゅう</div>
+        <div class="word-emoji-box" id="wordEmoji">🍉</div>
+        <div class="word-name-text" id="wordName">すいか</div>
+        <button class="demo-play-btn" id="demoPlayBtn" onclick="playCurrentDemo()">
+          <span>▶</span> おてほんをみる
+        </button>
+      </div>
+
+      <!-- 右側：文字マス列（1文字目なぞり ＋ 後の文字自力書き） -->
+      <div class="word-slots-wrapper" id="wordSlotsWrapper">
+        <!-- JSでマス目を動的生成 -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── クリア・花丸モーダル ─── -->
+  <div class="clear-modal" id="clearModal">
+    <div class="clear-card">
+      <div class="clear-hanamaru">💮</div>
+      <h2>たいへんよくできました！</h2>
+      <p id="clearWordDesc">「すいか」が かんせいしたよ！🍉</p>
+      <div class="clear-btn-row">
+        <button class="clear-btn again" onclick="restartWord()">もう一回</button>
+        <button class="clear-btn next" onclick="goToNextWord()">つぎのことばへ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ひらがなストロークデータ -->
+  <script src="../data/hiragana.js"></script>
+
+  <script>
+    // ─── 46文字の「イラスト・身近なことば」辞書 ───
+    const HIRAGANA_WORDS = {
+      'あ': { word: 'あひる', emoji: '🦆' },
+      'い': { word: 'いぬ', emoji: '🐶' },
+      'う': { word: 'うさぎ', emoji: '🐰' },
+      'え': { word: 'えんぴつ', emoji: '✏️' },
+      'お': { word: 'おにぎり', emoji: '🍙' },
+      'か': { word: 'かに', emoji: '🦀' },
+      'き': { word: 'きりん', emoji: '🦒' },
+      'く': { word: 'くるま', emoji: '🚗' },
+      'け': { word: 'けむし', emoji: '🐛' },
+      'こ': { word: 'こあら', emoji: '🐨' },
+      'さ': { word: 'さかな', emoji: '🐟' },
+      'し': { word: 'しか', emoji: '🦌' },
+      'す': { word: 'すいか', emoji: '🍉' },
+      'せ': { word: 'せみ', emoji: '🪲' },
+      'そ': { word: 'そら', emoji: '🌈' },
+      'た': { word: 'たこ', emoji: '🐙' },
+      'ち': { word: 'ちーず', emoji: '🧀' },
+      'つ': { word: 'つき', emoji: '🌙' },
+      'て': { word: 'てぶくろ', emoji: '🧤' },
+      'と': { word: 'とら', emoji: '🐯' },
+      'な': { word: 'なす', emoji: '🍆' },
+      'に': { word: 'にんじん', emoji: '🥕' },
+      'ぬ': { word: 'ぬいぐるみ', emoji: '🧸' },
+      'ね': { word: 'ねこ', emoji: '🐱' },
+      'の': { word: 'のーと', emoji: '📓' },
+      'は': { word: 'はな', emoji: '🌸' },
+      'ひ': { word: 'ひよこ', emoji: '🐥' },
+      'ふ': { word: 'ふね', emoji: '🚢' },
+      'へ': { word: 'へび', emoji: '🐍' },
+      'ほ': { word: 'ほし', emoji: '⭐' },
+      'ま': { word: 'まくら', emoji: '🛏️' },
+      'み': { word: 'みかん', emoji: '🍊' },
+      'む': { word: 'むし', emoji: '🐞' },
+      'め': { word: 'めがね', emoji: '👓' },
+      'も': { word: 'もも', emoji: '🍑' },
+      'や': { word: 'やま', emoji: '⛰️' },
+      'ゆ': { word: 'ゆき', emoji: '⛄' },
+      'よ': { word: 'よる', emoji: '🌃' },
+      'ら': { word: 'らいおん', emoji: '🦁' },
+      'り': { word: 'りんご', emoji: '🍎' },
+      'る': { word: 'るびー', emoji: '💎' },
+      'れ': { word: 'れもん', emoji: '🍋' },
+      'ろ': { word: 'ろぼっと', emoji: '🤖' },
+      'わ': { word: 'わに', emoji: '🐊' },
+      'を': { word: 'ほんをよむ', emoji: '📖' },
+      'ん': { word: 'きりん', emoji: '🦒' }
+    };
+
+    // 50音表の配置
+    const GOJUON_LAYOUT = [
+      ['あ', 'い', 'う', 'え', 'お'],
+      ['か', 'き', 'く', 'け', 'こ'],
+      ['さ', 'し', 'す', 'せ', 'そ'],
+      ['た', 'ち', 'つ', 'て', 'と'],
+      ['な', 'に', 'ぬ', 'ね', 'の'],
+      ['は', 'ひ', 'ふ', 'へ', 'ほ'],
+      ['ま', 'み', 'む', 'め', 'も'],
+      ['や', '',   'ゆ', '',   'よ'],
+      ['ら', 'り', 'る', 'れ', 'ろ'],
+      ['わ', '',   '',   '',   'を'],
+      ['ん', '',   '',   '',   '']
+    ];
+
+    // ─── サウンドエンジン（Web Audio API） ───
+    const AudioEngine = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      },
+      playCorrect() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.start(now);
+        osc.stop(now + 0.38);
+      },
+      playMiss() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.22);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      },
+      playFanfare() {
+        this.init();
+        if (!this.ctx) return;
+        const notes = [
+          { f: 523.25, t: 0.0, d: 0.1 },
+          { f: 659.25, t: 0.12, d: 0.1 },
+          { f: 783.99, t: 0.24, d: 0.1 },
+          { f: 1046.50, t: 0.36, d: 0.45 }
+        ];
+        const start = this.ctx.currentTime;
+        notes.forEach(n => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, start + n.t);
+          gain.gain.setValueAtTime(0.25, start + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + n.t + n.d);
+          osc.start(start + n.t);
+          osc.stop(start + n.t + n.d);
+        });
+      }
+    };
+
+    // ─── 状態管理 ───
+    let currentScreen = 'home';
+    let currentTargetChar = null; // 例: 'す'
+    let currentWordObj = null;    // 例: { word: 'すいか', emoji: '🍉' }
+    let wordChars = [];           // 例: ['す', 'い', 'か']
+    let activeSlotIdx = 0;        // 現在書き込み中のマス (0..)
+    let slotsState = [];          // 各マスの進行状態 { char, isDone, strokeIdx, userStrokes, canvas, ctx, hintFlash, showHint }
+    let isDrawing = false;
+    let currentPts = [];
+    let isDemoPlaying = false;
+
+    // 進捗（localStorage）
+    let progress = JSON.parse(localStorage.getItem('hiragana_word_progress') || '{}');
+
+    // ─── 画面遷移 ───
+    function showScreen(name) {
+      currentScreen = name;
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const sc = document.getElementById(name === 'home' ? 'screenHome' : 'screenPractice');
+      if (sc) sc.classList.add('active');
+
+      const backBtn = document.getElementById('backBtn');
+      const title = document.getElementById('headerTitle');
+      const hintBtn = document.getElementById('hintToggleBtn');
+
+      if (name === 'home') {
+        backBtn.style.visibility = 'hidden';
+        hintBtn.style.display = 'none';
+        title.textContent = 'ひらがな ことばドリル';
+        renderHome();
+      } else {
+        backBtn.style.visibility = 'visible';
+        hintBtn.style.display = 'inline-flex';
+        title.textContent = `「${currentTargetChar}」の れんしゅう`;
+      }
+    }
+
+    function handleBack() {
+      if (currentScreen === 'practice') showScreen('home');
+    }
+
+    // ─── ホーム画面描画 ───
+    function renderHome() {
+      const board = document.getElementById('gojuonBoard');
+      board.innerHTML = '';
+      let clearedCount = 0;
+
+      GOJUON_LAYOUT.forEach(row => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'gojuon-row';
+
+        row.forEach(char => {
+          const card = document.createElement('div');
+          if (!char) {
+            card.className = 'char-card empty';
+          } else {
+            card.className = 'char-card';
+            const isDone = progress[char];
+            if (isDone) {
+              card.classList.add('completed');
+              clearedCount++;
+            }
+            const info = HIRAGANA_WORDS[char] || { emoji: '✏️' };
+            card.innerHTML = `
+              <div class="char-card-char">${char}</div>
+              <div class="char-card-emoji">${info.emoji}</div>
+            `;
+            card.onclick = () => startWordPractice(char);
+          }
+          rowEl.appendChild(card);
+        });
+
+        board.appendChild(rowEl);
+      });
+
+      document.getElementById('clearedBadge').textContent = `${clearedCount} / 46`;
+    }
+
+    // ─── 練習開始（単語セットアップ） ───
+    function startWordPractice(char) {
+      currentTargetChar = char;
+      currentWordObj = HIRAGANA_WORDS[char] || { word: char, emoji: '✏️' };
+      wordChars = Array.from(currentWordObj.word);
+      activeSlotIdx = 0;
+
+      document.getElementById('wordEmoji').textContent = currentWordObj.emoji;
+      document.getElementById('wordName').textContent = currentWordObj.word;
+      document.getElementById('introBadge').textContent = `「${char}」の ことば`;
+
+      showScreen('practice');
+      buildSlotsUI();
+    }
+
+    // ─── マス目UIの動的構築 ───
+    function buildSlotsUI() {
+      const wrapper = document.getElementById('wordSlotsWrapper');
+      wrapper.innerHTML = '';
+      slotsState = [];
+
+      wordChars.forEach((ch, idx) => {
+        const isFirst = (idx === 0);
+
+        const box = document.createElement('div');
+        box.className = 'char-slot-box';
+        box.id = `slotBox_${idx}`;
+
+        // 十字リーダー
+        box.innerHTML = `
+          <svg class="slot-grid" viewBox="0 0 109 109">
+            <line x1="54.5" y1="0" x2="54.5" y2="109" />
+            <line x1="0" y1="54.5" x2="109" y2="54.5" />
+            <line x1="0" y1="0" x2="109" y2="109" class="diag" />
+            <line x1="109" y1="0" x2="0" y2="109" class="diag" />
+          </svg>
+          <canvas class="slot-canvas" id="slotCanvas_${idx}"></canvas>
+          <button class="slot-clear-btn" onclick="clearSlot(${idx})">消す</button>
+          <div class="slot-label-badge ${isFirst ? 'trace' : 'self'}">
+            ${isFirst ? '① なぞり' : 'じぶんで！'}
+          </div>
+        `;
+
+        wrapper.appendChild(box);
+
+        const canvasEl = box.querySelector('.slot-canvas');
+        const ctxEl = canvasEl.getContext('2d');
+
+        slotsState.push({
+          char: ch,
+          isDone: false,
+          strokeIdx: 0,
+          canvas: canvasEl,
+          ctx: ctxEl,
+          hintFlash: null,
+          showHint: isFirst // 1文字目は最初から薄いガイド表示
+        });
+
+        // ポインターイベント設定
+        canvasEl.onpointerdown = (e) => onSlotDown(e, idx);
+        canvasEl.onpointermove = (e) => onSlotMove(e, idx);
+        canvasEl.onpointerup = (e) => onSlotUp(e, idx);
+        canvasEl.onpointercancel = (e) => onSlotUp(e, idx);
+      });
+
+      resizeAllSlotCanvases();
+      setActiveSlot(0);
+      drawAllSlots();
+    }
+
+    function resizeAllSlotCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      slotsState.forEach(s => {
+        const rect = s.canvas.getBoundingClientRect();
+        const size = rect.width;
+        s.canvas.width = size * dpr;
+        s.canvas.height = size * dpr;
+        s.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      });
+    }
+
+    function setActiveSlot(idx) {
+      activeSlotIdx = idx;
+      slotsState.forEach((s, i) => {
+        const box = document.getElementById(`slotBox_${i}`);
+        if (box) {
+          box.classList.toggle('active-slot', i === activeSlotIdx && !s.isDone);
+          box.classList.toggle('done-slot', s.isDone);
+        }
+      });
+    }
+
+    // ─── キャンバス描画ルーチン ───
+    const SVG_VB = 109;
+
+    function drawAllSlots() {
+      slotsState.forEach((s, idx) => drawSlot(idx));
+    }
+
+    function drawSlot(idx) {
+      const s = slotsState[idx];
+      const box = document.getElementById(`slotBox_${idx}`);
+      if (!box) return;
+      const size = box.clientWidth;
+      const ctx = s.ctx;
+      ctx.clearRect(0, 0, size, size);
+
+      const scale = size / SVG_VB;
+      const paths = getCharPaths(s.char);
+
+      // 1. ガイド線の描画（1文字目、またはヒントON時）
+      const needGuide = (idx === 0) || s.showHint;
+
+      paths.forEach((pStr, pIdx) => {
+        // すでに正解した画は濃い黒で描画
+        if (pIdx < s.strokeIdx) {
+          drawSvgPath(ctx, pStr, scale, '#292524', 5.0);
+          return;
+        }
+
+        // 未完成の画のガイド
+        if (needGuide && !s.isDone) {
+          // 現在書く画は少し濃いグレー、後の画は薄いグレー
+          const col = (pIdx === s.strokeIdx) ? '#94a3b8' : '#e2e8f0';
+          const wid = (pIdx === s.strokeIdx) ? 4.5 : 3.2;
+          drawSvgPath(ctx, pStr, scale, col, wid);
+        }
+      });
+
+      // 2. 不正解ヒント（オレンジの始点フラッシュ）
+      if (s.hintFlash) {
+        ctx.save();
+        ctx.fillStyle = '#ea580c';
+        ctx.shadowColor = 'rgba(234, 88, 12, 0.6)';
+        ctx.shadowBlur = 8 * scale;
+        ctx.beginPath();
+        ctx.arc(s.hintFlash.x * scale, s.hintFlash.y * scale, 5.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 3. 描画中の線
+      if (idx === activeSlotIdx && currentPts.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 5.2 * scale;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(currentPts[0].x * scale, currentPts[0].y * scale);
+        for (let i = 1; i < currentPts.length; i++) {
+          ctx.lineTo(currentPts[i].x * scale, currentPts[i].y * scale);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawSvgPath(ctx, dStr, scale, color, width) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width * scale;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const p = new Path2D(dStr);
+      ctx.scale(scale, scale);
+      ctx.stroke(p);
+      ctx.restore();
+    }
+
+    function getCharPaths(ch) {
+      if (!window.HIRAGANA_DATA || !window.HIRAGANA_DATA.characters[ch]) return [];
+      return window.HIRAGANA_DATA.characters[ch].paths || [];
+    }
+
+    // ─── ポインターイベント（入力処理） ───
+    function toSlotSvg(e, canvasEl) {
+      const rect = canvasEl.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width * SVG_VB;
+      const y = (e.clientY - rect.top) / rect.height * SVG_VB;
+      return { x, y };
+    }
+
+    function onSlotDown(e, idx) {
+      if (isDemoPlaying) return;
+      AudioEngine.init();
+
+      // 未完了のマスならそこをアクティブに切り替え可能
+      if (idx !== activeSlotIdx && !slotsState[idx].isDone) {
+        setActiveSlot(idx);
+      }
+      if (slotsState[idx].isDone) return;
+
+      isDrawing = true;
+      e.target.setPointerCapture(e.pointerId);
+      currentPts = [toSlotSvg(e, slotsState[idx].canvas)];
+      drawSlot(idx);
+    }
+
+    function onSlotMove(e, idx) {
+      if (!isDrawing || idx !== activeSlotIdx) return;
+      const pt = toSlotSvg(e, slotsState[idx].canvas);
+      const last = currentPts[currentPts.length - 1];
+      if (!last || Math.hypot(pt.x - last.x, pt.y - last.y) > 0.8) {
+        currentPts.push(pt);
+        drawSlot(idx);
+      }
+    }
+
+    function onSlotUp(e, idx) {
+      if (!isDrawing || idx !== activeSlotIdx) return;
+      isDrawing = false;
+      if (currentPts.length < 3) {
+        currentPts = [];
+        drawSlot(idx);
+        return;
+      }
+
+      checkSlotStroke(idx);
+    }
+
+    // ─── 判定ロジック ───
+    function checkSlotStroke(idx) {
+      const s = slotsState[idx];
+      const paths = getCharPaths(s.char);
+      if (s.strokeIdx >= paths.length) return;
+
+      const targetPath = paths[s.strokeIdx];
+      const match = verifyStroke(targetPath, currentPts, idx === 0);
+
+      if (match) {
+        // 画の判定OK
+        AudioEngine.playCorrect();
+        s.strokeIdx++;
+        currentPts = [];
+        s.hintFlash = null;
+        drawSlot(idx);
+
+        // 1文字すべて書き終えたか？
+        if (s.strokeIdx >= paths.length) {
+          s.isDone = true;
+          setActiveSlot(activeSlotIdx + 1);
+          drawSlot(idx);
+
+          // すべてのマスが完成したか？
+          const allDone = slotsState.every(sl => sl.isDone);
+          if (allDone) {
+            setTimeout(onAllWordCompleted, 400);
+          } else {
+            // 次のマスへ自動フォーカス
+            const nextIdx = slotsState.findIndex(sl => !sl.isDone);
+            if (nextIdx >= 0) setActiveSlot(nextIdx);
+          }
+        }
+      } else {
+        // 不正解
+        AudioEngine.playMiss();
+        const startPt = getPathStartPoint(targetPath);
+        s.hintFlash = startPt;
+        currentPts = [];
+        drawSlot(idx);
+
+        setTimeout(() => {
+          s.hintFlash = null;
+          drawSlot(idx);
+        }, 1000);
+      }
+    }
+
+    function verifyStroke(pathStr, pts, isTrace) {
+      const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathEl.setAttribute('d', pathStr);
+      const totalLen = pathEl.getTotalLength();
+      if (totalLen < 1) return true;
+
+      const pStart = pathEl.getPointAtLength(0);
+      const pEnd = pathEl.getPointAtLength(totalLen);
+      const uStart = pts[0];
+      const uEnd = pts[pts.length - 1];
+
+      // なぞり書きマスは少し寛容、自力マスは少ししっかり判定
+      const tol = isTrace ? 22 : 26;
+
+      const dStart = Math.hypot(uStart.x - pStart.x, uStart.y - pStart.y);
+      const dEnd = Math.hypot(uEnd.x - pEnd.x, uEnd.y - pEnd.y);
+      if (dStart > tol || dEnd > tol) return false;
+
+      const nCheck = 10;
+      let hits = 0;
+      for (let i = 1; i < nCheck; i++) {
+        const pt = pathEl.getPointAtLength((i / nCheck) * totalLen);
+        const minDist = Math.min(...pts.map(p => Math.hypot(p.x - pt.x, p.y - pt.y)));
+        if (minDist <= tol) hits++;
+      }
+
+      return (hits / (nCheck - 1)) >= 0.65;
+    }
+
+    function getPathStartPoint(dStr) {
+      const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathEl.setAttribute('d', dStr);
+      return pathEl.getPointAtLength(0);
+    }
+
+    function clearSlot(idx) {
+      const s = slotsState[idx];
+      s.isDone = false;
+      s.strokeIdx = 0;
+      s.hintFlash = null;
+      currentPts = [];
+      setActiveSlot(idx);
+      drawSlot(idx);
+    }
+
+    function toggleHint() {
+      const s = slotsState[activeSlotIdx];
+      if (!s) return;
+      s.showHint = !s.showHint;
+      drawSlot(activeSlotIdx);
+    }
+
+    // ─── 単語完成・クリア演出 ───
+    function onAllWordCompleted() {
+      // 進捗保存（ターゲット文字をクリア済みに）
+      progress[currentTargetChar] = true;
+      localStorage.setItem('hiragana_word_progress', JSON.stringify(progress));
+
+      AudioEngine.playFanfare();
+
+      document.getElementById('clearWordDesc').textContent = `「${currentWordObj.word}」が かんせいしたよ！ ${currentWordObj.emoji}`;
+      document.getElementById('clearModal').classList.add('show');
+    }
+
+    function restartWord() {
+      document.getElementById('clearModal').classList.remove('show');
+      startWordPractice(currentTargetChar);
+    }
+
+    function goToNextWord() {
+      document.getElementById('clearModal').classList.remove('show');
+      const chars = Object.keys(HIRAGANA_WORDS);
+      const idx = chars.indexOf(currentTargetChar);
+      const nextChar = (idx >= 0 && idx + 1 < chars.length) ? chars[idx + 1] : chars[0];
+      startWordPractice(nextChar);
+    }
+
+    // ─── お手本アニメーション ───
+    function playCurrentDemo() {
+      if (isDemoPlaying) return;
+      const s = slotsState[activeSlotIdx];
+      if (!s) return;
+
+      isDemoPlaying = true;
+      AudioEngine.init();
+
+      const paths = getCharPaths(s.char);
+      if (paths.length === 0) { isDemoPlaying = false; return; }
+
+      const box = document.getElementById(`slotBox_${activeSlotIdx}`);
+      const size = box.clientWidth;
+      const scale = size / SVG_VB;
+      const ctx = s.ctx;
+
+      let curPathIdx = 0;
+      let progressVal = 0;
+
+      function step() {
+        ctx.clearRect(0, 0, size, size);
+
+        // 前の画を黒で表示
+        for (let i = 0; i < curPathIdx; i++) {
+          drawSvgPath(ctx, paths[i], scale, '#292524', 5.0);
+        }
+
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', paths[curPathIdx]);
+        const totalLen = pathEl.getTotalLength();
+        const currentLen = progressVal * totalLen;
+
+        ctx.save();
+        ctx.strokeStyle = '#ea580c';
+        ctx.lineWidth = 5.2 * scale;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const nPts = Math.max(5, Math.ceil(currentLen / 2));
+        for (let i = 0; i <= nPts; i++) {
+          const pt = pathEl.getPointAtLength((i / nPts) * currentLen);
+          if (i === 0) ctx.moveTo(pt.x * scale, pt.y * scale);
+          else ctx.lineTo(pt.x * scale, pt.y * scale);
+        }
+        ctx.stroke();
+
+        const head = pathEl.getPointAtLength(currentLen);
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.arc(head.x * scale, head.y * scale, 4.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        progressVal += 0.035;
+
+        if (progressVal >= 1.0) {
+          curPathIdx++;
+          progressVal = 0;
+          if (curPathIdx < paths.length) {
+            setTimeout(() => requestAnimationFrame(step), 180);
+          } else {
+            setTimeout(() => {
+              isDemoPlaying = false;
+              drawSlot(activeSlotIdx);
+            }, 400);
+          }
+        } else {
+          requestAnimationFrame(step);
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    // ─── 初期化 ───
+    window.addEventListener('DOMContentLoaded', () => {
+      renderHome();
+      window.addEventListener('resize', () => {
+        if (currentScreen === 'practice') {
+          resizeAllSlotCanvases();
+          drawAllSlots();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
