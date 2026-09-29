@@ -165,6 +165,11 @@
     .stroke-selector button { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0; font-weight: bold; }
     .stroke-selector button.active { background-color: var(--accent); color: white; border-color: var(--accent); }
 
+    .gojuon-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+    .gojuon-tab { flex: 1; padding: 5px 2px; font-size: 11px; font-weight: bold; border: 1px solid var(--border); border-radius: 4px; background: white; cursor: pointer; text-align: center; }
+    .gojuon-tab:hover { background: var(--hover); }
+    .gojuon-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
     .gojuon-grid { display: flex; flex-direction: column; gap: 6px; }
     .gojuon-row { display: flex; gap: 4px; align-items: center; }
     .gojuon-row-label { width: 32px; font-size: 0.85rem; font-weight: bold; color: var(--accent); text-align: center; }
@@ -232,7 +237,12 @@
   <main>
     <div class="sidebar left-sidebar">
       <div class="panel">
-        <h2>五十音表</h2>
+        <h2>文字選択</h2>
+        <div class="gojuon-tabs" id="gojuon-tabs">
+          <button class="gojuon-tab active" data-tab="seion">清音</button>
+          <button class="gojuon-tab" data-tab="dakuon">濁音</button>
+          <button class="gojuon-tab" data-tab="special">小文字</button>
+        </div>
         <div id="gojuon-grid" class="gojuon-grid">
           <!-- JSで生成 -->
         </div>
@@ -523,6 +533,7 @@
         if (!res.ok) throw new Error('Data not found');
         hiraganaData = await res.json();
         
+        initGojuonTabs();
         renderGojuon();
         
         const params = new URLSearchParams(window.location.search);
@@ -537,13 +548,22 @@
     }
 
     // --- Loading & Navigation ---
+    let currentGojuonTab = 'seion';
+
     function renderGojuon() {
       const container = document.getElementById('gojuon-grid');
       container.innerHTML = '';
-      
       if (!hiraganaData || !hiraganaData.meta) return;
-      
-      hiraganaData.meta.rows.forEach(row => {
+
+      // タブごとの行データを取得
+      let rows = [];
+      if (hiraganaData.meta.groups) {
+        rows = hiraganaData.meta.groups[currentGojuonTab] || hiraganaData.meta.rows;
+      } else {
+        rows = hiraganaData.meta.rows;
+      }
+
+      rows.forEach(row => {
         const rowEl = document.createElement('div');
         rowEl.className = 'gojuon-row';
         
@@ -557,6 +577,7 @@
           charEl.className = 'gojuon-char';
           charEl.textContent = c;
           charEl.dataset.char = c;
+          if (currentChar && currentChar.char === c) charEl.classList.add('active');
           charEl.addEventListener('click', () => {
             loadChar(c);
             updateUrlChar(c);
@@ -565,6 +586,18 @@
         });
         
         container.appendChild(rowEl);
+      });
+    }
+
+    function initGojuonTabs() {
+      const tabs = document.querySelectorAll('.gojuon-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          tabs.forEach(t => t.classList.remove('active'));
+          e.target.classList.add('active');
+          currentGojuonTab = e.target.dataset.tab;
+          renderGojuon();
+        });
       });
     }
 
@@ -632,14 +665,30 @@
     }
 
     function updateGojuonSelection() {
+      if (!currentChar || !hiraganaData) return;
+      // 所属グループを判定してタブを自動同期
+      if (hiraganaData.meta && hiraganaData.meta.groups) {
+        for (const [tabKey, rows] of Object.entries(hiraganaData.meta.groups)) {
+          const hasChar = rows.some(r => r.chars.includes(currentChar.char));
+          if (hasChar && currentGojuonTab !== tabKey) {
+            currentGojuonTab = tabKey;
+            document.querySelectorAll('.gojuon-tab').forEach(t => {
+              t.classList.toggle('active', t.dataset.tab === tabKey);
+            });
+            renderGojuon();
+            return;
+          }
+        }
+      }
+
       document.querySelectorAll('.gojuon-char').forEach(el => {
         el.classList.toggle('active', el.dataset.char === currentChar.char);
       });
     }
 
     function getFlatChars() {
-      if (!hiraganaData) return [];
-      return hiraganaData.meta.rows.flatMap(r => r.chars);
+      if (!hiraganaData || !hiraganaData.characters) return [];
+      return Object.keys(hiraganaData.characters);
     }
 
     function navigateChar(delta) {
