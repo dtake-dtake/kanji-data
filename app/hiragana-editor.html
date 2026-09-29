@@ -494,11 +494,11 @@
       const size = parseFloat(document.getElementById('font-size').value);
       const y = parseFloat(document.getElementById('font-y').value);
 
-      // 小文字（促音・拗音）の場合は左下の部屋に配置
+      // 小文字（促音・拗音）の場合は左下の部屋の中心（x=27.25, y=81.75）に配置
       const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(currentChar.char);
       const effectiveSize = isSmallKana ? size * 0.62 : size;
-      const effectiveX = isSmallKana ? 32 : 54.5;
-      const effectiveY = isSmallKana ? (y + 25) : y;
+      const effectiveX = isSmallKana ? 27.25 : 54.5;
+      const effectiveY = isSmallKana ? 81.75 : y;
       
       textEl.textContent = currentChar.char;
       textEl.setAttribute('font-family', fontName);
@@ -1449,8 +1449,8 @@
 
         const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(char);
         const effSize = isSmallKana ? fontSize * 0.62 : fontSize;
-        const effX = isSmallKana ? 32 : 54.5;
-        const effY = isSmallKana ? (fontY + 25) : fontY;
+        const effX = isSmallKana ? 27.25 : 54.5;
+        const effY = isSmallKana ? 81.75 : fontY;
 
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -1657,8 +1657,8 @@
 
         const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(char);
         const effSize = isSmallKana ? fontSize * 0.62 : fontSize;
-        const effX = isSmallKana ? 32 : 54.5;
-        const effY = isSmallKana ? (fontY + 25) : fontY;
+        const effX = isSmallKana ? 27.25 : 54.5;
+        const effY = isSmallKana ? 81.75 : fontY;
 
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
