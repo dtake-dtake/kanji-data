@@ -1063,38 +1063,46 @@
         return (hits / (nCheck - 1)) >= 0.55;
       }
 
-      // ─── 自力書きマス（2文字目以降）: ゆるい判定 ───
-      // チェック1: ある程度の長さで書いているか（極端に短いタップは弾く）
+      // ─── 自力書きマス（2文字目以降）: バランスの取れた判定 ───
+
+      // チェック1: 最低限の長さで書いているか（タップや極端に短い線を弾く）
       const userLen = pts.reduce((sum, p, i) => {
         if (i === 0) return 0;
         return sum + Math.hypot(p.x - pts[i-1].x, p.y - pts[i-1].y);
       }, 0);
-      const minLen = totalLen * 0.3; // お手本の30%以上の長さで書けばOK
-      if (userLen < Math.max(minLen, 8)) return false;
+      if (userLen < Math.max(totalLen * 0.25, 8)) return false;
 
-      // チェック2: 書いた向き（ベクトル）がお手本の向きと大まかに一致しているか
+      // チェック2: 始点がお手本の始点から大きく外れていないか（開始位置チェック）
       const pStart = pathEl.getPointAtLength(0);
-      const pEnd = pathEl.getPointAtLength(totalLen);
+      const pEnd   = pathEl.getPointAtLength(totalLen);
+      const dStart = Math.hypot(pts[0].x - pStart.x, pts[0].y - pStart.y);
+      if (dStart > 48) return false; // 始点が48px以上離れていたら別の字扱い
+
+      // チェック3: 形サンプリング（中間点が筆跡の近くを通っているか）
+      // お手本パスをN点に分割して、ユーザーの筆跡が各点の近くを通ったか調べる
+      // ─ これにより「る」を直線で書いてもループ部分で外れてNG になる ─
+      const N = 7;          // サンプル点数
+      const shapeTol = 36;  // 許容半径（viewBox 109 基準）
+      let shapeHits = 0;
+      for (let i = 1; i <= N; i++) {
+        const pt = pathEl.getPointAtLength((i / (N + 1)) * totalLen);
+        const minD = Math.min(...pts.map(p => Math.hypot(p.x - pt.x, p.y - pt.y)));
+        if (minD <= shapeTol) shapeHits++;
+      }
+      // N点中 43%以上（≒3点以上）通っていればOK
+      if (shapeHits / N < 0.43) return false;
+
+      // チェック4: 書いた向き（全体ベクトル）がお手本と逆方向でないか
       const refDx = pEnd.x - pStart.x;
       const refDy = pEnd.y - pStart.y;
-      const userDx = uEnd.x - uStart.x;
-      const userDy = uEnd.y - uStart.y;
-      const refLen2D = Math.hypot(refDx, refDy);
+      const userDx = pts[pts.length-1].x - pts[0].x;
+      const userDy = pts[pts.length-1].y - pts[0].y;
+      const refLen2D  = Math.hypot(refDx, refDy);
       const userLen2D = Math.hypot(userDx, userDy);
-      if (refLen2D > 5 && userLen2D > 5) {
-        const cosAngle = (refDx * userDx + refDy * userDy) / (refLen2D * userLen2D);
-        // cos(90°) = 0 → 90度以内ならOK（かなりゆるい）
-        if (cosAngle < -0.1) return false;
+      if (refLen2D > 10 && userLen2D > 10) {
+        const cos = (refDx * userDx + refDy * userDy) / (refLen2D * userLen2D);
+        if (cos < -0.25) return false; // 明らかに逆方向はNG
       }
-
-      // チェック3: 書いた位置がマスの中に収まっているか（大外れしていないか）
-      // お手本の中心と書いた筆跡の重心がひどく離れていなければOK
-      const refMidX = (pStart.x + pEnd.x) / 2;
-      const refMidY = (pStart.y + pEnd.y) / 2;
-      const userMidX = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-      const userMidY = pts.reduce((s, p) => s + p.y, 0) / pts.length;
-      const centerDist = Math.hypot(userMidX - refMidX, userMidY - refMidY);
-      if (centerDist > 42) return false; // 42px（viewBox109基準）より中心がずれていたらNG
 
       return true;
     }
