@@ -1063,44 +1063,68 @@
         return (hits / (nCheck - 1)) >= 0.55;
       }
 
-      // ─── 自力書きマス（2文字目以降）: バランスの取れた判定 ───
+      // ─── 自力書きマス（2文字目以降）: 方向フロー方式 ───
+      // 位置はゆるく、画の向き・形の流れ（カーブ・ループ）はしっかり見る
 
-      // チェック1: 最低限の長さで書いているか（タップや極端に短い線を弾く）
+      // 1. 最低限の長さ（タップ防止）
       const userLen = pts.reduce((sum, p, i) => {
         if (i === 0) return 0;
         return sum + Math.hypot(p.x - pts[i-1].x, p.y - pts[i-1].y);
       }, 0);
-      if (userLen < Math.max(totalLen * 0.25, 8)) return false;
+      if (userLen < Math.max(totalLen * 0.2, 8)) return false;
 
-      // チェック2: 始点がお手本の始点から大きく外れていないか
-      const pStart = pathEl.getPointAtLength(0);
-      const pEnd   = pathEl.getPointAtLength(totalLen);
-      const dStart = Math.hypot(pts[0].x - pStart.x, pts[0].y - pStart.y);
-      if (dStart > 38) return false;
-
-      // チェック3: 形サンプリング（お手本を9等分した点を筆跡が通っているか）
-      // 「る」のような曲線・ループを持つ字は、直線で書くと後半の点が外れてNG
-      const N = 9;
-      const shapeTol = 26;  // 許容半径（viewBox 109 基準 ≒ マスの24%）
-      let shapeHits = 0;
-      for (let i = 1; i <= N; i++) {
-        const pt = pathEl.getPointAtLength((i / (N + 1)) * totalLen);
-        const minD = Math.min(...pts.map(p => Math.hypot(p.x - pt.x, p.y - pt.y)));
-        if (minD <= shapeTol) shapeHits++;
+      // 2. お手本パスをN+1点にリサンプリング
+      const N = 10; // 区間数
+      const refPts = [];
+      for (let i = 0; i <= N; i++) {
+        const p = pathEl.getPointAtLength((i / N) * totalLen);
+        refPts.push({ x: p.x, y: p.y });
       }
-      if (shapeHits / N < 0.50) return false; // 50%以上（5点以上）通っていればOK
 
-      // チェック4: 書いた向き（全体ベクトル）がお手本と逆方向でないか
-      const refDx = pEnd.x - pStart.x;
-      const refDy = pEnd.y - pStart.y;
-      const userDx = pts[pts.length-1].x - pts[0].x;
-      const userDy = pts[pts.length-1].y - pts[0].y;
-      const refLen2D  = Math.hypot(refDx, refDy);
-      const userLen2D = Math.hypot(userDx, userDy);
-      if (refLen2D > 10 && userLen2D > 10) {
-        const cos = (refDx * userDx + refDy * userDy) / (refLen2D * userLen2D);
-        if (cos < -0.25) return false;
+      // 3. ユーザーの筆跡を弧長ベースでN+1点にリサンプリング
+      //    （等間隔に並べ直すことで速度差を吸収）
+      const cumLen = [0];
+      for (let i = 1; i < pts.length; i++) {
+        cumLen.push(cumLen[i-1] + Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y));
       }
+      const userTotalLen = cumLen[cumLen.length - 1];
+      if (userTotalLen < 1) return false;
+
+      const userResampled = [];
+      for (let i = 0; i <= N; i++) {
+        const targetLen = (i / N) * userTotalLen;
+        // targetLen に対応する pts 上の位置を線形補間で求める
+        let j = 1;
+        while (j < cumLen.length - 1 && cumLen[j] < targetLen) j++;
+        const segLen = cumLen[j] - cumLen[j-1];
+        const t = segLen > 0 ? (targetLen - cumLen[j-1]) / segLen : 0;
+        userResampled.push({
+          x: pts[j-1].x + t * (pts[j].x - pts[j-1].x),
+          y: pts[j-1].y + t * (pts[j].y - pts[j-1].y)
+        });
+      }
+
+      // 4. 各区間の方向ベクトルを比較
+      //    cos(角度差) > 0 → 同じ方向（90度以内）
+      //    cos(角度差) > 0.17 → 約80度以内
+      let dirHits = 0;
+      let dirChecked = 0;
+      for (let i = 0; i < N; i++) {
+        const rdx = refPts[i+1].x - refPts[i].x;
+        const rdy = refPts[i+1].y - refPts[i].y;
+        const udx = userResampled[i+1].x - userResampled[i].x;
+        const udy = userResampled[i+1].y - userResampled[i].y;
+        const rLen = Math.hypot(rdx, rdy);
+        const uLen = Math.hypot(udx, udy);
+        // 極端に短い区間はスキップ
+        if (rLen < 0.5 || uLen < 0.3) { dirHits++; dirChecked++; continue; }
+        const cos = (rdx * udx + rdy * udy) / (rLen * uLen);
+        dirChecked++;
+        if (cos > 0.1) dirHits++; // 約84度以内ならOK（低学年向け寛容設定）
+      }
+
+      // 10区間中55%以上（6区間）の方向が合っていればOK
+      if (dirChecked > 0 && (dirHits / dirChecked) < 0.55) return false;
 
       return true;
     }
