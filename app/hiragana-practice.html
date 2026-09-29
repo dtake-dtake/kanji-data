@@ -1072,25 +1072,23 @@
       }, 0);
       if (userLen < Math.max(totalLen * 0.25, 8)) return false;
 
-      // チェック2: 始点がお手本の始点から大きく外れていないか（開始位置チェック）
+      // チェック2: 始点がお手本の始点から大きく外れていないか
       const pStart = pathEl.getPointAtLength(0);
       const pEnd   = pathEl.getPointAtLength(totalLen);
       const dStart = Math.hypot(pts[0].x - pStart.x, pts[0].y - pStart.y);
-      if (dStart > 48) return false; // 始点が48px以上離れていたら別の字扱い
+      if (dStart > 38) return false;
 
-      // チェック3: 形サンプリング（中間点が筆跡の近くを通っているか）
-      // お手本パスをN点に分割して、ユーザーの筆跡が各点の近くを通ったか調べる
-      // ─ これにより「る」を直線で書いてもループ部分で外れてNG になる ─
-      const N = 7;          // サンプル点数
-      const shapeTol = 36;  // 許容半径（viewBox 109 基準）
+      // チェック3: 形サンプリング（お手本を9等分した点を筆跡が通っているか）
+      // 「る」のような曲線・ループを持つ字は、直線で書くと後半の点が外れてNG
+      const N = 9;
+      const shapeTol = 26;  // 許容半径（viewBox 109 基準 ≒ マスの24%）
       let shapeHits = 0;
       for (let i = 1; i <= N; i++) {
         const pt = pathEl.getPointAtLength((i / (N + 1)) * totalLen);
         const minD = Math.min(...pts.map(p => Math.hypot(p.x - pt.x, p.y - pt.y)));
         if (minD <= shapeTol) shapeHits++;
       }
-      // N点中 43%以上（≒3点以上）通っていればOK
-      if (shapeHits / N < 0.43) return false;
+      if (shapeHits / N < 0.50) return false; // 50%以上（5点以上）通っていればOK
 
       // チェック4: 書いた向き（全体ベクトル）がお手本と逆方向でないか
       const refDx = pEnd.x - pStart.x;
@@ -1101,7 +1099,7 @@
       const userLen2D = Math.hypot(userDx, userDy);
       if (refLen2D > 10 && userLen2D > 10) {
         const cos = (refDx * userDx + refDy * userDy) / (refLen2D * userLen2D);
-        if (cos < -0.25) return false; // 明らかに逆方向はNG
+        if (cos < -0.25) return false;
       }
 
       return true;
