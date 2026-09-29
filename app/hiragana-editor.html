@@ -252,7 +252,9 @@
     <div class="editor-section">
       <div class="editor-toolbar">
         <button id="toggle-move-mode" title="ストローク全体を移動します">全体移動: OFF</button>
+        <button id="toggle-all-move-mode" title="全ての画を同時にドラッグで移動します" style="background:#0891b2; color:white; border-color:#0891b2;">全画移動: OFF</button>
         <button id="toggle-rotate-mode" title="支点を選択してドラッグで回転">回転: OFF</button>
+        <button id="small-kana-btn" title="全ストロークを0.60倍に縮小して左下の部屋（小文字の位置）に配置します" style="background:#7c3aed; color:white; border-color:#7c3aed;">🔡 小文字化</button>
         <button id="toggle-draw-mode" title="クリックで点を置いてストロークを描画 (D)" style="background:#059669; color:white; border-color:#059669;">✏️ 描画</button>
         <button id="clear-stroke-btn" title="選択中の画のパスをクリアします">🗑️ 画クリア</button>
         <button id="clear-all-btn" title="全ての画をクリアします" style="background:#dc2626; color:white; border-color:#dc2626;">🗑️ 全クリア</button>
@@ -379,6 +381,7 @@
     let currentStrokeIndex = -1;
     let parsedStrokes = [];
     let isWholeMoveMode = false;
+    let isAllStrokeMoveMode = false;   // 全画一括移動モード
     let isRotateMode = false;
     let pivotPoint = null;
     
@@ -1227,6 +1230,17 @@
       const dx = pt.x - startX;
       const dy = pt.y - startY;
 
+      // 全画一括移動モード
+      if (dragState.isAllStrokeMove) {
+        if (!dragState.activated) {
+          const dist = Math.hypot(dx, dy);
+          if (dist < 1.5 / zoomLevel) return;
+          dragState.activated = true;
+        }
+        handleAllStrokeDrag(dx, dy, dragState.snapshots);
+        return;
+      }
+
       if (isWholeMoveMode) {
         const segs = parsedStrokes[currentStrokeIndex];
         for (let i = 0; i < segs.length; i++) {
@@ -1269,6 +1283,15 @@
 
     function endDrag(e) {
       if (!dragState) return;
+      // 全画移動モードの終了
+      if (dragState.isAllStrokeMove) {
+        if (dragState.activated) {
+          pushHistory();
+          updateUI();
+        }
+        dragState = null;
+        return;
+      }
       // ドラッグが有効化されなかった場合（タップのみ）はデータを元に戻す
       if (!dragState.activated && !dragState.isRotation && dragState.startSegments) {
         parsedStrokes[currentStrokeIndex] = dragState.startSegments;
@@ -1281,6 +1304,52 @@
       document.getElementById('guides-layer').innerHTML = '';
       pushHistory();
       updateUI();
+    }
+
+    // --- 全画一括変換 ---
+    /**
+     * 全ストロークの全座標に scale/dx/dy を適用する
+     * @param {number} scale - 拡大率
+     * @param {number} dx - X方向オフセット（スケール後）
+     * @param {number} dy - Y方向オフセット（スケール後）
+     */
+    function transformAllStrokes(scale, dx, dy) {
+      for (let si = 0; si < parsedStrokes.length; si++) {
+        const segs = parsedStrokes[si];
+        for (const seg of segs) {
+          if (seg.type === 'M') {
+            seg.x = seg.x * scale + dx;
+            seg.y = seg.y * scale + dy;
+          } else {
+            if (seg.abs_cp1x !== undefined) { seg.abs_cp1x = seg.abs_cp1x * scale + dx; seg.abs_cp1y = seg.abs_cp1y * scale + dy; }
+            if (seg.abs_cp2x !== undefined) { seg.abs_cp2x = seg.abs_cp2x * scale + dx; seg.abs_cp2y = seg.abs_cp2y * scale + dy; }
+            if (seg.abs_x   !== undefined) { seg.abs_x   = seg.abs_x   * scale + dx; seg.abs_y   = seg.abs_y   * scale + dy; }
+          }
+        }
+      }
+      pushHistory();
+      updateUI();
+    }
+
+    /**
+     * 全画一括移動モード用 drag: 全ストロークを同時に移動
+     */
+    function handleAllStrokeDrag(dx, dy, snapshots) {
+      for (let si = 0; si < parsedStrokes.length; si++) {
+        const segs = parsedStrokes[si];
+        const orig = snapshots[si];
+        if (!orig) continue;
+        for (let i = 0; i < segs.length; i++) {
+          const seg = segs[i], o = orig[i];
+          if (seg.type === 'M') { seg.x = o.x + dx; seg.y = o.y + dy; }
+          else {
+            if (seg.abs_cp1x !== undefined) { seg.abs_cp1x = o.abs_cp1x + dx; seg.abs_cp1y = o.abs_cp1y + dy; }
+            if (seg.abs_cp2x !== undefined) { seg.abs_cp2x = o.abs_cp2x + dx; seg.abs_cp2y = o.abs_cp2y + dy; }
+            if (seg.abs_x   !== undefined) { seg.abs_x   = o.abs_x   + dx; seg.abs_y   = o.abs_y   + dy; }
+          }
+        }
+      }
+      renderEditor();
     }
 
     // --- Segment Operations ---
@@ -2130,6 +2199,19 @@
           return;
         }
         
+        // 全画移動モード: 背景ドラッグで全ストロークを移動
+        if (isAllStrokeMoveMode && e.button === 0 && !e.altKey) {
+          e.preventDefault();
+          const pt = getMousePosition(e);
+          dragState = {
+            isAllStrokeMove: true,
+            startX: pt.x, startY: pt.y,
+            activated: false,
+            snapshots: parsedStrokes.map(segs => JSON.parse(JSON.stringify(segs)))
+          };
+          return;
+        }
+
         if (e.button === 2 || e.button === 1 || (e.button === 0 && e.altKey)) {
           e.preventDefault();
           isPanning = true;
@@ -2205,6 +2287,18 @@
           e.preventDefault();
           const pt = getMousePosition(e);
           startDrawing(pt.x, pt.y);
+          return;
+        }
+        // 全画移動モード: シングルタッチで全ストロークを移動
+        if (touches.length === 1 && isAllStrokeMoveMode) {
+          e.preventDefault();
+          const pt = getMousePosition(e);
+          dragState = {
+            isAllStrokeMove: true,
+            startX: pt.x, startY: pt.y,
+            activated: false,
+            snapshots: parsedStrokes.map(segs => JSON.parse(JSON.stringify(segs)))
+          };
           return;
         }
         if (touches.length === 2) {
@@ -2323,6 +2417,50 @@
           rb.classList.remove('active');
           renderEditor();
         }
+        if (isWholeMoveMode && isAllStrokeMoveMode) {
+          isAllStrokeMoveMode = false;
+          const ab = document.getElementById('toggle-all-move-mode');
+          ab.textContent = '全画移動: OFF'; ab.classList.remove('active');
+        }
+      });
+
+      // 全画移動モード
+      document.getElementById('toggle-all-move-mode').addEventListener('click', (e) => {
+        isAllStrokeMoveMode = !isAllStrokeMoveMode;
+        e.target.textContent = `全画移動: ${isAllStrokeMoveMode ? 'ON' : 'OFF'}`;
+        e.target.classList.toggle('active', isAllStrokeMoveMode);
+        // 他のモードをOFF
+        if (isAllStrokeMoveMode) {
+          if (isWholeMoveMode) {
+            isWholeMoveMode = false;
+            const mb = document.getElementById('toggle-move-mode');
+            mb.textContent = '全体移動: OFF'; mb.classList.remove('active');
+          }
+          if (isRotateMode) {
+            isRotateMode = false; pivotPoint = null;
+            const rb = document.getElementById('toggle-rotate-mode');
+            rb.textContent = '回転: OFF'; rb.classList.remove('active');
+            renderEditor();
+          }
+          if (isDrawMode) exitDrawMode();
+          if (isPointPlaceMode) exitPointPlaceMode();
+          showToast('全画移動: SVGをドラッグして全ストロークを移動');
+        }
+      });
+
+      // 小文字化ボタン: 全ストロークを左下の部屋(27.25, 81.75)に縮小配置
+      document.getElementById('small-kana-btn').addEventListener('click', () => {
+        if (parsedStrokes.length === 0 || !parsedStrokes.some(s => s.length > 1)) {
+          showToast('ストロークデータがありません', true);
+          return;
+        }
+        if (!confirm('全ストロークを0.60倍に縮小して左下の部屋（小文字の位置）に配置します。\n元に戻すにはCtrl+Zで戻せます。\nよろしいですか？')) return;
+        // scale=0.60, dx=-5.45, dy=49.05
+        const SCALE = 0.60;
+        const DX = 27.25 - 54.5 * SCALE;  // -5.45
+        const DY = 81.75 - 54.5 * SCALE;  // 49.05
+        transformAllStrokes(SCALE, DX, DY);
+        showToast('小文字化しました（左下の部屋に配置）');
       });
       
       document.getElementById('toggle-rotate-mode').addEventListener('click', (e) => {
