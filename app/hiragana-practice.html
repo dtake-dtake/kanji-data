@@ -705,7 +705,7 @@
       activeSlotIdx = 0;
 
       document.getElementById('wordEmoji').textContent = currentWordObj.emoji;
-      document.getElementById('wordName').textContent = currentWordObj.word;
+      document.getElementById('wordName').textContent = '';  // 答えを見せない
       document.getElementById('introBadge').textContent = `「${char}」の ことば`;
 
       showScreen('practice');
@@ -1023,27 +1023,62 @@
       const totalLen = pathEl.getTotalLength();
       if (totalLen < 1) return true;
 
-      const pStart = pathEl.getPointAtLength(0);
-      const pEnd = pathEl.getPointAtLength(totalLen);
       const uStart = pts[0];
       const uEnd = pts[pts.length - 1];
 
-      // なぞり書きマスは少し寛容、自力マスは少ししっかり判定
-      const tol = isTrace ? 22 : 26;
+      // ─── なぞり書きマス（1文字目）: 始点・終点・中間点のチェック ───
+      if (isTrace) {
+        const tol = 24;
+        const pStart = pathEl.getPointAtLength(0);
+        const pEnd = pathEl.getPointAtLength(totalLen);
+        const dStart = Math.hypot(uStart.x - pStart.x, uStart.y - pStart.y);
+        const dEnd = Math.hypot(uEnd.x - pEnd.x, uEnd.y - pEnd.y);
+        if (dStart > tol || dEnd > tol) return false;
 
-      const dStart = Math.hypot(uStart.x - pStart.x, uStart.y - pStart.y);
-      const dEnd = Math.hypot(uEnd.x - pEnd.x, uEnd.y - pEnd.y);
-      if (dStart > tol || dEnd > tol) return false;
-
-      const nCheck = 10;
-      let hits = 0;
-      for (let i = 1; i < nCheck; i++) {
-        const pt = pathEl.getPointAtLength((i / nCheck) * totalLen);
-        const minDist = Math.min(...pts.map(p => Math.hypot(p.x - pt.x, p.y - pt.y)));
-        if (minDist <= tol) hits++;
+        const nCheck = 8;
+        let hits = 0;
+        for (let i = 1; i < nCheck; i++) {
+          const pt = pathEl.getPointAtLength((i / nCheck) * totalLen);
+          const minDist = Math.min(...pts.map(p => Math.hypot(p.x - pt.x, p.y - pt.y)));
+          if (minDist <= tol) hits++;
+        }
+        return (hits / (nCheck - 1)) >= 0.55;
       }
 
-      return (hits / (nCheck - 1)) >= 0.65;
+      // ─── 自力書きマス（2文字目以降）: ゆるい判定 ───
+      // チェック1: ある程度の長さで書いているか（極端に短いタップは弾く）
+      const userLen = pts.reduce((sum, p, i) => {
+        if (i === 0) return 0;
+        return sum + Math.hypot(p.x - pts[i-1].x, p.y - pts[i-1].y);
+      }, 0);
+      const minLen = totalLen * 0.3; // お手本の30%以上の長さで書けばOK
+      if (userLen < Math.max(minLen, 8)) return false;
+
+      // チェック2: 書いた向き（ベクトル）がお手本の向きと大まかに一致しているか
+      const pStart = pathEl.getPointAtLength(0);
+      const pEnd = pathEl.getPointAtLength(totalLen);
+      const refDx = pEnd.x - pStart.x;
+      const refDy = pEnd.y - pStart.y;
+      const userDx = uEnd.x - uStart.x;
+      const userDy = uEnd.y - uStart.y;
+      const refLen2D = Math.hypot(refDx, refDy);
+      const userLen2D = Math.hypot(userDx, userDy);
+      if (refLen2D > 5 && userLen2D > 5) {
+        const cosAngle = (refDx * userDx + refDy * userDy) / (refLen2D * userLen2D);
+        // cos(90°) = 0 → 90度以内ならOK（かなりゆるい）
+        if (cosAngle < -0.1) return false;
+      }
+
+      // チェック3: 書いた位置がマスの中に収まっているか（大外れしていないか）
+      // お手本の中心と書いた筆跡の重心がひどく離れていなければOK
+      const refMidX = (pStart.x + pEnd.x) / 2;
+      const refMidY = (pStart.y + pEnd.y) / 2;
+      const userMidX = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const userMidY = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      const centerDist = Math.hypot(userMidX - refMidX, userMidY - refMidY);
+      if (centerDist > 42) return false; // 42px（viewBox109基準）より中心がずれていたらNG
+
+      return true;
     }
 
     function getPathStartPoint(dStr) {
