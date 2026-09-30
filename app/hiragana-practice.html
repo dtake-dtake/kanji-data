@@ -434,75 +434,97 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 12px 24px 16px;
+      padding: 8px 16px 12px;
+      overflow-y: auto;
     }
     .verify-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
       width: 100%;
-      max-width: 900px;
+      max-width: 1100px;
       height: 100%;
     }
-    .verify-top-bar {
+    /* 50音グリッド */
+    .verify-picker {
       width: 100%;
-      background: linear-gradient(90deg, #ede9fe, #ffffff, #ede9fe);
-      border: 2.5px solid #a78bfa;
-      border-radius: 20px;
+      background: #faf5ff;
+      border: 2px solid #c4b5fd;
+      border-radius: 16px;
+      padding: 8px 10px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .verify-picker-row {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+    }
+    .verify-pick-btn {
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid #ddd6fe;
+      border-radius: 8px;
+      background: white;
+      font-family: var(--font-main);
+      font-size: 16px;
+      font-weight: 800;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.1s;
+      padding: 0;
+      line-height: 32px;
+      text-align: center;
+    }
+    .verify-pick-btn:hover { background: #ede9fe; border-color: #a78bfa; }
+    .verify-pick-btn.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+    .verify-pick-btn.empty { visibility: hidden; }
+    /* 情報バー */
+    .verify-info-bar {
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 16px;
-      padding: 8px 24px;
       flex-shrink: 0;
     }
-    .verify-char-input {
-      width: 56px;
-      height: 44px;
-      font-size: 28px;
+    .verify-char-display {
+      font-size: 20px;
       font-weight: 900;
-      text-align: center;
-      border: 2.5px solid #a78bfa;
-      border-radius: 12px;
-      font-family: var(--font-main);
-      outline: none;
+      color: #5b21b6;
     }
-    .verify-char-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
-    .verify-go-btn {
+    .verify-reset-btn {
       background: #7c3aed;
       color: white;
       border: none;
-      border-radius: 14px;
-      padding: 8px 20px;
+      border-radius: 12px;
+      padding: 6px 18px;
       font-family: var(--font-main);
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 900;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .verify-go-btn:active { transform: scale(0.96); }
-    .verify-char-display {
-      font-size: 22px;
-      font-weight: 900;
-      color: #5b21b6;
-    }
+    .verify-reset-btn:active { transform: scale(0.96); }
     .verify-slots-area {
       flex: 1;
       width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 32px;
+      gap: 24px;
       min-height: 0;
     }
     .verify-slot-item {
       flex: 1;
-      max-width: min(45vw, calc(100vh - 220px), 420px);
+      max-width: min(42vw, calc(100vh - 280px), 380px);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
   </style>
 </head>
@@ -557,11 +579,12 @@
   <!-- ─── 画面3: 確認モード ─── -->
   <div class="screen" id="screenVerify">
     <div class="verify-container">
-      <div class="verify-top-bar">
-        <span class="verify-char-display">文字を入力 →</span>
-        <input class="verify-char-input" id="verifyCharInput" type="text" maxlength="1" placeholder="あ">
-        <button class="verify-go-btn" onclick="loadVerifyChar()">表示</button>
-        <span class="verify-char-display" id="verifyCharName"></span>
+      <div class="verify-picker" id="verifyPicker">
+        <!-- JSで50音グリッドを生成 -->
+      </div>
+      <div class="verify-info-bar">
+        <span class="verify-char-display" id="verifyCharName">↑ 文字をタップ</span>
+        <button class="verify-reset-btn" onclick="resetVerifySlots()">🔄 リセット</button>
       </div>
       <div class="verify-slots-area" id="verifySlotsArea">
         <!-- JSで動的生成 -->
@@ -936,7 +959,7 @@
       paths.forEach((pStr, pIdx) => {
         // すでに正解した画は濃い黒で描画
         if (pIdx < s.strokeIdx) {
-          drawSvgPath(ctx, pStr, scale, '#292524', 3.2);
+          drawSvgPath(ctx, pStr, scale, '#292524', 2.5);
           return;
         }
 
@@ -1397,7 +1420,7 @@
 
         // 前の画を黒で表示
         for (let i = 0; i < curPathIdx; i++) {
-          drawSvgPath(ctx, paths[i], scale, '#292524', 3.2);
+          drawSvgPath(ctx, paths[i], scale, '#292524', 2.5);
         }
 
         const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1455,22 +1478,62 @@
 
     function showVerifyScreen() {
       showScreen('verify');
+      renderVerifyPicker();
     }
 
-    function loadVerifyChar() {
-      const input = document.getElementById('verifyCharInput');
-      const ch = input.value.trim();
-      if (!ch) return;
+    // 50音ピッカーを描画
+    function renderVerifyPicker() {
+      const picker = document.getElementById('verifyPicker');
+      if (picker.children.length > 0) return; // 再描画不要
+
+      const layout = [
+        ['あ','い','う','え','お'],
+        ['か','き','く','け','こ'],
+        ['さ','し','す','せ','そ'],
+        ['た','ち','つ','て','と'],
+        ['な','に','ぬ','ね','の'],
+        ['は','ひ','ふ','へ','ほ'],
+        ['ま','み','む','め','も'],
+        ['や','','ゆ','','よ'],
+        ['ら','り','る','れ','ろ'],
+        ['わ','を','ん','',''],
+      ];
+
+      layout.forEach(row => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'verify-picker-row';
+        row.forEach(ch => {
+          const btn = document.createElement('button');
+          btn.className = 'verify-pick-btn' + (ch ? '' : ' empty');
+          btn.textContent = ch || '';
+          if (ch) {
+            btn.onclick = () => selectVerifyChar(ch);
+          }
+          rowEl.appendChild(btn);
+        });
+        picker.appendChild(rowEl);
+      });
+    }
+
+    function selectVerifyChar(ch) {
+      // ボタンのアクティブ状態を更新
+      document.querySelectorAll('.verify-pick-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent === ch);
+      });
 
       const paths = getCharPaths(ch);
       if (paths.length === 0) {
-        document.getElementById('verifyCharName').textContent = '❌ データなし';
+        document.getElementById('verifyCharName').textContent = `「${ch}」 ❌ データなし`;
         return;
       }
 
       verifyChar = ch;
       document.getElementById('verifyCharName').textContent = `「${ch}」 ${paths.length}画`;
       buildVerifySlots(ch);
+    }
+
+    function resetVerifySlots() {
+      if (verifyChar) buildVerifySlots(verifyChar);
     }
 
     function buildVerifySlots(ch) {
@@ -1577,7 +1640,7 @@
 
       paths.forEach((pStr, pIdx) => {
         if (pIdx < s.strokeIdx) {
-          drawSvgPath(ctx, pStr, scale, '#292524', 3.2);
+          drawSvgPath(ctx, pStr, scale, '#292524', 2.5);
           return;
         }
         if (needGuide && !s.isDone) {
@@ -1615,7 +1678,7 @@
 
       // 完了チェック
       if (s.isDone) {
-        paths.forEach(pStr => drawSvgPath(ctx, pStr, scale, '#292524', 3.2));
+        paths.forEach(pStr => drawSvgPath(ctx, pStr, scale, '#292524', 2.5));
       }
     }
 
@@ -1703,11 +1766,6 @@
           resizeVerifyCanvases();
           drawVerifySlots();
         }
-      });
-
-      // 確認モードでEnterキーで表示
-      document.getElementById('verifyCharInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') loadVerifyChar();
       });
     });
   </script>
