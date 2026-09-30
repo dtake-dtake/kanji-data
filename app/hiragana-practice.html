@@ -1314,21 +1314,21 @@
 
       // ─── なぞり書きマス（1文字目）: 始点・終点・中間点のチェック ───
       if (isTrace) {
-        const tol = 24;
+        const tol = 30;  // 始点・終点・中間点の許容距離
         const pStart = pathEl.getPointAtLength(0);
         const pEnd = pathEl.getPointAtLength(totalLen);
         const dStart = Math.hypot(uStart.x - pStart.x, uStart.y - pStart.y);
         const dEnd = Math.hypot(uEnd.x - pEnd.x, uEnd.y - pEnd.y);
         if (dStart > tol || dEnd > tol) return false;
 
-        const nCheck = 8;
+        const nCheck = 6;  // チェックする中間点の数
         let hits = 0;
         for (let i = 1; i < nCheck; i++) {
           const pt = pathEl.getPointAtLength((i / nCheck) * totalLen);
           const minDist = Math.min(...pts.map(p => Math.hypot(p.x - pt.x, p.y - pt.y)));
           if (minDist <= tol) hits++;
         }
-        if ((hits / (nCheck - 1)) < 0.55) return false;
+        if ((hits / (nCheck - 1)) < 0.5) return false;  // 50%以上でOK
 
         // なぞりモードは位置チェックで十分（特殊チェックは自力書きのみ）
         return true;
