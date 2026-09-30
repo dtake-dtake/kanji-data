@@ -161,74 +161,74 @@
       content: '💮'; position: absolute; top: -5px; right: -5px; font-size: 13px;
     }
 
-    /* ─── GIGA端末向け 練習画面（横一列レイアウト） ─── */
+    /* ─── GIGA端末向け 練習画面（上部イラスト＋下部マス列レイアウト） ─── */
     #screenPractice {
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 16px 24px;
+      justify-content: flex-start;
+      padding: 12px 24px 16px;
       position: relative;
     }
 
     .word-train-container {
       display: flex;
-      align-items: stretch;
-      justify-content: center;
-      gap: 16px;
-      width: 100%;
-      max-width: 1100px;
-      height: min(78vh, 420px);
-    }
-
-    /* ─── 左端：イラスト・ことばカード ─── */
-    .word-illustration-card {
-      flex: 0 0 min(26vw, 240px);
-      background: linear-gradient(180deg, #ffffff, #fff7ed);
-      border: 3px solid #fdba74;
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      width: 100%;
+      max-width: 1180px;
+      height: 100%;
+    }
+
+    /* ─── 上部：イラスト・おてほんバー ─── */
+    .word-top-bar {
+      width: 100%;
+      background: linear-gradient(90deg, #fff7ed, #ffffff, #fff7ed);
+      border: 2.5px solid #fdba74;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      padding: 20px 16px;
-      position: relative;
+      padding: 8px 24px;
+      flex-shrink: 0;
+      min-height: 56px;
+    }
+    .word-top-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
     .word-badge {
       background: #fed7aa;
       color: #9a3412;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 900;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 14px;
     }
     .word-emoji-box {
-      font-size: min(14vh, 84px);
+      font-size: 38px;
       line-height: 1;
-      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.12));
       animation: gentle-bob 2.5s infinite ease-in-out;
     }
     @keyframes gentle-bob {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    .word-name-text {
-      font-size: 28px;
-      font-weight: 900;
-      color: #9a3412;
-      letter-spacing: 2px;
+      50% { transform: translateY(-4px); }
     }
     .demo-play-btn {
-      width: 100%;
       background: var(--accent-blue);
       color: white;
       border: none;
       border-radius: 16px;
-      padding: 10px 14px;
+      padding: 9px 18px;
       font-family: var(--font-main);
       font-size: 14px;
       font-weight: 900;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
@@ -237,13 +237,15 @@
     }
     .demo-play-btn:active { transform: scale(0.96); }
 
-    /* ─── 文字マス列 ─── */
+    /* ─── 下部：文字マス列 ─── */
     .word-slots-wrapper {
       flex: 1;
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 16px;
+      min-height: 0;
     }
 
     .char-slot-box {
@@ -320,7 +322,7 @@
     /* マスと下ラベルをまとめるラッパー */
     .slot-item {
       flex: 1;
-      max-width: min(30vw, 320px);
+      max-width: min(34vw, calc(100vh - 210px), 340px);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -451,21 +453,23 @@
     <div class="gojuon-board" id="gojuonBoard"></div>
   </div>
 
-  <!-- ─── 画面2: GIGA向け 練習画面（横一列レイアウト） ─── -->
+  <!-- ─── 画面2: GIGA端末向け 練習画面（上部イラスト＋下部マス列） ─── -->
   <div class="screen" id="screenPractice">
     <div class="word-train-container">
       
-      <!-- 左端：イラストカード -->
-      <div class="word-illustration-card">
-        <div class="word-badge" id="introBadge">ことばの れんしゅう</div>
-        <div class="word-emoji-box" id="wordEmoji">🍉</div>
-        <div class="word-name-text" id="wordName">すいか</div>
+      <!-- 上部：イラスト・おてほんバー -->
+      <div class="word-top-bar">
+        <div class="word-top-left">
+          <div class="word-emoji-box" id="wordEmoji">🍉</div>
+          <div class="word-badge" id="introBadge">ことばの れんしゅう</div>
+          <span id="wordName" style="display:none;"></span>
+        </div>
         <button class="demo-play-btn" id="demoPlayBtn" onclick="playCurrentDemo()">
           <span>▶</span> おてほんをみる
         </button>
       </div>
 
-      <!-- 右側：文字マス列（1文字目なぞり ＋ 後の文字自力書き） -->
+      <!-- 下部：文字マス列（1文字目なぞり ＋ 後の文字自力書き） -->
       <div class="word-slots-wrapper" id="wordSlotsWrapper">
         <!-- JSでマス目を動的生成 -->
       </div>
