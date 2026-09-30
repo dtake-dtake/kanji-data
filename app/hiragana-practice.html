@@ -1161,16 +1161,17 @@
     // requireNoLoop: 結びがあってはいけない（220°未満）
     // requireLoopExit: 結びの後、右方向にはみ出して進む必要がある
     // requireCurve: 囲みカーブ（符号付き累積回転角150°以上）が必要
-    // requireWinding: 総曲がり量（符号なし、S字カーブ等で有効。200°以上）
+    // requireCrossback: 右に行った後、左に戻る動き（1画目をまたぐ）が必要
+    // requireWinding: 総曲がり量（符号なし、S字カーブ等で有効）
     // endDirRight: 書き終わりが右方向（れ）
     // endDirLeft: 書き終わりが左方向（わ）
     const STROKE_SPECIAL = {
       // 結び（ループ）の有無
       'る': { 0: { requireLoop: true } },
       'ろ': { 0: { requireNoLoop: true } },
-      'ぬ': { 1: { requireLoop: true, requireLoopExit: true } },
+      'ぬ': { 1: { requireLoop: true, requireLoopExit: true, requireCrossback: true } },
       'め': { 1: { requireNoLoop: true } },
-      'ね': { 1: { requireLoop: true, requireLoopExit: true } },
+      'ね': { 1: { requireLoop: true, requireLoopExit: true, requireCrossback: true } },
       'は': { 2: { requireLoop: true, requireLoopExit: true } },
       'ま': { 2: { requireLoop: true } },
       // 終端の方向
@@ -1248,6 +1249,32 @@
       if (spec.requireWinding) {
         const windDeg = computeTotalWinding(pts);
         if (windDeg < spec.requireWinding) return false;
+      }
+
+      // ── クロスバックチェック（ね・ぬ）──
+      // 右に行った後、左に戻る動きがあるか（1画目をまたぐ）
+      if (spec.requireCrossback) {
+        // 前半40%での最大x（右端）を見つける
+        const earlyEnd = Math.floor(pts.length * 0.4);
+        let earlyMaxX = -Infinity;
+        for (let i = 0; i <= earlyEnd; i++) {
+          if (pts[i].x > earlyMaxX) earlyMaxX = pts[i].x;
+        }
+        // 中盤25%~65%での最小x（左端）を見つける
+        const midStart = Math.floor(pts.length * 0.25);
+        const midEnd = Math.floor(pts.length * 0.65);
+        let midMinX = Infinity;
+        for (let i = midStart; i <= midEnd; i++) {
+          if (pts[i].x < midMinX) midMinX = pts[i].x;
+        }
+        // ストロークの横幅に対して20%以上戻っていなければNG
+        let totalMinX = Infinity, totalMaxX = -Infinity;
+        pts.forEach(p => {
+          if (p.x < totalMinX) totalMinX = p.x;
+          if (p.x > totalMaxX) totalMaxX = p.x;
+        });
+        const xRange = totalMaxX - totalMinX;
+        if (xRange > 5 && (earlyMaxX - midMinX) < xRange * 0.2) return false;
       }
 
       // ── ループ脱出チェック（ぬ・ね・は）──
