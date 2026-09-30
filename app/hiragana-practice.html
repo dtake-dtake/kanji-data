@@ -1043,9 +1043,11 @@
     // requireLoop: 結び（累積回転角280°以上）が必要
     // requireNoLoop: 結びがあってはいけない（220°未満）
     // requireLoopExit: 結びの後、右方向にはみ出して進む必要がある
+    // requireCurve: 囲みカーブ（累積回転角150°以上）が必要
     // endDirRight: 書き終わりが右方向（れ）
     // endDirLeft: 書き終わりが左方向（わ）
     const STROKE_SPECIAL = {
+      // 結び（ループ）の有無
       'る': { 0: { requireLoop: true } },
       'ろ': { 0: { requireNoLoop: true } },
       'ぬ': { 1: { requireLoop: true, requireLoopExit: true } },
@@ -1053,8 +1055,16 @@
       'ね': { 1: { requireLoop: true, requireLoopExit: true } },
       'は': { 2: { requireLoop: true, requireLoopExit: true } },
       'ま': { 2: { requireLoop: true } },
+      // 終端の方向
       'れ': { 1: { endDirRight: true } },
       'わ': { 1: { endDirLeft: true } },
+      // 囲みカーブ（直線で書くと弾かれる）
+      'す': { 1: { requireCurve: true } },   // 2画目: 右→下→左に囲む
+      'お': { 2: { requireCurve: true } },   // 3画目: 左に囲んで点
+      'な': { 3: { requireCurve: true } },   // 4画目: 左に囲んで点
+      'ほ': { 3: { requireLoop: true, requireLoopExit: true } }, // 4画目: はと同構造
+      'み': { 1: { requireCurve: true } },   // 2画目: 大きく囲む
+      'よ': { 1: { requireCurve: true } },   // 2画目: 下→左に囲む
     };
 
     // 累積回転角を計算（筆跡がどれだけ回転したかをラジアンで返す）
@@ -1086,6 +1096,13 @@
         const rotDeg = Math.abs(computeCumulativeRotation(pts) * 180 / Math.PI);
         if (spec.requireLoop  && rotDeg < 280) return false;  // 280°以上回ってないとNG
         if (spec.requireNoLoop && rotDeg > 220) return false;  // 220°以上回っていたらNG
+      }
+
+      // ── 囲みカーブチェック（す・お・な・み・よ等）──
+      // 結びほどではないが、しっかりカーブしている必要がある（150°以上）
+      if (spec.requireCurve) {
+        const rotDeg = Math.abs(computeCumulativeRotation(pts) * 180 / Math.PI);
+        if (rotDeg < 150) return false;  // 直線やゆるい弧では弾く
       }
 
       // ── ループ脱出チェック（ぬ・ね・は）──
