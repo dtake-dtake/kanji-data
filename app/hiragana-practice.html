@@ -428,6 +428,82 @@
       box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
     }
     .clear-btn.again { background: #f5f5f4; color: #57534e; }
+
+    /* ─── 確認モード ─── */
+    #screenVerify {
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 12px 24px 16px;
+    }
+    .verify-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      max-width: 900px;
+      height: 100%;
+    }
+    .verify-top-bar {
+      width: 100%;
+      background: linear-gradient(90deg, #ede9fe, #ffffff, #ede9fe);
+      border: 2.5px solid #a78bfa;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 8px 24px;
+      flex-shrink: 0;
+    }
+    .verify-char-input {
+      width: 56px;
+      height: 44px;
+      font-size: 28px;
+      font-weight: 900;
+      text-align: center;
+      border: 2.5px solid #a78bfa;
+      border-radius: 12px;
+      font-family: var(--font-main);
+      outline: none;
+    }
+    .verify-char-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+    .verify-go-btn {
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 8px 20px;
+      font-family: var(--font-main);
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .verify-go-btn:active { transform: scale(0.96); }
+    .verify-char-display {
+      font-size: 22px;
+      font-weight: 900;
+      color: #5b21b6;
+    }
+    .verify-slots-area {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      min-height: 0;
+    }
+    .verify-slot-item {
+      flex: 1;
+      max-width: min(45vw, calc(100vh - 220px), 420px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
   </style>
 </head>
 <body>
@@ -437,6 +513,7 @@
     <button class="header-btn" id="backBtn" onclick="handleBack()">← もどる</button>
     <div class="header-title" id="headerTitle">ひらがな ことばドリル</div>
     <div class="header-actions">
+      <button class="header-btn" id="verifyModeBtn" onclick="showVerifyScreen()" style="background:#ede9fe;color:#7c3aed;">🔍 確認</button>
       <button class="header-btn" id="hintToggleBtn" onclick="toggleHint()" style="display:none;">💡 ヒント</button>
     </div>
   </header>
@@ -474,6 +551,21 @@
         <!-- JSでマス目を動的生成 -->
       </div>
 
+    </div>
+  </div>
+
+  <!-- ─── 画面3: 確認モード ─── -->
+  <div class="screen" id="screenVerify">
+    <div class="verify-container">
+      <div class="verify-top-bar">
+        <span class="verify-char-display">文字を入力 →</span>
+        <input class="verify-char-input" id="verifyCharInput" type="text" maxlength="1" placeholder="あ">
+        <button class="verify-go-btn" onclick="loadVerifyChar()">表示</button>
+        <span class="verify-char-display" id="verifyCharName"></span>
+      </div>
+      <div class="verify-slots-area" id="verifySlotsArea">
+        <!-- JSで動的生成 -->
+      </div>
     </div>
   </div>
 
@@ -645,27 +737,36 @@
     function showScreen(name) {
       currentScreen = name;
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      const sc = document.getElementById(name === 'home' ? 'screenHome' : 'screenPractice');
+      const screenMap = { home: 'screenHome', practice: 'screenPractice', verify: 'screenVerify' };
+      const sc = document.getElementById(screenMap[name]);
       if (sc) sc.classList.add('active');
 
       const backBtn = document.getElementById('backBtn');
       const title = document.getElementById('headerTitle');
       const hintBtn = document.getElementById('hintToggleBtn');
+      const verifyBtn = document.getElementById('verifyModeBtn');
 
       if (name === 'home') {
         backBtn.style.visibility = 'hidden';
         hintBtn.style.display = 'none';
+        verifyBtn.style.display = 'inline-flex';
         title.textContent = 'ひらがな ことばドリル';
         renderHome();
-      } else {
+      } else if (name === 'practice') {
         backBtn.style.visibility = 'visible';
         hintBtn.style.display = 'inline-flex';
+        verifyBtn.style.display = 'none';
         title.textContent = `「${currentTargetChar}」の れんしゅう`;
+      } else if (name === 'verify') {
+        backBtn.style.visibility = 'visible';
+        hintBtn.style.display = 'none';
+        verifyBtn.style.display = 'none';
+        title.textContent = '🔍 文字の確認モード';
       }
     }
 
     function handleBack() {
-      if (currentScreen === 'practice') showScreen('home');
+      if (currentScreen === 'practice' || currentScreen === 'verify') showScreen('home');
     }
 
     // ─── ホーム画面描画 ───
@@ -1345,6 +1446,251 @@
       requestAnimationFrame(step);
     }
 
+    // ─── 確認モード ───
+    let verifyState = [];  // 確認用のスロット状態
+    let verifyChar = '';
+    let verifyActiveIdx = 0;
+    let verifyPts = [];
+    let isVerifyDrawing = false;
+
+    function showVerifyScreen() {
+      showScreen('verify');
+    }
+
+    function loadVerifyChar() {
+      const input = document.getElementById('verifyCharInput');
+      const ch = input.value.trim();
+      if (!ch) return;
+
+      const paths = getCharPaths(ch);
+      if (paths.length === 0) {
+        document.getElementById('verifyCharName').textContent = '❌ データなし';
+        return;
+      }
+
+      verifyChar = ch;
+      document.getElementById('verifyCharName').textContent = `「${ch}」 ${paths.length}画`;
+      buildVerifySlots(ch);
+    }
+
+    function buildVerifySlots(ch) {
+      const area = document.getElementById('verifySlotsArea');
+      area.innerHTML = '';
+      verifyState = [];
+      verifyActiveIdx = 0;
+      verifyPts = [];
+
+      const modes = [
+        { label: 'なぞり', showHint: true },
+        { label: '白背景', showHint: false }
+      ];
+
+      modes.forEach((mode, idx) => {
+        const item = document.createElement('div');
+        item.className = 'verify-slot-item';
+        item.id = `vItem_${idx}`;
+
+        const box = document.createElement('div');
+        box.className = 'char-slot-box';
+        box.id = `vBox_${idx}`;
+        box.innerHTML = `
+          <svg class="slot-grid" viewBox="0 0 109 109">
+            <line x1="54.5" y1="0" x2="54.5" y2="109" />
+            <line x1="0" y1="54.5" x2="109" y2="54.5" />
+            <line x1="0" y1="0" x2="109" y2="109" class="diag" />
+            <line x1="109" y1="0" x2="0" y2="109" class="diag" />
+          </svg>
+          <canvas class="slot-canvas" id="vCanvas_${idx}"></canvas>
+          <button class="slot-clear-btn" onclick="clearVerifySlot(${idx})">消す</button>
+        `;
+
+        const label = document.createElement('div');
+        label.className = `slot-label-badge ${idx === 0 ? 'trace' : 'self'}`;
+        label.textContent = mode.label;
+
+        item.appendChild(box);
+        item.appendChild(label);
+        area.appendChild(item);
+
+        const canvasEl = box.querySelector('.slot-canvas');
+        const ctxEl = canvasEl.getContext('2d');
+
+        verifyState.push({
+          char: ch,
+          isDone: false,
+          strokeIdx: 0,
+          canvas: canvasEl,
+          ctx: ctxEl,
+          hintFlash: null,
+          showHint: mode.showHint
+        });
+
+        canvasEl.onpointerdown = (e) => onVerifyDown(e, idx);
+        canvasEl.onpointermove = (e) => onVerifyMove(e, idx);
+        canvasEl.onpointerup   = (e) => onVerifyUp(e, idx);
+        canvasEl.onpointercancel = (e) => onVerifyUp(e, idx);
+      });
+
+      resizeVerifyCanvases();
+      setVerifyActive(0);
+      drawVerifySlots();
+    }
+
+    function resizeVerifyCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      verifyState.forEach(s => {
+        const rect = s.canvas.getBoundingClientRect();
+        const size = rect.width;
+        if (size === 0) return;
+        s.canvas.width = size * dpr;
+        s.canvas.height = size * dpr;
+        s.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      });
+    }
+
+    function setVerifyActive(idx) {
+      verifyActiveIdx = idx;
+      verifyState.forEach((s, i) => {
+        const box = document.getElementById(`vBox_${i}`);
+        if (box) {
+          box.classList.toggle('active-slot', i === verifyActiveIdx && !s.isDone);
+          box.classList.toggle('done-slot', s.isDone);
+        }
+      });
+    }
+
+    function drawVerifySlots() {
+      verifyState.forEach((s, i) => drawVerifySlot(i));
+    }
+
+    function drawVerifySlot(idx) {
+      const s = verifyState[idx];
+      if (!s) return;
+      const size = s.canvas.getBoundingClientRect().width;
+      if (size === 0) return;
+      const scale = size / SVG_VB;
+      const ctx = s.ctx;
+      ctx.clearRect(0, 0, size, size);
+
+      const paths = getCharPaths(s.char);
+      const needGuide = s.showHint;
+
+      paths.forEach((pStr, pIdx) => {
+        if (pIdx < s.strokeIdx) {
+          drawSvgPath(ctx, pStr, scale, '#292524', 3.2);
+          return;
+        }
+        if (needGuide && !s.isDone) {
+          const col = (pIdx === s.strokeIdx) ? '#94a3b8' : '#e2e8f0';
+          const wid = (pIdx === s.strokeIdx) ? 3.0 : 2.2;
+          drawSvgPath(ctx, pStr, scale, col, wid);
+        }
+      });
+
+      // 書いている途中の線
+      if (idx === verifyActiveIdx && verifyPts.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 3.5 * scale;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        verifyPts.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x * scale, p.y * scale);
+          else ctx.lineTo(p.x * scale, p.y * scale);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ヒントフラッシュ
+      if (s.hintFlash) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(234, 88, 12, 0.6)';
+        ctx.beginPath();
+        ctx.arc(s.hintFlash.x * scale, s.hintFlash.y * scale, 8 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 完了チェック
+      if (s.isDone) {
+        paths.forEach(pStr => drawSvgPath(ctx, pStr, scale, '#292524', 3.2));
+      }
+    }
+
+    function onVerifyDown(e, idx) {
+      if (verifyState[idx].isDone) return;
+      setVerifyActive(idx);
+      isVerifyDrawing = true;
+      e.target.setPointerCapture(e.pointerId);
+      const rect = verifyState[idx].canvas.getBoundingClientRect();
+      const scale = rect.width / SVG_VB;
+      verifyPts = [{ x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale }];
+      drawVerifySlot(idx);
+    }
+
+    function onVerifyMove(e, idx) {
+      if (!isVerifyDrawing || idx !== verifyActiveIdx) return;
+      const rect = verifyState[idx].canvas.getBoundingClientRect();
+      const scale = rect.width / SVG_VB;
+      verifyPts.push({ x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale });
+      drawVerifySlot(idx);
+    }
+
+    function onVerifyUp(e, idx) {
+      if (!isVerifyDrawing || idx !== verifyActiveIdx) return;
+      isVerifyDrawing = false;
+      if (verifyPts.length < 3) { verifyPts = []; drawVerifySlot(idx); return; }
+      checkVerifyStroke(idx);
+    }
+
+    function checkVerifyStroke(idx) {
+      const s = verifyState[idx];
+      const paths = getCharPaths(s.char);
+      if (s.strokeIdx >= paths.length) return;
+
+      const targetPath = paths[s.strokeIdx];
+      const isTrace = (idx === 0); // 最初のマスがなぞり
+      const match = verifyStroke(targetPath, verifyPts, isTrace, s.char, s.strokeIdx);
+
+      if (match) {
+        AudioEngine.playCorrect();
+        s.strokeIdx++;
+        verifyPts = [];
+        s.hintFlash = null;
+        drawVerifySlot(idx);
+
+        if (s.strokeIdx >= paths.length) {
+          s.isDone = true;
+          setVerifyActive(verifyActiveIdx);
+          drawVerifySlot(idx);
+        }
+      } else {
+        AudioEngine.playMiss();
+        const startPt = getPathStartPoint(targetPath);
+        s.hintFlash = startPt;
+        verifyPts = [];
+        drawVerifySlot(idx);
+        setTimeout(() => { s.hintFlash = null; drawVerifySlot(idx); }, 1000);
+      }
+    }
+
+    // 確認モード用の verifyStroke（本体と同じロジック）
+    function verifyStroke_verify(pathStr, pts, isTrace, char, strokeIdx) {
+      return verifyStroke(pathStr, pts, isTrace, char, strokeIdx);
+    }
+
+    function clearVerifySlot(idx) {
+      const s = verifyState[idx];
+      s.isDone = false;
+      s.strokeIdx = 0;
+      s.hintFlash = null;
+      verifyPts = [];
+      setVerifyActive(idx);
+      drawVerifySlot(idx);
+    }
+
     // ─── 初期化 ───
     window.addEventListener('DOMContentLoaded', () => {
       renderHome();
@@ -1353,6 +1699,15 @@
           resizeAllSlotCanvases();
           drawAllSlots();
         }
+        if (currentScreen === 'verify') {
+          resizeVerifyCanvases();
+          drawVerifySlots();
+        }
+      });
+
+      // 確認モードでEnterキーで表示
+      document.getElementById('verifyCharInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') loadVerifyChar();
       });
     });
   </script>
