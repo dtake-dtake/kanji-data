@@ -1234,7 +1234,7 @@
       if (spec.requireLoop || spec.requireNoLoop) {
         const rotDeg = Math.abs(computeCumulativeRotation(pts) * 180 / Math.PI);
         if (spec.requireLoop  && rotDeg < 280) return false;
-        if (spec.requireNoLoop && rotDeg > 220) return false;
+        if (spec.requireNoLoop && rotDeg > 250) return false;  // ぬ(280°)との間に余裕を持たせる
       }
 
       // ── 囲みカーブチェック（す・お・な・み・よ等）──
