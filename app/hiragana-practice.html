@@ -431,77 +431,70 @@
 
     /* ─── 確認モード ─── */
     #screenVerify {
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 8px 16px 12px;
-      overflow-y: auto;
+      align-items: stretch;
+      justify-content: center;
+      padding: 8px 16px;
     }
     .verify-container {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
+      flex-direction: row;
+      gap: 14px;
       width: 100%;
-      max-width: 1100px;
+      max-width: 1200px;
       height: 100%;
+      margin: 0 auto;
     }
-    /* 50音グリッド */
-    .verify-picker {
-      width: 100%;
+    /* 左サイドバー：50音ピッカー */
+    .verify-sidebar {
+      flex-shrink: 0;
+      width: 190px;
       background: #faf5ff;
       border: 2px solid #c4b5fd;
       border-radius: 16px;
-      padding: 8px 10px;
-      flex-shrink: 0;
+      padding: 8px 6px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 6px;
+      overflow-y: auto;
     }
     .verify-picker-row {
       display: flex;
       justify-content: center;
-      gap: 3px;
+      gap: 2px;
     }
     .verify-pick-btn {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border: 1.5px solid #ddd6fe;
-      border-radius: 8px;
+      border-radius: 7px;
       background: white;
       font-family: var(--font-main);
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       color: #374151;
       cursor: pointer;
       transition: all 0.1s;
       padding: 0;
-      line-height: 32px;
+      line-height: 30px;
       text-align: center;
     }
     .verify-pick-btn:hover { background: #ede9fe; border-color: #a78bfa; }
     .verify-pick-btn.active { background: #7c3aed; color: white; border-color: #7c3aed; }
     .verify-pick-btn.empty { visibility: hidden; }
-    /* 情報バー */
-    .verify-info-bar {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      flex-shrink: 0;
-    }
-    .verify-char-display {
-      font-size: 20px;
+    .verify-sidebar-info {
+      text-align: center;
+      font-size: 18px;
       font-weight: 900;
       color: #5b21b6;
+      padding: 4px 0;
     }
     .verify-reset-btn {
+      width: 100%;
       background: #7c3aed;
       color: white;
       border: none;
       border-radius: 12px;
-      padding: 6px 18px;
+      padding: 7px 0;
       font-family: var(--font-main);
       font-size: 14px;
       font-weight: 900;
@@ -509,18 +502,18 @@
       transition: all 0.15s;
     }
     .verify-reset-btn:active { transform: scale(0.96); }
+    /* 右：マス領域 */
     .verify-slots-area {
       flex: 1;
-      width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 24px;
-      min-height: 0;
+      gap: 20px;
+      min-width: 0;
     }
     .verify-slot-item {
       flex: 1;
-      max-width: min(42vw, calc(100vh - 280px), 380px);
+      max-width: min(40vw, calc(100vh - 160px), 400px);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -579,13 +572,13 @@
   <!-- ─── 画面3: 確認モード ─── -->
   <div class="screen" id="screenVerify">
     <div class="verify-container">
-      <div class="verify-picker" id="verifyPicker">
-        <!-- JSで50音グリッドを生成 -->
-      </div>
-      <div class="verify-info-bar">
-        <span class="verify-char-display" id="verifyCharName">↑ 文字をタップ</span>
+      <!-- 左サイドバー：50音ピッカー -->
+      <div class="verify-sidebar" id="verifySidebar">
+        <div id="verifyPicker"><!-- JSで50音を生成 --></div>
+        <div class="verify-sidebar-info" id="verifyCharName">文字をタップ</div>
         <button class="verify-reset-btn" onclick="resetVerifySlots()">🔄 リセット</button>
       </div>
+      <!-- 右：マス領域 -->
       <div class="verify-slots-area" id="verifySlotsArea">
         <!-- JSで動的生成 -->
       </div>
