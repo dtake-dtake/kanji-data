@@ -1330,8 +1330,8 @@
         }
         if ((hits / (nCheck - 1)) < 0.55) return false;
 
-        // なぞりでも特殊チェックを適用
-        return applySpecialChecks(pts, char, strokeIdx);
+        // なぞりモードは位置チェックで十分（特殊チェックは自力書きのみ）
+        return true;
       }
 
       // ─── 自力書きマス（2文字目以降）: 方向フロー方式 ───
