@@ -1174,9 +1174,9 @@
       'ね': { 1: { requireLoop: true, requireLoopExit: true, requireCrossback: true } },
       'は': { 2: { requireLoop: true, requireLoopExit: true } },
       'ま': { 2: { requireLoop: true } },
-      // 終端の方向
-      'れ': { 1: { endDirRight: true } },
-      'わ': { 1: { endDirLeft: true } },
+      // 終端の方向 + クロスバック
+      'れ': { 1: { endDirRight: true, requireCrossback: true } },
+      'わ': { 1: { endDirLeft: true, requireCrossback: true } },
       // 囲みカーブ（直線で書くと弾かれる）
       'す': { 1: { requireCurve: true } },   // 2画目: 右→下→左に囲む
       'お': { 1: { requireCurve: true } },   // 2画目: 左に大きく囲む（3画目は点）
