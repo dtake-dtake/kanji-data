@@ -582,6 +582,11 @@
       <div class="verify-slots-area" id="verifySlotsArea">
         <!-- JSで動的生成 -->
       </div>
+      <!-- 診断パネル -->
+      <div id="verifyDiag" style="display:none; position:fixed; bottom:8px; right:8px; background:#1e293b; color:#e2e8f0; border-radius:10px; padding:10px 14px; font-size:13px; font-family:monospace; line-height:1.6; z-index:100; min-width:260px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+        <div style="font-weight:bold; margin-bottom:4px; font-size:14px;" id="diagTitle">判定結果</div>
+        <div id="diagBody"></div>
+      </div>
     </div>
   </div>
 
@@ -1792,10 +1797,11 @@
       if (s.strokeIdx >= paths.length) return;
 
       const targetPath = paths[s.strokeIdx];
-      const isTrace = (idx === 0); // 最初のマスがなぞり
-      const match = verifyStroke(targetPath, verifyPts, isTrace, s.char, s.strokeIdx);
+      const isTrace = (idx === 0);
+      const diag = verifyStrokeDiag(targetPath, verifyPts, isTrace, s.char, s.strokeIdx);
+      showDiag(diag, `「${s.char}」${s.strokeIdx + 1}画目`);
 
-      if (match) {
+      if (diag.pass) {
         AudioEngine.playCorrect();
         s.strokeIdx++;
         verifyPts = [];
@@ -1817,9 +1823,139 @@
       }
     }
 
-    // 確認モード用の verifyStroke（本体と同じロジック）
-    function verifyStroke_verify(pathStr, pts, isTrace, char, strokeIdx) {
-      return verifyStroke(pathStr, pts, isTrace, char, strokeIdx);
+    // 確認モード用：診断情報付きの判定
+    function verifyStrokeDiag(pathStr, pts, isTrace, char, strokeIdx) {
+      const diag = { pass: false, checks: [] };
+      const ck = (name, val, threshold, op, unit) => {
+        const ok = op === '<=' ? val <= threshold : val >= threshold;
+        diag.checks.push({ name, val: val.toFixed(1), threshold, op, unit: unit || '', ok });
+        return ok;
+      };
+
+      const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathEl.setAttribute('d', pathStr);
+      const totalLen = pathEl.getTotalLength();
+      if (totalLen < 1) { diag.pass = true; return diag; }
+
+      const uStart = pts[0];
+      const uEnd = pts[pts.length - 1];
+
+      // なぞりモード
+      if (isTrace) {
+        diag.pass = verifyStroke(pathStr, pts, isTrace, char, strokeIdx);
+        diag.checks.push({ name: 'なぞり判定', val: diag.pass ? 'OK' : 'NG', ok: diag.pass });
+        return diag;
+      }
+
+      // 自力書きモード
+      const userLen = pts.reduce((sum, p, i) => i === 0 ? 0 : sum + Math.hypot(p.x - pts[i-1].x, p.y - pts[i-1].y), 0);
+      const minLen = Math.max(totalLen * 0.2, 8);
+      if (!ck('最低長さ', userLen, minLen, '>=', '')) return diag;
+
+      const posTol = 35;
+      const refStart = pathEl.getPointAtLength(0);
+      const refEnd = pathEl.getPointAtLength(totalLen);
+      const startDist = Math.hypot(uStart.x - refStart.x, uStart.y - refStart.y);
+      const endDist = Math.hypot(uEnd.x - refEnd.x, uEnd.y - refEnd.y);
+      if (!ck('始点距離', startDist, posTol, '<=', '')) return diag;
+      if (!ck('終点距離', endDist, posTol, '<=', '')) return diag;
+
+      // 方向フロー
+      const N = 10;
+      const refPts = [];
+      for (let i = 0; i <= N; i++) {
+        const p = pathEl.getPointAtLength((i / N) * totalLen);
+        refPts.push({ x: p.x, y: p.y });
+      }
+      const cumLen = [0];
+      for (let i = 1; i < pts.length; i++) {
+        cumLen.push(cumLen[i-1] + Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y));
+      }
+      const userTotalLen = cumLen[cumLen.length - 1];
+      if (userTotalLen < 1) return diag;
+      const userResampled = [];
+      for (let i = 0; i <= N; i++) {
+        const targetLen = (i / N) * userTotalLen;
+        let j = 1;
+        while (j < cumLen.length - 1 && cumLen[j] < targetLen) j++;
+        const segLen = cumLen[j] - cumLen[j-1];
+        const t = segLen > 0 ? (targetLen - cumLen[j-1]) / segLen : 0;
+        userResampled.push({ x: pts[j-1].x + t * (pts[j].x - pts[j-1].x), y: pts[j-1].y + t * (pts[j].y - pts[j-1].y) });
+      }
+      let dirHits = 0, dirChecked = 0;
+      for (let i = 0; i < N; i++) {
+        const rdx = refPts[i+1].x - refPts[i].x, rdy = refPts[i+1].y - refPts[i].y;
+        const udx = userResampled[i+1].x - userResampled[i].x, udy = userResampled[i+1].y - userResampled[i].y;
+        const rLen = Math.hypot(rdx, rdy), uLen = Math.hypot(udx, udy);
+        if (rLen < 0.5 || uLen < 0.3) { dirHits++; dirChecked++; continue; }
+        const cos = (rdx * udx + rdy * udy) / (rLen * uLen);
+        dirChecked++;
+        if (cos > 0.1) dirHits++;
+      }
+      const dirPct = dirChecked > 0 ? (dirHits / dirChecked) * 100 : 100;
+      if (!ck('方向一致', dirPct, 55, '>=', '%')) return diag;
+
+      // 特殊チェック
+      const specMap = STROKE_SPECIAL[char];
+      if (specMap && specMap[strokeIdx]) {
+        const spec = specMap[strokeIdx];
+        const rotDeg = Math.abs(computeCumulativeRotation(pts) * 180 / Math.PI);
+        const windDeg = computeTotalWinding(pts);
+
+        if (spec.requireLoop) { if (!ck('結び(累積)', rotDeg, 280, '>=', '°')) return diag; }
+        if (spec.requireNoLoop) { if (!ck('結びなし', rotDeg, 260, '<=', '°')) return diag; }
+        if (spec.requireCurve) { if (!ck('囲みカーブ', rotDeg, 150, '>=', '°')) return diag; }
+        if (spec.requireWinding) { if (!ck('総曲がり', windDeg, spec.requireWinding, '>=', '°')) return diag; }
+
+        if (spec.requireCrossback) {
+          const earlyEnd = Math.floor(pts.length * 0.4);
+          let earlyMaxX = -Infinity;
+          for (let i = 0; i <= earlyEnd; i++) if (pts[i].x > earlyMaxX) earlyMaxX = pts[i].x;
+          const midStart = Math.floor(pts.length * 0.25), midEnd = Math.floor(pts.length * 0.65);
+          let midMinX = Infinity;
+          for (let i = midStart; i <= midEnd; i++) if (pts[i].x < midMinX) midMinX = pts[i].x;
+          let totalMinX = Infinity, totalMaxX = -Infinity;
+          pts.forEach(p => { if (p.x < totalMinX) totalMinX = p.x; if (p.x > totalMaxX) totalMaxX = p.x; });
+          const xRange = totalMaxX - totalMinX;
+          const crossPct = xRange > 5 ? ((earlyMaxX - midMinX) / xRange * 100) : 100;
+          if (!ck('またぎ', crossPct, 20, '>=', '%')) return diag;
+        }
+
+        if (spec.requireLoopExit) {
+          const tailIdx = Math.floor(pts.length * 0.85);
+          if (tailIdx < pts.length - 2) {
+            const exitDx = pts[pts.length - 1].x - pts[tailIdx].x;
+            if (!ck('脱出(右)', exitDx, 1, '>=', '')) return diag;
+          }
+        }
+
+        if (spec.endDirRight || spec.endDirLeft) {
+          const tailIdx = Math.floor(pts.length * 0.80);
+          if (tailIdx < pts.length - 2) {
+            const tailDx = pts[pts.length - 1].x - pts[tailIdx].x;
+            if (spec.endDirRight) { if (!ck('終端→右', tailDx, 1, '>=', '')) return diag; }
+            if (spec.endDirLeft) { if (!ck('終端→左', tailDx, -1, '<=', '')) return diag; }
+          }
+        }
+      }
+
+      diag.pass = true;
+      return diag;
+    }
+
+    // 診断パネルを表示
+    function showDiag(diag, strokeLabel) {
+      const panel = document.getElementById('verifyDiag');
+      const title = document.getElementById('diagTitle');
+      const body = document.getElementById('diagBody');
+      const icon = diag.pass ? '✅' : '❌';
+      title.innerHTML = `${icon} ${strokeLabel}`;
+      body.innerHTML = diag.checks.map(c => {
+        if (c.threshold === undefined) return `${c.ok ? '✅' : '❌'} ${c.name}: ${c.val}`;
+        const mark = c.ok ? '✅' : '❌';
+        return `${mark} ${c.name}: <b>${c.val}${c.unit}</b> (${c.op}${c.threshold}${c.unit})`;
+      }).join('<br>');
+      panel.style.display = 'block';
     }
 
     function clearVerifySlot(idx) {
