@@ -1351,10 +1351,13 @@
       }, 0);
       if (userLen < Math.max(totalLen * 0.2, 8)) return false;
 
-      // 1.5 ゆるい始点位置チェック（完全に見当違いの場所に書くのを防ぐ）
+      // 1.5 ゆるい始点・終点の位置チェック（見当違いの場所に書くのを防ぐ）
+      const posTol = 35;  // 許容距離（≈32%）
       const refStart = pathEl.getPointAtLength(0);
+      const refEnd = pathEl.getPointAtLength(totalLen);
       const startDist = Math.hypot(uStart.x - refStart.x, uStart.y - refStart.y);
-      if (startDist > 40) return false;  // 40SVG単位（≈37%）以上ずれていたらNG
+      const endDist = Math.hypot(uEnd.x - refEnd.x, uEnd.y - refEnd.y);
+      if (startDist > posTol || endDist > posTol) return false;
 
       // 2. お手本パスをN+1点にリサンプリング
       const N = 10; // 区間数
