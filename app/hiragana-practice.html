@@ -598,8 +598,14 @@
     </div>
   </div>
 
-  <!-- ひらがなストロークデータ -->
-  <script src="../data/hiragana.js"></script>
+  <!-- ひらがなストロークデータ（JSONから直接読み込み→エディタの変更が即反映） -->
+  <script>
+    // hiragana.json を fetch で読み込み（hiragana.js は不要）
+    const _hiraganaReady = fetch('../data/hiragana.json')
+      .then(r => r.json())
+      .then(data => { window.HIRAGANA_DATA = data; })
+      .catch(e => console.error('hiragana.json load error:', e));
+  </script>
 
   <script>
     // ─── 46文字の「イラスト・身近なことば」辞書 ───
@@ -1816,7 +1822,8 @@
 
     // ─── 初期化 ───
     window.addEventListener('DOMContentLoaded', () => {
-      renderHome();
+      // JSONの読み込み完了を待ってからホーム画面を描画
+      _hiraganaReady.then(() => renderHome());
       window.addEventListener('resize', () => {
         if (currentScreen === 'practice') {
           resizeAllSlotCanvases();
