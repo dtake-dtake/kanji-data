@@ -958,7 +958,7 @@
       paths.forEach((pStr, pIdx) => {
         // すでに正解した画は濃い黒で描画
         if (pIdx < s.strokeIdx) {
-          drawSvgPath(ctx, pStr, scale, '#292524', 2.5);
+          drawSvgPath(ctx, pStr, scale, '#292524', 2.0);
           return;
         }
 
@@ -966,7 +966,7 @@
         if (needGuide && !s.isDone) {
           // 現在書く画は少し濃いグレー、後の画は薄いグレー
           const col = (pIdx === s.strokeIdx) ? '#94a3b8' : '#e2e8f0';
-          const wid = (pIdx === s.strokeIdx) ? 3.0 : 2.2;
+          const wid = (pIdx === s.strokeIdx) ? 2.5 : 1.8;
           drawSvgPath(ctx, pStr, scale, col, wid);
         }
       });
@@ -987,7 +987,7 @@
       if (idx === activeSlotIdx && currentPts.length > 1) {
         ctx.save();
         ctx.strokeStyle = '#2563eb';
-        ctx.lineWidth = 3.5 * scale;
+        ctx.lineWidth = 2.8 * scale;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
@@ -1474,7 +1474,7 @@
 
         // 前の画を黒で表示
         for (let i = 0; i < curPathIdx; i++) {
-          drawSvgPath(ctx, paths[i], scale, '#292524', 2.5);
+          drawSvgPath(ctx, paths[i], scale, '#292524', 2.0);
         }
 
         const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1484,7 +1484,7 @@
 
         ctx.save();
         ctx.strokeStyle = '#ea580c';
-        ctx.lineWidth = 3.5 * scale;
+        ctx.lineWidth = 2.8 * scale;
         ctx.lineCap = 'round';
         ctx.beginPath();
         const nPts = Math.max(5, Math.ceil(currentLen / 2));
@@ -1706,12 +1706,12 @@
 
       paths.forEach((pStr, pIdx) => {
         if (pIdx < s.strokeIdx) {
-          drawSvgPath(ctx, pStr, scale, '#292524', 2.5);
+          drawSvgPath(ctx, pStr, scale, '#292524', 2.0);
           return;
         }
         if (needGuide && !s.isDone) {
           const col = (pIdx === s.strokeIdx) ? '#94a3b8' : '#e2e8f0';
-          const wid = (pIdx === s.strokeIdx) ? 3.0 : 2.2;
+          const wid = (pIdx === s.strokeIdx) ? 2.5 : 1.8;
           drawSvgPath(ctx, pStr, scale, col, wid);
         }
       });
@@ -1720,7 +1720,7 @@
       if (idx === verifyActiveIdx && verifyPts.length > 1) {
         ctx.save();
         ctx.strokeStyle = '#2563eb';
-        ctx.lineWidth = 3.5 * scale;
+        ctx.lineWidth = 2.8 * scale;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
@@ -1744,7 +1744,7 @@
 
       // 完了チェック
       if (s.isDone) {
-        paths.forEach(pStr => drawSvgPath(ctx, pStr, scale, '#292524', 2.5));
+        paths.forEach(pStr => drawSvgPath(ctx, pStr, scale, '#292524', 2.0));
       }
     }
 
