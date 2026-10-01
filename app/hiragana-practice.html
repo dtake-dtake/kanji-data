@@ -758,6 +758,7 @@
     // ─── 画面遷移 ───
     function showScreen(name) {
       currentScreen = name;
+      sessionStorage.setItem('current_screen', name);
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       const screenMap = { home: 'screenHome', practice: 'screenPractice', verify: 'screenVerify' };
       const sc = document.getElementById(screenMap[name]);
@@ -1592,6 +1593,9 @@
         b.classList.toggle('active', b.textContent === ch);
       });
 
+      // 選択状態を保存（リロード時に復元）
+      sessionStorage.setItem('verify_char', ch);
+
       const paths = getCharPaths(ch);
       if (paths.length === 0) {
         document.getElementById('verifyCharName').textContent = `「${ch}」 ❌ データなし`;
@@ -1827,8 +1831,17 @@
 
     // ─── 初期化 ───
     window.addEventListener('DOMContentLoaded', () => {
-      // JSONの読み込み完了を待ってからホーム画面を描画
-      _hiraganaReady.then(() => renderHome());
+      _hiraganaReady.then(() => {
+        // 前回の画面を復元
+        const savedScreen = sessionStorage.getItem('current_screen');
+        if (savedScreen === 'verify') {
+          showVerifyScreen();
+          const savedChar = sessionStorage.getItem('verify_char');
+          if (savedChar) selectVerifyChar(savedChar);
+        } else {
+          renderHome();
+        }
+      });
       window.addEventListener('resize', () => {
         if (currentScreen === 'practice') {
           resizeAllSlotCanvases();
