@@ -1545,9 +1545,21 @@
         ['や','','ゆ','','よ'],
         ['ら','り','る','れ','ろ'],
         ['わ','を','ん','',''],
+        [],  // 区切り
+        ['が','ぎ','ぐ','げ','ご'],
+        ['ざ','じ','ず','ぜ','ぞ'],
+        ['だ','ぢ','づ','で','ど'],
+        ['ば','び','ぶ','べ','ぼ'],
+        ['ぱ','ぴ','ぷ','ぺ','ぽ'],
       ];
 
       layout.forEach(row => {
+        if (row.length === 0) {
+          const hr = document.createElement('div');
+          hr.style.cssText = 'width:100%;height:1px;background:#c4b5fd;margin:2px 0;';
+          picker.appendChild(hr);
+          return;
+        }
         const rowEl = document.createElement('div');
         rowEl.className = 'verify-picker-row';
         row.forEach(ch => {
