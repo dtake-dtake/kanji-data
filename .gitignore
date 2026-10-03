@@ -19,6 +19,8 @@ docs/
 /stroke-editor.html
 /batch-adjust.html
 /review-list.html
+/kanji-skill.html
+/kana-skill.html
 
 # Dev server / scripts (local dev only)
 scripts/

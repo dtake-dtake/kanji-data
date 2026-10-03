@@ -54,27 +54,31 @@
     header {
       background-color: var(--panel-bg);
       border-bottom: 1px solid var(--border);
-      padding: 10px 20px;
+      padding: 6px 14px;
       display: flex;
       align-items: center;
-      gap: 15px;
-      flex-wrap: wrap;
+      gap: 8px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      flex-shrink: 0;
     }
 
     h1 {
-      font-size: 1.2rem;
-      margin-right: 20px;
+      font-size: 1.05rem;
+      margin-right: 8px;
       color: var(--accent);
+      white-space: nowrap;
     }
 
     input, select, button {
       font-family: inherit;
-      font-size: 1rem;
-      padding: 6px 12px;
+      font-size: 12px;
+      padding: 4px 8px;
       border: 1px solid var(--border);
       border-radius: 4px;
       background-color: #fff;
       color: var(--text);
+      white-space: nowrap;
     }
 
     button {
@@ -102,18 +106,20 @@
     }
 
     .kanji-input {
-      width: 80px;
+      width: 60px;
       text-align: center;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
+      font-weight: bold;
     }
 
     /* Main Content */
     main {
       flex: 1;
       display: flex;
-      padding: 20px;
-      gap: 20px;
+      padding: 8px 12px;
+      gap: 10px;
       overflow: hidden;
+      min-height: 0;
     }
 
     .editor-section {
@@ -123,16 +129,34 @@
       background-color: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 20px;
+      padding: 8px 12px;
       align-items: center;
       position: relative;
+      overflow-y: auto;
+      min-height: 0;
+      min-width: 0;
     }
 
     .editor-toolbar {
       display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
       width: 100%;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      flex-shrink: 0;
+    }
+
+    .editor-toolbar button {
+      font-size: 11px;
+      padding: 4px 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
       justify-content: center;
     }
 
@@ -144,13 +168,14 @@
 
     .svg-container {
       width: 100%;
-      max-width: 700px;
+      max-width: min(600px, calc(100vh - 140px));
       aspect-ratio: 1;
       background-color: #eee8df;
       border: 1px solid var(--border);
       border-radius: 6px;
       position: relative;
       user-select: none;
+      flex-shrink: 0;
     }
 
     svg#main-editor {
@@ -215,18 +240,98 @@
     .cp-bezier { fill: var(--point-cp); stroke: #888; stroke-width: 0.5; }
 
     .sidebar {
-      width: 300px;
+      width: 240px;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 10px;
       overflow-y: auto;
+    }
+
+    .sidebar.left-sidebar {
+      width: 200px;
+    }
+
+    .char-nav-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-bottom: 8px;
+    }
+    .char-nav-tab {
+      flex: 1 0 28px;
+      padding: 4px 2px;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .char-nav-tab:hover { background: var(--hover); }
+    .char-nav-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    .char-search-box {
+      margin-bottom: 8px;
+    }
+    .char-search-input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+      box-sizing: border-box;
+      background: #fff;
+    }
+    .char-search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .char-grid-container {
+      max-height: calc(100vh - 230px);
+      overflow-y: auto;
+      padding-right: 3px;
+    }
+    .char-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+    .char-cell {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1.15rem;
+      font-family: 'Yu Mincho', 'Noto Serif JP', serif;
+      transition: all 0.12s;
+      position: relative;
+    }
+    .char-cell:hover {
+      border-color: var(--accent);
+      background: #fff9f6;
+      transform: translateY(-1px);
+    }
+    .char-cell.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      font-weight: bold;
     }
 
     .panel {
       background-color: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 15px;
+      padding: 12px;
     }
 
     .panel h2 {
@@ -332,9 +437,13 @@
 <body>
 
   <header>
-    <h1>漢字 筆順エディタ</h1>
+    <h1 id="editor-title">漢字 筆順エディタ</h1>
     <div>
-      <input type="text" id="kanji-input" class="kanji-input" placeholder="漢字" maxlength="1">
+      <select id="data-mode" style="font-weight:bold; background:#fff3e0;">
+        <option value="kanji">漢字</option>
+        <option value="katakana">カタカナ</option>
+      </select>
+      <input type="text" id="kanji-input" class="kanji-input" placeholder="文字" maxlength="1">
       <select id="grade-select">
         <option value="1">小1</option>
         <option value="2">小2</option>
@@ -343,6 +452,13 @@
         <option value="5">小5</option>
         <option value="6">小6</option>
         <option value="0">全学年</option>
+      </select>
+      <select id="katakana-row-select" style="display:none;">
+        <option value="all">全部</option>
+        <option value="seion">清音</option>
+        <option value="dakuon">濁音</option>
+        <option value="handakuon">半濁音</option>
+        <option value="small">小文字</option>
       </select>
     </div>
     <button id="load-btn">読み込み</button>
@@ -365,15 +481,41 @@
   </header>
 
   <main>
+    <div class="sidebar left-sidebar">
+      <div class="panel">
+        <h2 id="left-panel-title">文字選択</h2>
+        <div class="char-nav-tabs" id="char-nav-tabs">
+          <button class="char-nav-tab active" data-grade="1">小1</button>
+          <button class="char-nav-tab" data-grade="2">小2</button>
+          <button class="char-nav-tab" data-grade="3">小3</button>
+          <button class="char-nav-tab" data-grade="4">小4</button>
+          <button class="char-nav-tab" data-grade="5">小5</button>
+          <button class="char-nav-tab" data-grade="6">小6</button>
+          <button class="char-nav-tab" data-grade="0">全学年</button>
+        </div>
+        <div class="char-search-box">
+          <input type="text" id="char-search-input" class="char-search-input" placeholder="🔍 漢字を検索...">
+        </div>
+        <div class="char-grid-container">
+          <div id="char-grid" class="char-grid">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="editor-section">
       <div class="editor-toolbar">
-        <button id="toggle-move-mode" title="ストローク全体を移動します">全体移動: OFF</button>
+        <button id="toggle-move-mode" title="選択中の画全体を移動します">1画移動: OFF</button>
+        <button id="toggle-all-move-mode" title="全画をまとめて同時に移動します" style="background:#0891b2; color:white; border-color:#0891b2;">全画移動: OFF</button>
         <button id="toggle-rotate-mode" title="支点を設定してクリック→他の点をドラッグで回転">回転: OFF</button>
-        <span style="margin-left:auto; display:flex; align-items:center; gap:4px;">
-          <button id="zoom-out-btn" title="縮小" style="min-width:28px;">−</button>
-          <span id="zoom-level" style="font-size:12px; min-width:40px; text-align:center;">100%</span>
-          <button id="zoom-in-btn" title="拡大" style="min-width:28px;">+</button>
-          <button id="zoom-reset-btn" title="リセット" style="font-size:11px;">リセット</button>
+        <button id="clear-stroke-btn" title="選択中の画をクリアします">🗑️ 画クリア</button>
+        <button id="clear-all-btn" title="全ての画をクリアします" style="background:#dc2626; color:white; border-color:#dc2626;">🗑️ 全クリア</button>
+        <span style="margin-left:auto; display:flex; align-items:center; gap:3px; flex-shrink:0;">
+          <button id="zoom-out-btn" title="縮小" style="min-width:24px; padding:3px 6px;">−</button>
+          <span id="zoom-level" style="font-size:11px; min-width:34px; text-align:center;">100%</span>
+          <button id="zoom-in-btn" title="拡大" style="min-width:24px; padding:3px 6px;">+</button>
+          <button id="zoom-reset-btn" title="リセット" style="font-size:11px; padding:3px 6px;">リセット</button>
         </span>
       </div>
       <div class="svg-container" id="svg-container">
@@ -456,6 +598,8 @@
 
   <!-- Load Kanji Data -->
   <script src="../data/kanji/all_grades.js"></script>
+  <!-- Load Katakana Data -->
+  <script src="../data/katakana.js"></script>
 
   <script>
     // --- State ---
@@ -463,10 +607,14 @@
     let currentStrokeIndex = -1;
     let parsedStrokes = []; // Array of segment arrays
     let selectedSegmentIndex = -1; // For segment delete
+    let dataMode = 'kanji'; // 'kanji' or 'katakana'
     let isWholeMoveMode = false;
+    let isAllStrokeMoveMode = false; // 全画一括移動モード
     let isRotateMode = false;
     let pivotPoint = null; // { x, y } - rotation pivot
     let selectedStrokes = new Set(); // For multi-stroke group move
+    let currentCharNavGrade = 1; // 左サイドバーの選択中タブ学年
+    let currentKataTab = 'all'; // カタカナ選択中タブ
     
     // History
     let history = [];
@@ -496,6 +644,22 @@
       5: [...'圧移因永営衛易益液演応往桜恩可仮価河過賀快解格確額刊幹慣眼基寄規技義逆久旧居許境均禁句群経潔件券険検限現減故個護効厚耕鉱構興講混査再災妻採際在財罪雑酸賛支志枝師資飼示似識質舎謝授修述術準序招承証条状常情織職制性政勢精製税責績接設舌絶銭祖素総造増測属率損退貸態団断築張提程適敵統銅導徳独任燃能破犯判版比肥非備俵評貧布婦富武復複仏編弁保墓報豊防貿暴務夢迷綿輸余預容略留領'],
       6: [...'異遺域宇映延沿我灰拡革閣割株干巻看簡危机揮貴疑吸供胸郷勤筋系敬警劇激穴絹権憲厳己呼庁座裁策冊蚕至私姿視詞誌磁射捨尺若樹収宗就衆従縦縮熟純処署諸除将傷障城蒸針仁垂推寸盛聖誠宣専泉洗染善奏窓創装層操蔵臓存尊誕担探暖段頂潮賃痛展討党糖届難乳認納脳派拝背肺俳班晩否批秘腹奮並陛閉片補暮宝訪亡忘棒枚幕密盟模訳郵優幼欲翌乱卵覧裏律臨朗論']
     };
+
+    // Katakana character lists for navigation
+    const KATAKANA_CHARS_LIST = {
+      seion: [...'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'],
+      dakuon: [...'ガギグゲゴザジズゼゾダヂヅデドバビブベボ'],
+      handakuon: [...'パピプペポ'],
+      small: [...'ァィゥェォャュョッ'],
+      symbol: [...'ー'],
+    };
+
+    function getKatakanaList(filter) {
+      if (filter === 'all' || !filter) {
+        return [...KATAKANA_CHARS_LIST.seion, ...KATAKANA_CHARS_LIST.dakuon, ...KATAKANA_CHARS_LIST.handakuon, ...KATAKANA_CHARS_LIST.small, ...KATAKANA_CHARS_LIST.symbol];
+      }
+      return KATAKANA_CHARS_LIST[filter] || [];
+    }
 
     function getGradeList(grade) {
       if (grade === 0 || grade === '0') {
@@ -540,21 +704,216 @@
       const params = new URLSearchParams(window.location.search);
       const charParam = params.get('char');
       const gradeParam = params.get('grade');
+      const modeParam = params.get('mode');
       
-      if (gradeParam) {
-        gradeSelect.value = gradeParam;
+      if (modeParam === 'katakana') {
+        dataMode = 'katakana';
+        document.getElementById('data-mode').value = 'katakana';
+        switchModeUI('katakana');
       }
       
+      if (gradeParam !== null && gradeParam !== undefined) {
+        gradeSelect.value = gradeParam;
+        currentCharNavGrade = parseInt(gradeParam, 10);
+      }
+      
+      initCharNav();
+
       if (charParam) {
         kanjiInput.value = charParam;
         loadKanji(charParam);
+      } else {
+        const defaultList = dataMode === 'katakana' ? getKatakanaList('all') : getGradeList(currentCharNavGrade);
+        if (defaultList && defaultList.length > 0) {
+          kanjiInput.value = defaultList[0];
+          loadKanji(defaultList[0]);
+        }
       }
+      
+      // Mode switch event
+      document.getElementById('data-mode').addEventListener('change', (e) => {
+        dataMode = e.target.value;
+        switchModeUI(dataMode);
+        initCharNav();
+        const defaultList = dataMode === 'katakana' ? getKatakanaList('all') : getGradeList(currentCharNavGrade);
+        if (defaultList && defaultList.length > 0) {
+          kanjiInput.value = defaultList[0];
+          loadKanji(defaultList[0]);
+        }
+      });
+
+      // Grade select event (Header)
+      gradeSelect.addEventListener('change', (e) => {
+        currentCharNavGrade = parseInt(e.target.value, 10);
+        updateCharNavTabs();
+        renderCharGrid(document.getElementById('char-search-input').value);
+      });
+
+      // Katakana row filter event
+      document.getElementById('katakana-row-select').addEventListener('change', (e) => {
+        currentKataTab = e.target.value;
+        updateCharNavTabs();
+        renderCharGrid(document.getElementById('char-search-input').value);
+        updateCharPosition();
+      });
       
       setupEventListeners();
     }
 
+    function switchModeUI(mode) {
+      const title = document.getElementById('editor-title');
+      const gradeSel = document.getElementById('grade-select');
+      const kataSel = document.getElementById('katakana-row-select');
+      
+      if (mode === 'katakana') {
+        title.textContent = 'カタカナ 筆順エディタ';
+        gradeSel.style.display = 'none';
+        kataSel.style.display = '';
+      } else {
+        title.textContent = '漢字 筆順エディタ';
+        gradeSel.style.display = '';
+        kataSel.style.display = 'none';
+      }
+    }
+
+    // --- Left Sidebar Character Navigation ---
+    function initCharNav() {
+      const searchInput = document.getElementById('char-search-input');
+      searchInput.value = '';
+      searchInput.oninput = (e) => {
+        renderCharGrid(e.target.value);
+      };
+      updateCharNavTabs();
+      renderCharGrid();
+    }
+
+    function updateCharNavTabs() {
+      const titleEl = document.getElementById('left-panel-title');
+      const tabsContainer = document.getElementById('char-nav-tabs');
+      if (!tabsContainer) return;
+
+      if (dataMode === 'katakana') {
+        titleEl.textContent = 'カタカナ選択';
+        tabsContainer.innerHTML = `
+          <button class="char-nav-tab ${currentKataTab === 'all' ? 'active' : ''}" data-kata="all">全部</button>
+          <button class="char-nav-tab ${currentKataTab === 'seion' ? 'active' : ''}" data-kata="seion">清音</button>
+          <button class="char-nav-tab ${currentKataTab === 'dakuon' ? 'active' : ''}" data-kata="dakuon">濁音</button>
+          <button class="char-nav-tab ${currentKataTab === 'small' ? 'active' : ''}" data-kata="small">小文字</button>
+        `;
+        tabsContainer.querySelectorAll('.char-nav-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            tabsContainer.querySelectorAll('.char-nav-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentKataTab = tab.dataset.kata;
+            if (document.getElementById('katakana-row-select')) {
+              document.getElementById('katakana-row-select').value = currentKataTab;
+            }
+            renderCharGrid(document.getElementById('char-search-input').value);
+          });
+        });
+      } else {
+        titleEl.textContent = '漢字選択';
+        tabsContainer.innerHTML = `
+          <button class="char-nav-tab ${currentCharNavGrade === 1 ? 'active' : ''}" data-grade="1">小1</button>
+          <button class="char-nav-tab ${currentCharNavGrade === 2 ? 'active' : ''}" data-grade="2">小2</button>
+          <button class="char-nav-tab ${currentCharNavGrade === 3 ? 'active' : ''}" data-grade="3">小3</button>
+          <button class="char-nav-tab ${currentCharNavGrade === 4 ? 'active' : ''}" data-grade="4">小4</button>
+          <button class="char-nav-tab ${currentCharNavGrade === 5 ? 'active' : ''}" data-grade="5">小5</button>
+          <button class="char-nav-tab ${currentCharNavGrade === 6 ? 'active' : ''}" data-grade="6">小6</button>
+          <button class="char-nav-tab ${currentCharNavGrade === 0 ? 'active' : ''}" data-grade="0">全</button>
+        `;
+        tabsContainer.querySelectorAll('.char-nav-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            tabsContainer.querySelectorAll('.char-nav-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentCharNavGrade = parseInt(tab.dataset.grade, 10);
+            if (gradeSelect) gradeSelect.value = currentCharNavGrade;
+            renderCharGrid(document.getElementById('char-search-input').value);
+          });
+        });
+      }
+    }
+
+    function renderCharGrid(searchTerm = '') {
+      const grid = document.getElementById('char-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      let list = [];
+      if (dataMode === 'katakana') {
+        list = getKatakanaList(currentKataTab);
+      } else {
+        list = getGradeList(currentCharNavGrade);
+      }
+
+      if (searchTerm) {
+        searchTerm = searchTerm.trim();
+        list = list.filter(ch => ch.includes(searchTerm));
+      }
+
+      const currentCharStr = currentKanji ? currentKanji.char : '';
+
+      list.forEach(ch => {
+        const cell = document.createElement('div');
+        cell.className = 'char-cell' + (ch === currentCharStr ? ' active' : '');
+        cell.textContent = ch;
+        cell.dataset.char = ch;
+        cell.title = ch;
+        cell.addEventListener('click', () => {
+          kanjiInput.value = ch;
+          const url = new URL(window.location);
+          url.searchParams.set('char', ch);
+          url.searchParams.set('mode', dataMode);
+          if (dataMode === 'kanji') url.searchParams.set('grade', currentCharNavGrade);
+          window.history.pushState({}, '', url);
+          loadKanji(ch);
+        });
+        grid.appendChild(cell);
+      });
+
+      // Scroll active cell into view smoothly
+      const activeCell = grid.querySelector('.char-cell.active');
+      if (activeCell) {
+        activeCell.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function updateCharGridActive() {
+      if (!currentKanji) return;
+      const targetChar = currentKanji.char;
+
+      // Sync grade tab if needed (when char belongs to different grade)
+      if (dataMode === 'kanji') {
+        if (currentKanji.grade && currentCharNavGrade !== 0 && currentCharNavGrade !== currentKanji.grade) {
+          currentCharNavGrade = currentKanji.grade;
+          if (gradeSelect) gradeSelect.value = currentCharNavGrade;
+          updateCharNavTabs();
+          renderCharGrid(document.getElementById('char-search-input').value);
+          return;
+        }
+      }
+
+      document.querySelectorAll('.char-cell').forEach(cell => {
+        cell.classList.toggle('active', cell.dataset.char === targetChar);
+      });
+      const activeCell = document.querySelector('.char-cell.active');
+      if (activeCell) {
+        activeCell.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
     // --- Data Handling ---
     function findKanji(char) {
+      if (dataMode === 'katakana') {
+        if (!window.KATAKANA_DATA || !window.KATAKANA_DATA.characters) {
+          showToast('エラー: カタカナデータ(katakana.js)が見つかりません');
+          return null;
+        }
+        const kData = window.KATAKANA_DATA.characters[char];
+        if (!kData) return null;
+        // Return with a grade-like field for compatibility
+        return { ...kData, grade: 'katakana' };
+      }
       if (!window.ALL_GRADES_KANJI) {
         showToast('エラー: 漢字データ(all_grades.js)が見つかりません');
         return null;
@@ -587,14 +946,23 @@
       
       updateUI();
       updateCharPosition();
+      updateCharGridActive();
       if (fontOverlayActive) renderFontOverlay();
     }
 
     // --- Navigation ---
+    function getCurrentCharList() {
+      if (dataMode === 'katakana') {
+        const rowFilter = document.getElementById('katakana-row-select').value;
+        return getKatakanaList(rowFilter);
+      }
+      const grade = parseInt(gradeSelect.value) || (currentKanji ? currentKanji.grade : 1);
+      return getGradeList(grade);
+    }
+
     function navigateChar(delta) {
       if (!currentKanji) return;
-      const grade = parseInt(gradeSelect.value) || currentKanji.grade;
-      const list = getGradeList(grade);
+      const list = getCurrentCharList();
       const idx = list.indexOf(currentKanji.char);
       if (idx === -1) return;
       const newIdx = idx + delta;
@@ -604,7 +972,7 @@
       // Update URL
       const url = new URL(window.location);
       url.searchParams.set('char', newChar);
-      url.searchParams.set('grade', grade);
+      url.searchParams.set('mode', dataMode);
       window.history.replaceState({}, '', url);
       loadKanji(newChar);
     }
@@ -612,8 +980,7 @@
     function updateCharPosition() {
       const posSpan = document.getElementById('char-position');
       if (!currentKanji) { posSpan.textContent = '- / -'; return; }
-      const grade = parseInt(gradeSelect.value) || currentKanji.grade;
-      const list = getGradeList(grade);
+      const list = getCurrentCharList();
       const idx = list.indexOf(currentKanji.char);
       posSpan.textContent = idx >= 0 ? `${idx + 1} / ${list.length}` : '- / -';
     }
@@ -1402,6 +1769,50 @@
       return { snappedX, snappedY };
     }
 
+    function handleAllStrokeDrag(dx, dy, snapshots) {
+      for (let si = 0; si < parsedStrokes.length; si++) {
+        const segs = parsedStrokes[si];
+        const orig = snapshots[si];
+        if (!orig) continue;
+        for (let i = 0; i < segs.length; i++) {
+          const seg = segs[i], o = orig[i];
+          if (seg.type === 'M') { seg.x = o.x + dx; seg.y = o.y + dy; }
+          else {
+            if (seg.abs_cp1x !== undefined) { seg.abs_cp1x = o.abs_cp1x + dx; seg.abs_cp1y = o.abs_cp1y + dy; }
+            if (seg.abs_cp2x !== undefined) { seg.abs_cp2x = o.abs_cp2x + dx; seg.abs_cp2y = o.abs_cp2y + dy; }
+            if (seg.abs_x   !== undefined) { seg.abs_x   = o.abs_x   + dx; seg.abs_y   = o.abs_y   + dy; }
+          }
+        }
+      }
+      renderEditor();
+    }
+
+    function clearCurrentStroke() {
+      if (currentStrokeIndex < 0 || currentStrokeIndex >= parsedStrokes.length) return;
+      if (!confirm(`画${currentStrokeIndex + 1} をクリアしますか？`)) return;
+      parsedStrokes[currentStrokeIndex] = [
+        { type: 'M', x: 54.5, y: 54.5 },
+        { type: 'c', abs_cp1x: 54.5, abs_cp1y: 54.5, abs_cp2x: 54.5, abs_cp2y: 54.5, abs_x: 54.5, abs_y: 54.5 }
+      ];
+      pushHistory();
+      updateUI();
+      showToast(`画 ${currentStrokeIndex + 1} をクリアしました`);
+    }
+
+    function clearAllStrokes() {
+      const charName = currentKanji ? currentKanji.char : '';
+      if (!confirm(`「${charName}」の全ストローク(${parsedStrokes.length}画)をクリアしますか？`)) return;
+      for (let i = 0; i < parsedStrokes.length; i++) {
+        parsedStrokes[i] = [
+          { type: 'M', x: 54.5, y: 54.5 },
+          { type: 'c', abs_cp1x: 54.5, abs_cp1y: 54.5, abs_cp2x: 54.5, abs_cp2y: 54.5, abs_x: 54.5, abs_y: 54.5 }
+        ];
+      }
+      pushHistory();
+      updateUI();
+      showToast(`全 ${parsedStrokes.length} 画をクリアしました`);
+    }
+
     function handleDrag(e) {
       if (!dragState) return;
       e.preventDefault();
@@ -1448,6 +1859,17 @@
       
       const dx = pt.x - startX;
       const dy = pt.y - startY;
+
+      // 全画一括移動モード
+      if (dragState.isAllStrokeMove) {
+        if (!dragState.activated) {
+          const dist = Math.hypot(dx, dy);
+          if (dist < 1.5 / zoomLevel) return;
+          dragState.activated = true;
+        }
+        handleAllStrokeDrag(dx, dy, dragState.snapshots);
+        return;
+      }
 
       if (isWholeMoveMode) {
         // Move all selected strokes by dx, dy
@@ -1512,6 +1934,14 @@
 
     function endDrag(e) {
       if (!dragState) return;
+      if (dragState.isAllStrokeMove) {
+        if (dragState.activated) {
+          pushHistory();
+          updateUI();
+        }
+        dragState = null;
+        return;
+      }
       dragState = null;
       guidesLayer.innerHTML = '';
       
@@ -1652,6 +2082,30 @@
       // Build final paths
       const finalPaths = parsedStrokes.map(stroke => buildSvgPath(stroke));
       
+      if (dataMode === 'katakana') {
+        // Katakana save
+        const payload = {
+          char: currentKanji.char,
+          paths: finalPaths,
+          numbers: currentKanji.numbers
+        };
+        try {
+          const res = await fetch('/api/save-katakana', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            showToast('保存しました（カタカナ）');
+          } else {
+            showToast('保存に失敗しました', true);
+          }
+        } catch (err) {
+          showToast('エラー: サーバーに接続できません', true);
+        }
+        return;
+      }
+
       const payload = {
         char: currentKanji.char,
         grade: currentKanji.grade,
@@ -1732,17 +2186,45 @@
       toggleMoveModeBtn.addEventListener('click', () => {
         isWholeMoveMode = !isWholeMoveMode;
         if (isWholeMoveMode) {
+          isAllStrokeMoveMode = false;
+          document.getElementById('toggle-all-move-mode').classList.remove('active');
+          document.getElementById('toggle-all-move-mode').textContent = '全画移動: OFF';
           isRotateMode = false; pivotPoint = null;
           document.getElementById('toggle-rotate-mode').classList.remove('active');
           document.getElementById('toggle-rotate-mode').textContent = '回転: OFF';
           toggleMoveModeBtn.classList.add('active');
-          toggleMoveModeBtn.textContent = '全体移動: ON';
+          toggleMoveModeBtn.textContent = '1画移動: ON';
         } else {
           toggleMoveModeBtn.classList.remove('active');
-          toggleMoveModeBtn.textContent = '全体移動: OFF';
+          toggleMoveModeBtn.textContent = '1画移動: OFF';
         }
         renderEditor();
       });
+
+      // 全画移動モードボタン
+      document.getElementById('toggle-all-move-mode').addEventListener('click', () => {
+        isAllStrokeMoveMode = !isAllStrokeMoveMode;
+        const btn = document.getElementById('toggle-all-move-mode');
+        if (isAllStrokeMoveMode) {
+          isWholeMoveMode = false;
+          toggleMoveModeBtn.classList.remove('active');
+          toggleMoveModeBtn.textContent = '1画移動: OFF';
+          isRotateMode = false; pivotPoint = null;
+          document.getElementById('toggle-rotate-mode').classList.remove('active');
+          document.getElementById('toggle-rotate-mode').textContent = '回転: OFF';
+          btn.classList.add('active');
+          btn.textContent = '全画移動: ON';
+          showToast('全画移動モード: キャンバスをドラッグすると全ての画が同時に移動します');
+        } else {
+          btn.classList.remove('active');
+          btn.textContent = '全画移動: OFF';
+        }
+        renderEditor();
+      });
+
+      // 画クリア & 全クリア
+      document.getElementById('clear-stroke-btn').addEventListener('click', clearCurrentStroke);
+      document.getElementById('clear-all-btn').addEventListener('click', clearAllStrokes);
 
       document.getElementById('toggle-rotate-mode').addEventListener('click', () => {
         isRotateMode = !isRotateMode;
@@ -1750,7 +2232,10 @@
         if (isRotateMode) {
           isWholeMoveMode = false;
           toggleMoveModeBtn.classList.remove('active');
-          toggleMoveModeBtn.textContent = '全体移動: OFF';
+          toggleMoveModeBtn.textContent = '1画移動: OFF';
+          isAllStrokeMoveMode = false;
+          document.getElementById('toggle-all-move-mode').classList.remove('active');
+          document.getElementById('toggle-all-move-mode').textContent = '全画移動: OFF';
           pivotPoint = null;
           btn.classList.add('active');
           btn.textContent = '回転: ON (支点を選択)';
@@ -1816,8 +2301,21 @@
         zoomAt(factor, pt.x, pt.y);
       }, { passive: false });
       
-      // Right-click drag to pan
+      // Mouse drag handlers on svgEditor
       svgEditor.addEventListener('mousedown', (e) => {
+        // 全画移動モード: 背景ドラッグで全ストロークを移動
+        if (isAllStrokeMoveMode && e.button === 0 && !e.altKey) {
+          e.preventDefault();
+          const pt = getMousePosition(e);
+          dragState = {
+            isAllStrokeMove: true,
+            startX: pt.x, startY: pt.y,
+            activated: false,
+            snapshots: parsedStrokes.map(segs => JSON.parse(JSON.stringify(segs)))
+          };
+          return;
+        }
+
         if (e.button === 2 || (e.button === 0 && e.altKey)) {
           e.preventDefault();
           isPanning = true;
@@ -1865,6 +2363,17 @@
 
       svgEditor.addEventListener('touchstart', (e) => {
         const touches = e.touches;
+        if (touches.length === 1 && isAllStrokeMoveMode) {
+          e.preventDefault();
+          const pt = getMousePosition(e);
+          dragState = {
+            isAllStrokeMove: true,
+            startX: pt.x, startY: pt.y,
+            activated: false,
+            snapshots: parsedStrokes.map(segs => JSON.parse(JSON.stringify(segs)))
+          };
+          return;
+        }
         if (touches.length === 2) {
           e.preventDefault();
           touchState.startTouches = [

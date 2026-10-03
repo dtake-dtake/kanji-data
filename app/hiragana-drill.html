@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-<title>ひらがなドリル</title>
+<title>かなドリル</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
@@ -90,16 +90,25 @@ input { font-family: inherit; outline: none; -webkit-user-select: auto; user-sel
   .tablet-row .nazori-area { flex-shrink: 0; }
   .tablet-row .side-panel { flex: 1; min-width: 220px; max-width: 360px; }
 }
+/* Mode tabs */
+.kana-tabs { display: flex; gap: 0; width: 100%; margin-bottom: 14px; border-radius: 12px; overflow: hidden; border: 2px solid #ec4899; }
+.kana-tab { flex: 1; padding: 12px; font-size: 1.1rem; font-weight: 700; text-align: center; background: #fff; color: #ec4899; transition: all 0.15s; }
+.kana-tab.active { background: #ec4899; color: #fff; }
+.kana-tab:not(.active):hover { background: #fce7f3; }
 </style>
 </head>
 <body>
 
 <!-- HOME -->
 <div id="screen-home" class="screen active">
+  <div class="kana-tabs">
+    <button class="kana-tab active" id="tab-hiragana" onclick="switchKana('hiragana')">ひらがな</button>
+    <button class="kana-tab" id="tab-katakana" onclick="switchKana('katakana')">カタカナ</button>
+  </div>
   <div class="unit-badge" style="position:relative;">
-    <h1>🌸 ひらがなドリル</h1>
-    <p>もじを タップして れんしゅう</p>
-    <a href="hiragana-editor.html" style="position:absolute; top:12px; right:12px; color:#fff; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.5); padding:4px 10px; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">✏️ 字形調整</a>
+    <h1 id="home-title">🌸 ひらがなドリル</h1>
+    <p id="home-subtitle">もじを タップして れんしゅう</p>
+    <a id="home-editor-link" href="hiragana-editor.html" style="position:absolute; top:12px; right:12px; color:#fff; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.5); padding:4px 10px; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">✏️ 字形調整</a>
   </div>
   <div class="gojuon-table" id="gojuon-table"></div>
 
@@ -152,7 +161,7 @@ input { font-family: inherit; outline: none; -webkit-user-select: auto; user-sel
 const SVG_VB = 109, TOL = 22, ROUNDS = 3, SW = 5, GW = 9;
 const NS = 'http://www.w3.org/2000/svg';
 
-const GOJUON = [
+const GOJUON_HIRA = [
   ['わ','ら','や','ま','は','な','た','さ','か','あ'],
   ['',  'り','',  'み','ひ','に','ち','し','き','い'],
   ['を','る','ゆ','む','ふ','ぬ','つ','す','く','う'],
@@ -160,7 +169,15 @@ const GOJUON = [
   ['ん','ろ','よ','も','ほ','の','と','そ','こ','お'],
 ];
 
-const ROWS = {
+const GOJUON_KATA = [
+  ['ワ','ラ','ヤ','マ','ハ','ナ','タ','サ','カ','ア'],
+  ['',  'リ','',  'ミ','ヒ','ニ','チ','シ','キ','イ'],
+  ['ヲ','ル','ユ','ム','フ','ヌ','ツ','ス','ク','ウ'],
+  ['',  'レ','',  'メ','ヘ','ネ','テ','セ','ケ','エ'],
+  ['ン','ロ','ヨ','モ','ホ','ノ','ト','ソ','コ','オ'],
+];
+
+const ROWS_HIRA = {
   'あ行':['あ','い','う','え','お'], 'か行':['か','き','く','け','こ'],
   'さ行':['さ','し','す','せ','そ'], 'た行':['た','ち','つ','て','と'],
   'な行':['な','に','ぬ','ね','の'], 'は行':['は','ひ','ふ','へ','ほ'],
@@ -168,24 +185,54 @@ const ROWS = {
   'ら行':['ら','り','る','れ','ろ'], 'わ行':['わ','を','ん'],
 };
 
-let hData = null;
+const ROWS_KATA = {
+  'ア行':['ア','イ','ウ','エ','オ'], 'カ行':['カ','キ','ク','ケ','コ'],
+  'サ行':['サ','シ','ス','セ','ソ'], 'タ行':['タ','チ','ツ','テ','ト'],
+  'ナ行':['ナ','ニ','ヌ','ネ','ノ'], 'ハ行':['ハ','ヒ','フ','ヘ','ホ'],
+  'マ行':['マ','ミ','ム','メ','モ'], 'ヤ行':['ヤ','ユ','ヨ'],
+  'ラ行':['ラ','リ','ル','レ','ロ'], 'ワ行':['ワ','ヲ','ン'],
+};
 
-// State
+let hData = null;
+let kData = null;
+let kanaMode = 'hiragana';
+
+function activeData() { return kanaMode === 'katakana' ? kData : hData; }
+function activeGojuon() { return kanaMode === 'katakana' ? GOJUON_KATA : GOJUON_HIRA; }
+function activeRows() { return kanaMode === 'katakana' ? ROWS_KATA : ROWS_HIRA; }
+
 const S = {
-  mode: 'practice',
-  chars: [],
-  ci: 0,
-  si: 0,
-  round: 0,
-  results: [],
-  failed: false,
-  listen: false,   // 聞いて書くモード
+  mode: 'practice', chars: [], ci: 0, si: 0, round: 0,
+  results: [], failed: false, listen: false,
 };
 
 // ==================== DATA ====================
 async function loadData() {
-  try { hData = await (await fetch('../data/hiragana.json')).json(); renderHome(); }
-  catch (e) { document.body.innerHTML = `<div style="padding:40px;text-align:center"><h2>エラー</h2><p>サーバー起動: <code>node scripts/server.js</code></p></div>`; }
+  try {
+    hData = await (await fetch('../data/hiragana.json')).json();
+    try { kData = await (await fetch('../data/katakana.json')).json(); } catch(e) { console.warn('katakana.json not found'); }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'katakana' && kData) {
+      kanaMode = 'katakana';
+      document.getElementById('tab-hiragana').classList.remove('active');
+      document.getElementById('tab-katakana').classList.add('active');
+    }
+    renderHome();
+  } catch (e) {
+    document.body.innerHTML = `<div style="padding:40px;text-align:center"><h2>エラー</h2><p>サーバー起動: <code>node scripts/server.js</code></p></div>`;
+  }
+}
+
+// ==================== KANA SWITCH ====================
+function switchKana(mode) {
+  if (mode === 'katakana' && !kData) { alert('カタカナデータがありません'); return; }
+  kanaMode = mode;
+  document.getElementById('tab-hiragana').classList.toggle('active', mode === 'hiragana');
+  document.getElementById('tab-katakana').classList.toggle('active', mode === 'katakana');
+  const url = new URL(window.location);
+  url.searchParams.set('mode', mode);
+  window.history.replaceState({}, '', url);
+  renderHome();
 }
 
 // ==================== SCREENS ====================
@@ -194,16 +241,26 @@ function goHome() { show('screen-home'); }
 
 // ==================== HOME ====================
 function renderHome() {
+  const badge = document.querySelector('.unit-badge');
+  if (kanaMode === 'katakana') {
+    document.getElementById('home-title').textContent = '✨ カタカナドリル';
+    document.getElementById('home-editor-link').href = 'stroke-editor.html?mode=katakana';
+    badge.style.background = 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)';
+  } else {
+    document.getElementById('home-title').textContent = '🌸 ひらがなドリル';
+    document.getElementById('home-editor-link').href = 'hiragana-editor.html';
+    badge.style.background = 'linear-gradient(135deg, #f472b6 0%, #c084fc 100%)';
+  }
+
+  const gojuon = activeGojuon();
   const t = document.getElementById('gojuon-table'); t.innerHTML = '';
-  GOJUON.forEach(row => row.forEach(ch => {
+  gojuon.forEach(row => row.forEach(ch => {
     const c = document.createElement('div');
-    if (ch) {
-      c.className = 'gojuon-cell';
-      c.textContent = ch;
-      c.onclick = () => startPractice(ch);
-    } else { c.className = 'gojuon-cell empty'; }
+    if (ch) { c.className = 'gojuon-cell'; c.textContent = ch; c.onclick = () => startPractice(ch); }
+    else { c.className = 'gojuon-cell empty'; }
     t.appendChild(c);
   }));
+  document.getElementById('row-picker').style.display = 'none';
 }
 
 // ==================== PRACTICE ====================
@@ -212,28 +269,26 @@ function startPractice(ch) {
   showNazori();
 }
 
-// ==================== TEST MODES ====================
+// ==================== TEST ====================
 function showRowPicker() {
   const rp = document.getElementById('row-picker');
   if (rp.style.display !== 'none') { rp.style.display = 'none'; return; }
   rp.style.display = 'flex'; rp.innerHTML = '';
-  Object.entries(ROWS).forEach(([name, chars]) => {
+  Object.entries(activeRows()).forEach(([name, chars]) => {
     const b = document.createElement('button');
-    b.className = 'row-pick-btn';
-    b.textContent = name;
+    b.className = 'row-pick-btn'; b.textContent = name;
     b.onclick = () => { rp.style.display = 'none'; startTest(chars, `テスト ${name}`); };
     rp.appendChild(b);
   });
 }
 
 function startTestRandom() {
-  const all = []; GOJUON.forEach(r => r.forEach(ch => { if (ch) all.push(ch); }));
-  const picked = all.sort(() => Math.random() - 0.5).slice(0, 5);
-  startTest(picked, 'テスト ランダム5');
+  const all = []; activeGojuon().forEach(r => r.forEach(ch => { if (ch) all.push(ch); }));
+  startTest(all.sort(() => Math.random() - 0.5).slice(0, 5), 'テスト ランダム5');
 }
 
 function startTestListen() {
-  const all = []; GOJUON.forEach(r => r.forEach(ch => { if (ch) all.push(ch); }));
+  const all = []; activeGojuon().forEach(r => r.forEach(ch => { if (ch) all.push(ch); }));
   const picked = all.sort(() => Math.random() - 0.5).slice(0, 5);
   S.mode = 'test'; S.chars = picked; S.ci = 0; S.si = 0; S.results = []; S.failed = false;
   S._label = '🔊 聞いて書く'; S.listen = true;
@@ -247,47 +302,31 @@ function startTest(chars, label) {
 }
 
 // ==================== SPEECH ====================
-function speak(text) {
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ja-JP';
-  u.rate = 0.6;
-  u.pitch = 1.1;
-  speechSynthesis.speak(u);
-}
+function speak(text) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 0.6; u.pitch = 1.1; speechSynthesis.speak(u); }
 
 function speakHint(ch) {
   speechSynthesis.cancel();
-  const toKata = c => String.fromCharCode(c.charCodeAt(0) + 0x60);
+  const toKata = c => { const code = c.charCodeAt(0); return (code >= 0x3040 && code <= 0x309F) ? String.fromCharCode(code + 0x60) : c; };
   let rowText = toKata(ch);
-  for (const [name, chars] of Object.entries(ROWS)) {
+  for (const [name, chars] of Object.entries(activeRows())) {
     if (chars.includes(ch)) { rowText = chars.map(toKata).join(''); break; }
   }
-  // 1回目: 行の5音
-  const u1 = new SpeechSynthesisUtterance(rowText);
-  u1.lang = 'ja-JP'; u1.rate = 0.6; u1.pitch = 1.1;
-  // 2回目: 対象の文字
-  const u2 = new SpeechSynthesisUtterance('の、' + toKata(ch));
-  u2.lang = 'ja-JP'; u2.rate = 0.5; u2.pitch = 1.1;
-  speechSynthesis.speak(u1);
-  speechSynthesis.speak(u2);
+  const u1 = new SpeechSynthesisUtterance(rowText); u1.lang = 'ja-JP'; u1.rate = 0.6; u1.pitch = 1.1;
+  const u2 = new SpeechSynthesisUtterance('の、' + toKata(ch)); u2.lang = 'ja-JP'; u2.rate = 0.5; u2.pitch = 1.1;
+  speechSynthesis.speak(u1); speechSynthesis.speak(u2);
 }
 
-function replayAudio() {
-  speakHint(S.chars[S.ci]);
-}
+function replayAudio() { speakHint(S.chars[S.ci]); }
 
-// ==================== NAZORI SCREEN ====================
+// ==================== NAZORI ====================
 function showNazori() {
   show('screen-nazori');
-  const ch = S.chars[S.ci]; const cd = hData.characters[ch];
+  const ch = S.chars[S.ci]; const cd = activeData().characters[ch];
   const isTest = S.mode === 'test';
 
-  // Title — hide character in listen mode
   if (S.listen) {
-    document.getElementById('nazori-title').textContent = `🔊 きいて 書こう`;
+    document.getElementById('nazori-title').textContent = '🔊 きいて 書こう';
     document.getElementById('nazori-progress').textContent = `${S.ci + 1} / ${S.chars.length}`;
-    // Play audio
     setTimeout(() => speakHint(ch), 300);
   } else if (isTest) {
     document.getElementById('nazori-title').textContent = `「${ch}」を 書こう`;
@@ -297,31 +336,28 @@ function showNazori() {
     document.getElementById('nazori-progress').textContent = `${S.round + 1} / ${ROUNDS}`;
   }
 
-  // Replay button (listen mode only)
   document.getElementById('btn-replay').style.display = S.listen ? 'block' : 'none';
 
-  // Edit char link
   const editLink = document.getElementById('btn-edit-char');
-  if (editLink) editLink.href = `hiragana-editor.html?char=${encodeURIComponent(ch)}`;
-
-  // Round dots (practice only)
-  const rd = document.getElementById('nazori-rounds'); rd.innerHTML = '';
-  if (!isTest) {
-    for (let i = 0; i < ROUNDS; i++) { const d = document.createElement('div'); d.className = 'round-dot' + (i < S.round ? ' done' : i === S.round ? ' current' : ''); rd.appendChild(d); }
+  if (editLink) {
+    editLink.href = kanaMode === 'katakana'
+      ? `stroke-editor.html?mode=katakana&char=${encodeURIComponent(ch)}`
+      : `hiragana-editor.html?char=${encodeURIComponent(ch)}`;
   }
+
+  const rd = document.getElementById('nazori-rounds'); rd.innerHTML = '';
+  if (!isTest) { for (let i = 0; i < ROUNDS; i++) { const d = document.createElement('div'); d.className = 'round-dot' + (i < S.round ? ' done' : i === S.round ? ' current' : ''); rd.appendChild(d); } }
 
   setupCanvas(cd, isTest);
 }
 
 function setupCanvas(cd, isTest) {
   const area = document.getElementById('nazori-area');
-  // Remove leftover animation overlay from previous question
   const oldSvg = area.querySelector('svg.asvg'); if (oldSvg) oldSvg.remove();
   const sz = Math.round(area.getBoundingClientRect().width); const sc = sz / SVG_VB;
   const old = document.getElementById('nazori-canvas'); const canvas = old.cloneNode(false); canvas.id = 'nazori-canvas'; old.parentNode.replaceChild(canvas, old);
   const dpr = devicePixelRatio || 1; canvas.width = sz * dpr; canvas.height = sz * dpr; canvas.style.width = sz + 'px'; canvas.style.height = sz + 'px';
   const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
   drawCanvas(ctx, cd, sz, sc, isTest);
 
   const stEl = document.getElementById('nazori-status');
@@ -329,85 +365,46 @@ function setupCanvas(cd, isTest) {
 
   let drawing = false, pts = [], locked = false;
 
-  // Evaluate a completed stroke
   function evalStroke(userPts) {
     if (locked || S.si >= cd.paths.length || userPts.length < 3) return;
     const ref = mp(cd.paths[S.si]).points.map(p => ({ x: p.x * sc, y: p.y * sc }));
     const pok = avgM(userPts, ref) < TOL * sc;
     const dok = chkD(userPts, ref);
-
     if (pok && dok) {
       S.si++;
       if (S.si >= cd.paths.length) {
-        locked = true;
-        drawCanvas(ctx, cd, sz, sc, isTest);
-        showFB(ctx, sz, '○', '#22c55e');
+        locked = true; drawCanvas(ctx, cd, sz, sc, isTest); showFB(ctx, sz, '○', '#22c55e');
         stEl.textContent = '⭕ よく書けました！'; stEl.className = 'nazori-status good';
-        if (isTest) {
-          S.results.push({ char: S.chars[S.ci], ok: !S.failed });
-          setTimeout(() => advanceTest(), 900);
-        } else {
-          S.round++;
-          if (S.round < ROUNDS) setTimeout(() => { S.si = 0; showNazori(); }, 1000);
-          else setTimeout(() => goHome(), 1000);
-        }
-      } else {
-        drawCanvas(ctx, cd, sz, sc, isTest);
-        stEl.textContent = isTest ? '書いてね' : `${S.si + 1}画目を 書いてね`;
-      }
+        if (isTest) { S.results.push({ char: S.chars[S.ci], ok: !S.failed }); setTimeout(() => advanceTest(), 900); }
+        else { S.round++; if (S.round < ROUNDS) setTimeout(() => { S.si = 0; showNazori(); }, 1000); else setTimeout(() => goHome(), 1000); }
+      } else { drawCanvas(ctx, cd, sz, sc, isTest); stEl.textContent = isTest ? '書いてね' : `${S.si + 1}画目を 書いてね`; }
     } else {
-      locked = true;
-      S.failed = true;
+      locked = true; S.failed = true;
       let r = pok && !dok ? '向きが ちがうよ' : findO(userPts, cd, S.si, sc) >= 0 ? '書き順が ちがうよ' : 'もうすこし ていねいに';
       showFB(ctx, sz, '✕', '#ef4444');
       const charHint = S.listen ? ` →「${S.chars[S.ci]}」` : '';
       stEl.textContent = `✕ ${r}${charHint}`; stEl.className = 'nazori-status retry';
-      if (isTest) {
-        S.results.push({ char: S.chars[S.ci], ok: false });
-        setTimeout(() => {
-          animateCorrect(cd.paths);
-          setTimeout(() => advanceTest(), cd.paths.length * 450 + 400);
-        }, 800);
-      } else {
-        setTimeout(() => { S.si = 0; setupCanvas(cd, false); }, 1200);
-      }
+      if (isTest) { S.results.push({ char: S.chars[S.ci], ok: false }); setTimeout(() => { animateCorrect(cd.paths); setTimeout(() => advanceTest(), cd.paths.length * 450 + 400); }, 800); }
+      else { setTimeout(() => { S.si = 0; setupCanvas(cd, false); }, 1200); }
     }
   }
 
-  function finishStroke() {
-    if (!drawing) return;
-    drawing = false;
-    ctx.beginPath();
-    const p = pts.slice();
-    pts = [];
-    evalStroke(p);
-  }
+  function finishStroke() { if (!drawing) return; drawing = false; ctx.beginPath(); const p = pts.slice(); pts = []; evalStroke(p); }
 
   canvas.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    if (locked || S.si >= cd.paths.length) return;
-    // If previous stroke wasn't finished (pointerup missed), evaluate it now
+    e.preventDefault(); if (locked || S.si >= cd.paths.length) return;
     if (drawing && pts.length >= 3) { finishStroke(); if (locked) return; }
-    drawing = true;
-    const p = cp(e, canvas); pts = [p];
+    drawing = true; const p = cp(e, canvas); pts = [p];
     ctx.beginPath(); ctx.moveTo(p.x, p.y);
     ctx.strokeStyle = '#475569'; ctx.lineWidth = SW * (sc / 2); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   });
-  canvas.addEventListener('pointermove', e => {
-    e.preventDefault(); if (!drawing) return;
-    const p = cp(e, canvas); pts.push(p);
-    ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y);
-  });
+  canvas.addEventListener('pointermove', e => { e.preventDefault(); if (!drawing) return; const p = cp(e, canvas); pts.push(p); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
   canvas.addEventListener('pointerup', e => { e.preventDefault(); finishStroke(); });
   canvas.addEventListener('pointercancel', e => { e.preventDefault(); finishStroke(); });
   canvas.addEventListener('pointerleave', e => { e.preventDefault(); if (drawing) finishStroke(); });
 }
 
-function advanceTest() {
-  S.ci++;
-  if (S.ci < S.chars.length) { S.si = 0; S.failed = false; showNazori(); }
-  else showTestResults();
-}
+function advanceTest() { S.ci++; if (S.ci < S.chars.length) { S.si = 0; S.failed = false; showNazori(); } else showTestResults(); }
 
 function animateCorrect(paths) {
   const area = document.getElementById('nazori-area');
@@ -420,29 +417,19 @@ function animateCorrect(paths) {
     p.setAttribute('stroke', '#1e293b'); p.setAttribute('stroke-width', '4'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
     const { length } = mp(d); p.style.strokeDasharray = length; p.style.strokeDashoffset = length;
     p.style.transition = `stroke-dashoffset ${Math.max(0.3, length / 180)}s ease ${i * 0.4}s`;
-    svg.appendChild(p);
-    requestAnimationFrame(() => requestAnimationFrame(() => { p.style.strokeDashoffset = '0'; }));
+    svg.appendChild(p); requestAnimationFrame(() => requestAnimationFrame(() => { p.style.strokeDashoffset = '0'; }));
   });
 }
 
 function drawCanvas(ctx, cd, sz, sc, isTest) {
   ctx.clearRect(0, 0, sz, sz);
   for (let i = 0; i < cd.paths.length; i++) {
-    if (i < S.si) {
-      drawP(ctx, cd.paths[i], sc, '#1e293b', SW * (sc / 2));
-    } else if (!isTest) {
-      // Practice: show blue guide
-      drawP(ctx, cd.paths[i], sc, 'rgba(236,72,153,0.18)', GW * (sc / 2));
-    }
-    // Test: no guide for unwritten strokes
+    if (i < S.si) drawP(ctx, cd.paths[i], sc, '#1e293b', SW * (sc / 2));
+    else if (!isTest) drawP(ctx, cd.paths[i], sc, 'rgba(236,72,153,0.18)', GW * (sc / 2));
   }
 }
 
-function resetCurrentStroke() {
-  S.si = 0;
-  const ch = S.chars[S.ci]; const cd = hData.characters[ch];
-  setupCanvas(cd, S.mode === 'test');
-}
+function resetCurrentStroke() { S.si = 0; const cd = activeData().characters[S.chars[S.ci]]; setupCanvas(cd, S.mode === 'test'); }
 
 // ==================== RESULTS ====================
 function showTestResults() {
@@ -451,20 +438,12 @@ function showTestResults() {
   document.getElementById('results-score').textContent = `${ok} / ${S.results.length}`;
   document.getElementById('results-label').textContent = S._label || 'テスト';
   const p = S.results.length > 0 ? ok / S.results.length : 0;
-  document.getElementById('results-message').textContent =
-    p === 1 ? '🎉 パーフェクト！' : p >= 0.8 ? '👏 よくできました！' : p >= 0.5 ? '💪 もうすこし！' : '📝 もういちど！';
+  document.getElementById('results-message').textContent = p === 1 ? '🎉 パーフェクト！' : p >= 0.8 ? '👏 よくできました！' : p >= 0.5 ? '💪 もうすこし！' : '📝 もういちど！';
   const det = document.getElementById('results-detail'); det.innerHTML = '';
-  S.results.forEach(r => {
-    const sp = document.createElement('span');
-    sp.className = 'r-item ' + (r.ok ? 'r-ok' : 'r-ng');
-    sp.textContent = r.ok ? `${r.char} ○` : `${r.char} ✕`;
-    det.appendChild(sp);
-  });
+  S.results.forEach(r => { const sp = document.createElement('span'); sp.className = 'r-item ' + (r.ok ? 'r-ok' : 'r-ng'); sp.textContent = r.ok ? `${r.char} ○` : `${r.char} ✕`; det.appendChild(sp); });
 }
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('screen-results').classList.contains('active')) goHome();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('screen-results').classList.contains('active')) goHome(); });
 
 // ==================== SVG HELPERS ====================
 let _ms = null;
@@ -481,3 +460,4 @@ loadData();
 </script>
 </body>
 </html>
+

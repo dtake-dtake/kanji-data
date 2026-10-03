@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>漢字スキル 新出漢字学習 — 学</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   RESET & 1-PAGE FIT (SCROLL PROHIBITED)
+================================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+:root {
+  --bg-color: #f7f4ee;
+  --panel-bg: #ffffff;
+  --text-main: #1c1917;
+  --text-sub: #44403c;
+  --text-muted: #78716c;
+  --border-color: #e2dcd2;
+  --accent-red: #dc2626;
+  --accent-blue: #2563eb;
+  --ink-color: #18181b;
+  --font-gothic: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+}
+
+html, body {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden; /* スクロール禁止・1P完結 */
+  background-color: var(--bg-color);
+  font-family: var(--font-gothic);
+  color: var(--text-main);
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================================================
+   HEADER (COMPACT 44px)
+================================================================ */
+.app-header {
+  height: 44px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-bottom: 2px solid var(--border-color);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  z-index: 20;
+}
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-badge {
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.04em;
+}
+.brand-title {
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: #1c1917;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 440px;
+}
+
+/* 学年切り替えタブ */
+.grade-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.btn-grade {
+  background: transparent;
+  border: none;
+  font-family: var(--font-gothic);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-grade:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+.btn-grade.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-nav {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+}
+.btn-nav:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+.btn-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.kanji-selector-wrap {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid var(--accent-blue);
+  border-radius: 8px;
+  padding: 1px 5px;
+}
+.kanji-select {
+  font-family: var(--font-gothic);
+  font-size: 1.05rem;
+  font-weight: 900;
+  border: none;
+  background: transparent;
+  color: #1e3a8a;
+  outline: none;
+  cursor: pointer;
+  padding: 1px 3px;
+}
+
+/* ================================================================
+   MAIN CONTAINER (FITS REMAINING HEIGHT EXACTLY)
+================================================================ */
+.main-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px 10px;
+}
+
+.skill-book-container {
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 280px; /* 左: 練習6マス / 右: 大きな見本と読み */
+  gap: 14px;
+  background: #ffffff;
+  border: 2.5px solid #e2dcd2;
+  border-radius: 18px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .skill-book-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+/* ================================================================
+   RIGHT COLUMN: 見本マス（上部・大きく！）＋ 読み方（下部・コンパクト縦書き）
+================================================================ */
+.sample-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  order: 2; /* 右側 */
+  align-items: stretch;
+}
+@media (max-width: 860px) {
+  .sample-column {
+    order: 1;
+    height: auto;
+  }
+}
+
+/* 上部: 見本カード（適切な高さを保ち、余白を読み方欄に譲る） */
+.sample-card {
+  width: 100%;
+  flex-shrink: 0;
+  background: #faf8f5;
+  border: 1.5px solid #e7dfd5;
+  border-radius: 14px;
+  padding: 8px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.sample-tag-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.sample-title-tag {
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+/* 上部見本マス（約200px〜210pxで大きく表示） */
+.sample-grid-box {
+  position: relative;
+  width: 100%;
+  max-width: 210px;
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 3px solid #dc2626;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(220, 38, 38, 0.12);
+}
+
+.cross-leader {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.cross-leader-h {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed #fca5a5;
+  transform: translateY(-50%);
+}
+.cross-leader-v {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px dashed #fca5a5;
+  transform: translateX(-50%);
+}
+
+.sample-svg-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.sample-controls {
+  width: 100%;
+  max-width: 220px;
+  margin-top: 6px;
+  display: flex;
+  flex-shrink: 0;
+}
+.btn-sample-play {
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+.btn-sample-play:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+/* ================================================================
+   下部: 読み・ことば欄（縦に長くゆったり、上部見出し＆段下げ揃え）
+================================================================ */
+.readings-panel {
+  width: 100%;
+  flex: 1; /* 余白を活用して縦に大きく伸ばす！ */
+  min-height: 160px;
+  background: #ffffff;
+  border: 1.5px solid #e2dcd2;
+  border-radius: 14px;
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.readings-panel-header {
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #78716c;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #f1ece4;
+  padding: 0 2px 4px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.readings-title {
+  color: #44403c;
+  font-weight: 900;
+}
+.reading-mode-toggle {
+  display: inline-flex;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 1.5px;
+  gap: 2px;
+}
+.btn-mode {
+  background: transparent;
+  border: none;
+  font-family: var(--font-gothic);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #64748b;
+  padding: 1.5px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.3;
+}
+.btn-mode:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
+.btn-mode.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+}
+
+/* 読み・ことば本体: 右から左へ並ぶ堅牢なFlexbox（横スクロール対応） */
+.readings-vertical-flow {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row-reverse; /* 右から左へ整然と並べる */
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 6px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.readings-vertical-flow::-webkit-scrollbar {
+  height: 5px;
+}
+.readings-vertical-flow::-webkit-scrollbar-track {
+  background: transparent;
+}
+.readings-vertical-flow::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.readings-vertical-flow::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 縦の1列（上部にラベル/スペーサー、直下に縦書き文字） */
+.reading-item-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px; /* ラベルと直下の文字の間隔 */
+  flex-shrink: 0;
+}
+
+/* セクション間の控えめな点線仕切り（右側に点線） */
+.reading-item-col.divider-right {
+  margin-right: 3px;
+  padding-right: 9px;
+  border-right: 1.5px dotted #e2dcd2;
+}
+
+/* 上部見出しラベル（音・訓・例） */
+.item-label {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.badge-on {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+.badge-kun {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+.badge-ex {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #7dd3fc;
+}
+
+/* 2列目以降の段下げスペーサー（上部を完全に揃える） */
+.item-spacer {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  visibility: hidden;
+}
+
+/* 案B: 読み＋例ペアユニットカード（「生」等でのテスト表示） */
+.reading-pair-unit {
+  display: flex;
+  flex-direction: row-reverse; /* 右に読み、左に例 */
+  align-items: flex-start;
+  gap: 6px;
+  background: #fafaf9;
+  border: 1.5px solid #e7e5e4;
+  border-radius: 9px;
+  padding: 5px 6px 7px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
+}
+.reading-pair-unit:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.reading-pair-unit.is-primary {
+  background: #f0fdf4;
+  border: 2px solid #22c55e;
+  box-shadow: 0 1px 4px rgba(34, 197, 94, 0.15);
+}
+.reading-pair-unit.is-on {
+  background: #fffafa;
+  border-color: #fecaca;
+}
+.reading-pair-unit.is-kun:not(.is-primary) {
+  background: #fbfbfa;
+}
+.reading-badge-test {
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  margin-left: 6px;
+}
+
+/* 縦書き本文テキスト（括弧・約物・長音符を正しい縦書きグリフに変換） */
+.item-vtext {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-feature-settings: "vert" 1, "vrt2" 1;
+  -webkit-font-feature-settings: "vert" 1, "vrt2" 1;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.35;
+  color: #1c1917;
+  white-space: nowrap;
+}
+.item-vtext.is-example {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #334155;
+}
+.item-vtext.is-long-example {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+.okuri-text {
+  font-size: 0.84rem;
+  color: #78716c;
+  font-weight: 700;
+}
+
+/* ================================================================
+   LEFT COLUMN: 練習枠（縦2行 × 横3列 = 6マス）
+================================================================ */
+.practice-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+  order: 1; /* 左側 */
+}
+@media (max-width: 860px) {
+  .practice-column {
+    order: 2;
+  }
+}
+
+.grid-col-headers {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.col-header-chip {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.header-trace {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.header-snap {
+  background: #fef3c7;
+  color: #92400e;
+}
+.header-free {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+/* 縦2行 × 横3列 グリッド */
+.practice-grid-3x2 {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.slot-card {
+  background: #ffffff;
+  border: 2px solid #d6cebf;
+  border-radius: 12px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  overflow: hidden;
+}
+.slot-card:hover {
+  border-color: #94a3b8;
+  background: #fafaf9;
+}
+.slot-card.active {
+  border-color: var(--accent-blue);
+  background: #f8faff;
+  box-shadow: 0 0 0 2.5px rgba(37, 99, 235, 0.22);
+}
+.slot-card.completed {
+  border-color: #fca5a5;
+  background: #fffafa;
+}
+
+
+
+
+/* 手書きキャンバス領域（正方形を維持） */
+.canvas-wrapper {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 1px solid #e7dfd5;
+  border-radius: 9px;
+  overflow: hidden;
+  touch-action: none;
+}
+.slot-card.active .canvas-wrapper {
+  border-color: #93c5fd;
+  border-width: 1.5px;
+}
+.slot-card.completed .canvas-wrapper {
+  border-color: #fecaca;
+}
+
+.drawing-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+}
+
+/* 十字点線リーダー */
+.canvas-cross {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.canvas-cross-h {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed #cbd5e1;
+  transform: translateY(-50%);
+}
+.canvas-cross-v {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed #cbd5e1;
+  transform: translateX(-50%);
+}
+
+/* ================================================================
+   正解時の赤ペン正円（◯）オーバーレイ
+   質感（赤ペンの鮮やかさ・太さ・先端丸め・くるっと描くアニメーション）を維持した正円
+================================================================ */
+.maru-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 6;
+  pointer-events: none;
+  display: none;
+}
+.slot-card.completed .maru-overlay {
+  display: block;
+}
+.maru-circle {
+  fill: none;
+  stroke: #dc2626;
+  stroke-width: 4.8;
+  stroke-linecap: round;
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.slot-card.completed .maru-circle {
+  stroke-dashoffset: 0;
+}
+
+
+
+/* ================================================================
+   COMPLETION MODAL
+================================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 20px;
+}
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-card {
+  background: #ffffff;
+  border: 3px solid #dc2626;
+  border-radius: 22px;
+  padding: 24px 20px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.18);
+  transform: scale(0.9);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal-overlay.active .modal-card {
+  transform: scale(1);
+}
+
+.hanamaru-stamp {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 10px;
+  animation: stampPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes stampPop {
+  0% { transform: scale(2) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.modal-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #b91c1c;
+  margin-bottom: 4px;
+}
+.modal-sub {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 18px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.btn-modal {
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+.btn-modal-primary {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #ffffff;
+}
+.btn-modal-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     APP HEADER (44px)
+================================================================ -->
+<header class="app-header">
+  <div class="header-brand">
+    <a id="btn-return-parent" href="#" class="btn-nav" style="display:none; background:#f1f5f9; text-decoration:none; margin-right:4px;">◀ もどる</a>
+    <span class="brand-badge">漢字スキル</span>
+    <h1 class="brand-title" id="header-unit-title">かん字の ひろば③ かわる よみかた</h1>
+  </div>
+
+  <div class="header-nav">
+    <div class="grade-tabs">
+      <button class="btn-grade active" data-grade="1" title="小学1年生 (80字)">1年</button>
+      <button class="btn-grade" data-grade="2" title="小学2年生 (160字)">2年</button>
+      <button class="btn-grade" data-grade="3" title="小学3年生 (200字)">3年</button>
+      <button class="btn-grade" data-grade="4" title="小学4年生 (202字)">4年</button>
+      <button class="btn-grade" data-grade="5" title="小学5年生 (193字)">5年</button>
+      <button class="btn-grade" data-grade="6" title="小学6年生 (191字)">6年</button>
+    </div>
+    <button id="btn-prev-kanji" class="btn-nav" title="前の漢字">◀ まえ</button>
+    <div class="kanji-selector-wrap">
+      <select id="select-kanji" class="kanji-select" aria-label="漢字選択">
+        <option value="学" selected>学</option>
+      </select>
+    </div>
+    <button id="btn-next-kanji" class="btn-nav" title="次の漢字">つぎ ▶</button>
+    <a href="kana-skill.html" class="btn-nav" style="background:#f3e8ff; border-color:#d8b4fe; color:#7e22ce; text-decoration:none;" title="ひらがな・カタカナスキルへ移動">かなスキル ➔</a>
+  </div>
+</header>
+
+<!-- ================================================================
+     MAIN CONTENT (1-PAGE FIT, NO SCROLL)
+================================================================ -->
+<main class="main-wrapper">
+  <div class="skill-book-container">
+
+    <!-- ============================================================
+         LEFT COLUMN: 練習枠（縦2行 × 横3列 = 6マス）
+         右列(なぞり吸着) → 中列(練習吸着) → 左列(ほんばん軌跡)
+    ============================================================ -->
+    <section class="practice-column">
+
+      <!-- 3列の見出しタグ（右開き文化） -->
+      <div class="grid-col-headers">
+        <div class="col-header-chip header-free" id="col-header-free">③ ほんばん</div>
+        <div class="col-header-chip header-snap" id="col-header-snap">② れんしゅう</div>
+        <div class="col-header-chip header-trace" id="col-header-trace">① なぞり</div>
+      </div>
+
+      <!-- 縦2 × 横3 グリッド（計6マス） -->
+      <div class="practice-grid-3x2" id="practice-grid">
+        <!-- JSで6つのスロット要素を生成 -->
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         RIGHT COLUMN: 見本マス（上部・大きく！）＋ 読み（下部・コンパクト縦書き）
+    ============================================================ -->
+    <aside class="sample-column">
+      <!-- 上部: 見本マスカード（大きく表示！） -->
+      <div class="sample-card">
+        <div class="sample-tag-row">
+          <span class="sample-title-tag">手本</span>
+          <span style="font-size:0.75rem; font-weight:900; color:#dc2626;" id="info-stroke-count">8画</span>
+        </div>
+        
+        <div class="sample-grid-box" id="sample-box">
+          <div class="cross-leader">
+            <div class="cross-leader-h"></div>
+            <div class="cross-leader-v"></div>
+          </div>
+          <!-- 見本SVG -->
+          <svg id="sample-svg" class="sample-svg-layer" viewBox="0 0 109 109">
+            <!-- JSでストロークパスを描画 -->
+          </svg>
+        </div>
+
+        <div class="sample-controls">
+          <button id="btn-animate-sample" class="btn-sample-play">
+            <span>▶ かき順アニメ</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 下部: 読み・ことば欄（縦に長くゆったり、上部見出し＆段下げ揃え） -->
+      <div class="readings-panel">
+        <div class="readings-panel-header">
+          <span class="readings-title" id="readings-title-text">よみ・ことば</span>
+          <div class="reading-mode-toggle" id="reading-mode-toggle" role="group" aria-label="表示モード">
+            <button class="btn-mode active" data-mode="A" title="音・訓・例をまとめて表示">まとめ (A)</button>
+            <button class="btn-mode" data-mode="B" title="読みとことばをセットで表示">ペア (B)</button>
+          </div>
+        </div>
+
+        <!-- 縦書きコンテナ（右から音、訓、例が並び、上部ラベルと段下げで綺麗に整列） -->
+        <div class="readings-vertical-flow" id="vertical-info-flow">
+          <!-- JSで動的に注入 -->
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<!-- ================================================================
+     COMPLETION MODAL (花丸スタンプ)
+================================================================ -->
+<div class="modal-overlay" id="completion-modal">
+  <div class="modal-card">
+    <svg class="hanamaru-stamp" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="#dc2626" stroke-width="4.5" stroke-dasharray="7 3"/>
+      <circle cx="60" cy="60" r="42" fill="none" stroke="#dc2626" stroke-width="3"/>
+      <path d="M60,10 C70,10 75,25 60,35 C45,25 50,10 60,10 Z
+               M110,60 C110,70 95,75 85,60 C95,45 110,50 110,60 Z
+               M60,110 C50,110 45,95 60,85 C75,95 70,110 60,110 Z
+               M10,60 C10,50 25,45 35,60 C25,75 10,70 10,60 Z"
+            fill="none" stroke="#ef4444" stroke-width="2.5" opacity="0.6"/>
+      <text id="stamp-text-1" x="60" y="55" font-family="'Zen Maru Gothic', sans-serif" font-size="16" font-weight="900" fill="#dc2626" text-anchor="middle">たいへん</text>
+      <text id="stamp-text-2" x="60" y="75" font-family="'Zen Maru Gothic', sans-serif" font-size="15" font-weight="900" fill="#dc2626" text-anchor="middle">よくできました</text>
+      <text x="60" y="93" font-size="16" text-anchor="middle">💮</text>
+    </svg>
+
+    <h2 class="modal-title" id="modal-title">６マス 完成！</h2>
+    <p class="modal-sub" id="modal-sub">「<span id="modal-kanji-char">学</span>」の 練習が おわりました！</p>
+    
+    <div class="modal-actions">
+      <button id="btn-modal-retry" class="btn-modal btn-modal-secondary">もう一度</button>
+      <button id="btn-modal-next" class="btn-modal btn-modal-primary">つぎの漢字へ ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SCRIPTS
+================================================================ -->
+<script>
+(function() {
+  const isAppDir = window.location.pathname.includes('/app/') || window.location.pathname.includes('\\app\\');
+  const base = isAppDir ? '../' : './';
+  // 1年生データ
+  document.write('<script src="' + base + 'data/kanji/grade1.js"><\/script>');
+  document.write('<script src="' + base + 'data/textbook/grade1.js"><\/script>');
+  document.write('<script src="' + base + 'data/akaneko-skill/grade1.js"><\/script>');
+  // 2年生データ
+  document.write('<script src="' + base + 'data/kanji/grade2.js"><\/script>');
+  document.write('<script src="' + base + 'data/textbook/grade2.js"><\/script>');
+  document.write('<script src="' + base + 'data/akaneko-skill/grade2.js"><\/script>');
+  // 3年生データ
+  document.write('<script src="' + base + 'data/kanji/grade3.js"><\/script>');
+  document.write('<script src="' + base + 'data/textbook/grade3.js"><\/script>');
+  document.write('<script src="' + base + 'data/akaneko-skill/grade3.js"><\/script>');
+  // 4年生データ
+  document.write('<script src="' + base + 'data/kanji/grade4.js"><\/script>');
+  document.write('<script src="' + base + 'data/textbook/grade4.js"><\/script>');
+  document.write('<script src="' + base + 'data/akaneko-skill/grade4.js"><\/script>');
+  // 5年生データ
+  document.write('<script src="' + base + 'data/kanji/grade5.js"><\/script>');
+  document.write('<script src="' + base + 'data/textbook/grade5.js"><\/script>');
+  document.write('<script src="' + base + 'data/akaneko-skill/grade5.js"><\/script>');
+  // 6年生データ
+  document.write('<script src="' + base + 'data/kanji/grade6.js"><\/script>');
+  document.write('<script src="' + base + 'data/textbook/grade6.js"><\/script>');
+  document.write('<script src="' + base + 'data/akaneko-skill/grade6.js"><\/script>');
+})();
+</script>
+
+<script>
+// ================================================================
+// FALLBACK DATA (「学」を完全内蔵)
+// ================================================================
+const FALLBACK_GAKU = {
+  stroke: {
+    char: '学',
+    grade: 1,
+    codePoint: '05b66',
+    strokeCount: 8,
+    paths: [
+      'M29.5,17.25c3.5,3,6.5,7.25,7.75,9.75',
+      'M49,12c1.25,2,4.75,8.25,5.25,11.5',
+      'M75,11c0.25,1.75-0.12,2.75-0.75,4.25c-1.29,3.1-4.25,7.38-6.5,9.75',
+      'M21.25,33.75c-0.12,4.75-2,12.5-3.75,16.25',
+      'M23.5,36.5c17-1.62,42.38-5.5,60-5.75c9.5-0.13,4.12,5.12,0,9',
+      'M37.25,46.5c1,0.25,3.75,0.25,5.5-0.25s18.25-4,20-4s2.75,0.75,1,2.25S54.5,53.5,53,54.75',
+      'M50.75,55.75c4,8.75,7.18,24.67,1.75,38c-2.75,6.75-7.75,1.25-9.75-2',
+      'M15.75,67.75c1.75,1,4.64,1.36,7.5,1c15.88-2,44.43-6.25,61.37-5.5c2.5,0.11,4.72,0.25,6.39,1'
+    ]
+  },
+  textbook: {
+    book: "下",
+    page: 105,
+    unit: "かん字の ひろば③ かわる よみかた",
+    readings: {
+      primary: "がく",
+      on: ["ガク"],
+      kun: ["まな-ぶ"],
+      extra: []
+    },
+    examples: ["大学", "先生に 学ぶ"]
+  }
+};
+
+// ================================================================
+// 6マスの設定（右から左へ流れる構成）
+// ================================================================
+const SVG_VB = 109;
+const TOLERANCE_TRACE = 20;
+const TOLERANCE_FREE  = 22;
+
+const SLOTS_CONFIG = [
+  // 右列 (見本側: なぞり・吸着)
+  { id: 0, col: 3, row: 1, label: 'なぞり①', guide: 'line',  snap: true },
+  { id: 1, col: 3, row: 2, label: 'なぞり②', guide: 'faint', snap: true },
+  // 中列 (練習・吸着)
+  { id: 2, col: 2, row: 1, label: 'れんしゅう①', guide: 'none', snap: true },
+  { id: 3, col: 2, row: 2, label: 'れんしゅう②', guide: 'none', snap: true },
+  // 左列 (ほんばん・自力軌跡を残す)
+  { id: 4, col: 1, row: 1, label: 'ほんばん①', guide: 'none', snap: false },
+  { id: 5, col: 1, row: 2, label: 'ほんばん②', guide: 'none', snap: false }
+];
+
+let currentChar = '学';
+let strokeData = null;
+let textbookData = null;
+let activeSlotIdx = 0;
+let isAnimatingSample = false;
+let animTimer = null;
+
+let slotsState = SLOTS_CONFIG.map(cfg => ({
+  ...cfg,
+  strokeIdx: 0,
+  isDone: false,
+  completedPaths: [],
+  userStrokes: [],
+  currentPts: [],
+  isDrawing: false,
+  hintFlash: null,
+  showFaintHint: false
+}));
+
+// ================================================================
+// INITIALIZATION & GRADE UI LOCALIZATION (案A: 学年別既習漢字化)
+// ================================================================
+function updateUIForGrade(grade) {
+  // 1. ナビゲーションボタン（まえ／前、つぎ／次）
+  const btnPrev = document.getElementById('btn-prev-kanji');
+  const btnNext = document.getElementById('btn-next-kanji');
+  if (btnPrev) btnPrev.textContent = grade >= 2 ? '◀ 前' : '◀ まえ';
+  if (btnNext) btnNext.textContent = grade >= 3 ? '次 ▶' : 'つぎ ▶';
+
+  // 2. かき順アニメボタン
+  const btnAnim = document.getElementById('btn-animate-sample');
+  if (btnAnim) {
+    const span = btnAnim.querySelector('span');
+    if (span) span.textContent = grade >= 2 ? '▶ 書き順アニメ' : '▶ かき順アニメ';
+  }
+
+  // 3. よみ・ことば 見出し
+  const readingsTitle = document.getElementById('readings-title-text');
+  if (readingsTitle) {
+    if (grade >= 3) {
+      readingsTitle.textContent = '読み・言葉';
+    } else if (grade === 2) {
+      readingsTitle.textContent = '読み・ことば';
+    } else {
+      readingsTitle.textContent = 'よみ・ことば';
+    }
+  }
+
+  // 4. 練習マスの列ヘッダーチップ
+  const chipFree = document.getElementById('col-header-free');
+  const chipSnap = document.getElementById('col-header-snap');
+  const chipTrace = document.getElementById('col-header-trace');
+  if (chipTrace) chipTrace.textContent = '① なぞり';
+  if (chipSnap) {
+    chipSnap.textContent = grade >= 3 ? '② 練習' : '② れんしゅう';
+  }
+  if (chipFree) {
+    chipFree.textContent = grade >= 2 ? '③ 本番' : '③ ほんばん';
+  }
+
+  // 5. SLOTS_CONFIG のラベル更新
+  if (typeof SLOTS_CONFIG !== 'undefined' && SLOTS_CONFIG) {
+    SLOTS_CONFIG[2].label = grade >= 3 ? '練習①' : 'れんしゅう①';
+    SLOTS_CONFIG[3].label = grade >= 3 ? '練習②' : 'れんしゅう②';
+    SLOTS_CONFIG[4].label = grade >= 2 ? '本番①' : 'ほんばん①';
+    SLOTS_CONFIG[5].label = grade >= 2 ? '本番②' : 'ほんばん②';
+  }
+
+  // 6. 花丸モーダル文言
+  const modalTitle = document.getElementById('modal-title');
+  const btnRetry = document.getElementById('btn-modal-retry');
+  const btnModalNext = document.getElementById('btn-modal-next');
+  const stampText1 = document.getElementById('stamp-text-1');
+
+  if (modalTitle) {
+    modalTitle.textContent = grade >= 4 ? '６マス 完成！' : '６マス かんせい！';
+  }
+  if (btnRetry) {
+    btnRetry.textContent = grade >= 3 ? 'もう一度' : 'もういちど';
+  }
+  if (btnModalNext) {
+    btnModalNext.textContent = grade >= 3 ? '次の漢字へ ▶' : 'つぎのかん字へ ▶';
+  }
+  if (stampText1) {
+    stampText1.textContent = grade >= 4 ? '大変' : 'たいへん';
+  }
+
+  updateModalSubText();
+}
+
+function updateModalSubText() {
+  const modalSub = document.getElementById('modal-sub');
+  if (!modalSub) return;
+  if (currentGrade >= 4) {
+    modalSub.innerHTML = `「<span id="modal-kanji-char">${currentChar}</span>」の 練習が 終わりました！`;
+  } else if (currentGrade === 3) {
+    modalSub.innerHTML = `「<span id="modal-kanji-char">${currentChar}</span>」の 練習が おわりました！`;
+  } else {
+    modalSub.innerHTML = `「<span id="modal-kanji-char">${currentChar}</span>」の れんしゅうが おわりました！`;
+  }
+}
+
+function formatUnitTitleByGrade(title, grade) {
+  if (!title) return '';
+  let res = title;
+  if (grade >= 2) {
+    res = res.replace(/ひろば/g, '広場')
+             .replace(/かきじゅん/g, '書き順')
+             .replace(/かき順/g, '書き順');
+  }
+  if (grade >= 3) {
+    res = res.replace(/かん字/g, '漢字')
+             .replace(/ことば/g, '言葉');
+  }
+  return res;
+}
+
+function formatExampleByGrade(text, grade) {
+  if (!text) return '';
+  let s = text;
+  if (grade >= 2) {
+    // 2年生以上で漢字化（1〜2年の既習語）
+    s = s.replace(/ひろば/g, '広場')
+         .replace(/かき順/g, '書き順')
+         .replace(/かきじゅん/g, '書き順')
+         .replace(/ほんばん/g, '本番')
+         .replace(/よう日/g, '曜日')
+         .replace(/てがみ/g, '手紙');
+  }
+  if (grade >= 3) {
+    // 3年生以上で漢字化（3年までの既習語）
+    s = s.replace(/かん字/g, '漢字')
+         .replace(/ことば/g, '言葉')
+         .replace(/れんしゅう/g, '練習')
+         .replace(/もういちど/g, 'もう一度')
+         .replace(/つぎ/g, '次');
+  }
+  if (grade >= 4) {
+    // 4年生以上で漢字化
+    s = s.replace(/かんせい/g, '完成')
+         .replace(/おわり/g, '終わり');
+  }
+  return s;
+}
+
+function initApp() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramGrade = parseInt(urlParams.get('grade'), 10);
+  const paramKanji = urlParams.get('kanji');
+  const paramReturnUrl = urlParams.get('returnUrl');
+
+  if (paramGrade && paramGrade >= 1 && paramGrade <= 6) {
+    currentGrade = paramGrade;
+  }
+
+  if (paramReturnUrl) {
+    const btnReturn = document.getElementById('btn-return-parent');
+    if (btnReturn) {
+      btnReturn.style.display = 'inline-flex';
+      btnReturn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.parent && window.parent !== window) {
+          window.parent.location.href = paramReturnUrl;
+        } else {
+          window.location.href = paramReturnUrl;
+        }
+      });
+    }
+  }
+
+  updateUIForGrade(currentGrade);
+  setupKanjiSelector();
+
+  let initialKanji = paramKanji || (currentGrade === 1 ? '学' : null);
+  if (!initialKanji) {
+    const { skill, kanji } = getCurrentDataSources();
+    if (skill.books?.[0]?.lessons?.[0]?.kanji?.[0]) {
+      initialKanji = skill.books[0].lessons[0].kanji[0];
+    } else if (Object.keys(kanji).length > 0) {
+      initialKanji = Object.keys(kanji)[0];
+    } else {
+      initialKanji = '学';
+    }
+  }
+
+  loadKanjiData(initialKanji);
+  buildPracticeGrid();
+  setupEventListeners();
+  renderSample();
+  renderInfo();
+  updateProgress();
+}
+
+let currentGrade = 1;
+
+function getCurrentDataSources() {
+  const g = currentGrade;
+  return {
+    kanji: window[`GRADE${g}_KANJI`] || {},
+    textbook: window[`GRADE${g}_TEXTBOOK`] || {},
+    skill: window[`GRADE${g}_SKILL`] || {}
+  };
+}
+
+function getCompletedKanjiSet() {
+  try {
+    const key = `kanji_skill_grade${currentGrade}_completed`;
+    const list = JSON.parse(localStorage.getItem(key) || '[]');
+    return new Set(list);
+  } catch {
+    return new Set();
+  }
+}
+
+function markKanjiCompleted(kanji) {
+  try {
+    const key = `kanji_skill_grade${currentGrade}_completed`;
+    const set = getCompletedKanjiSet();
+    if (!set.has(kanji)) {
+      set.add(kanji);
+      localStorage.setItem(key, JSON.stringify([...set]));
+      setupKanjiSelector();
+    }
+  } catch {}
+}
+
+function switchGrade(grade) {
+  currentGrade = grade;
+  document.querySelectorAll('.btn-grade').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.grade, 10) === grade);
+  });
+
+  updateUIForGrade(grade);
+
+  const { skill, kanji } = getCurrentDataSources();
+  let firstKanji = '学';
+  if (grade === 1) {
+    firstKanji = '学';
+  } else if (skill.books?.[0]?.lessons?.[0]?.kanji?.[0]) {
+    firstKanji = skill.books[0].lessons[0].kanji[0];
+  } else if (Object.keys(kanji).length > 0) {
+    firstKanji = Object.keys(kanji)[0];
+  }
+
+  setupKanjiSelector();
+  loadKanjiData(firstKanji);
+}
+
+function setupKanjiSelector() {
+  const sel = document.getElementById('select-kanji');
+  sel.innerHTML = '';
+
+  const completedSet = getCompletedKanjiSet();
+  const { kanji: kanjiMap, skill: skillData } = getCurrentDataSources();
+
+  if (skillData && skillData.books && skillData.books.length > 0) {
+    skillData.books.forEach(b => {
+      b.lessons.forEach(l => {
+        const group = document.createElement('optgroup');
+        const shortTitle = l.title.split(' / ')[0];
+        group.label = `${b.book}・${l.number}回 ${shortTitle}`;
+
+        l.kanji.forEach(k => {
+          const opt = document.createElement('option');
+          opt.value = k;
+          const isDone = completedSet.has(k);
+          opt.textContent = isDone ? `${k} ✔` : `${k}`;
+          if (k === currentChar) opt.selected = true;
+          group.appendChild(opt);
+        });
+        sel.appendChild(group);
+      });
+    });
+  } else {
+    let list = kanjiMap && Object.keys(kanjiMap).length > 0 ? Object.keys(kanjiMap) : ['学'];
+    list.forEach(k => {
+      const opt = document.createElement('option');
+      opt.value = k;
+      const isDone = completedSet.has(k);
+      opt.textContent = isDone ? `${k} ✔` : `${k}`;
+      if (k === currentChar) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  if (!sel._hasChangeListener) {
+    sel._hasChangeListener = true;
+    sel.addEventListener('change', (e) => {
+      loadKanjiData(e.target.value);
+    });
+  }
+}
+
+function getKanjiUnitName(kanji) {
+  if (textbookData && textbookData.unit) {
+    return textbookData.unit;
+  }
+  const { textbook: tbMap, skill: skillMap } = getCurrentDataSources();
+  if (tbMap && tbMap.kanjiDetails && tbMap.kanjiDetails[kanji]?.unit) {
+    return tbMap.kanjiDetails[kanji].unit;
+  }
+  if (skillMap && skillMap.books) {
+    for (const b of skillMap.books) {
+      for (const l of b.lessons) {
+        if (l.kanji.includes(kanji)) {
+          return `${b.book}・${l.number}回 ${l.title}`;
+        }
+      }
+    }
+  }
+  return '新出漢字学習';
+}
+
+function loadKanjiData(kanji) {
+  currentChar = kanji;
+  document.getElementById('select-kanji').value = kanji;
+  document.getElementById('modal-kanji-char').textContent = kanji;
+
+  const { kanji: kanjiMap, textbook: tbMap } = getCurrentDataSources();
+
+  if (kanjiMap && kanjiMap[kanji]) {
+    strokeData = kanjiMap[kanji];
+  } else {
+    let foundStroke = null;
+    for (let g = 1; g <= 6; g++) {
+      if (window[`GRADE${g}_KANJI`]?.[kanji]) {
+        foundStroke = window[`GRADE${g}_KANJI`][kanji];
+        break;
+      }
+    }
+    strokeData = foundStroke || FALLBACK_GAKU.stroke;
+  }
+
+  if (tbMap && tbMap.kanjiDetails && tbMap.kanjiDetails[kanji]) {
+    textbookData = tbMap.kanjiDetails[kanji];
+  } else {
+    let foundTb = null;
+    for (let g = 1; g <= 6; g++) {
+      if (window[`GRADE${g}_TEXTBOOK`]?.kanjiDetails?.[kanji]) {
+        foundTb = window[`GRADE${g}_TEXTBOOK`].kanjiDetails[kanji];
+        break;
+      }
+    }
+    textbookData = foundTb || FALLBACK_GAKU.textbook;
+  }
+
+  // 単元名を更新（学年別の既習漢字化を適用）
+  const rawUnitName = getKanjiUnitName(kanji);
+  const unitName = formatUnitTitleByGrade(rawUnitName, currentGrade);
+  const titleEl = document.getElementById('header-unit-title');
+  if (titleEl) titleEl.textContent = unitName;
+  document.title = `漢字スキル — ${unitName} (${kanji})`;
+  updateModalSubText();
+
+  resetAllSlots();
+  renderSample();
+  renderInfo();
+  setTimeout(() => playSampleAnimation(), 200);
+}
+
+// ================================================================
+// BUILD 3x2 GRID (6マス)
+// ================================================================
+function buildPracticeGrid() {
+  const container = document.getElementById('practice-grid');
+  container.innerHTML = '';
+
+  const displayOrder = [
+    slotsState[4], slotsState[2], slotsState[0],
+    slotsState[5], slotsState[3], slotsState[1]
+  ];
+
+  displayOrder.forEach((slot, index) => {
+    const card = document.createElement('div');
+    card.className = `slot-card ${slot.id === activeSlotIdx ? 'active' : ''}`;
+    card.id = `slot-card-${slot.id}`;
+    card.dataset.slotId = slot.id;
+
+    card.innerHTML = `
+      <div class="canvas-wrapper" id="canvas-wrap-${slot.id}">
+        <div class="canvas-cross">
+          <div class="canvas-cross-h"></div>
+          <div class="canvas-cross-v"></div>
+        </div>
+        <canvas class="drawing-canvas" id="canvas-${slot.id}"></canvas>
+        
+        <!-- 赤ペン正円（◯）オーバーレイ -->
+        <svg class="maru-overlay" viewBox="0 0 100 100">
+          <circle class="maru-circle" cx="50" cy="50" r="41" />
+        </svg>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      selectSlot(slot.id);
+    });
+
+    card.addEventListener('dblclick', () => {
+      clearSlot(slot.id);
+    });
+
+    container.appendChild(card);
+  });
+
+  slotsState.forEach(slot => {
+    setupCanvas(slot.id);
+  });
+}
+
+function setupCanvas(slotId) {
+  const canvas = document.getElementById(`canvas-${slotId}`);
+  const wrap = document.getElementById(`canvas-wrap-${slotId}`);
+  if (!canvas || !wrap) return;
+
+  const updateSize = () => {
+    const rect = wrap.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    const size = rect.width;
+
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    slotsState[slotId].ctx = ctx;
+    slotsState[slotId].pixelSize = size;
+    drawSlot(slotId);
+  };
+
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => updateSize());
+    ro.observe(wrap);
+  } else {
+    setTimeout(updateSize, 80);
+  }
+
+  canvas.onpointerdown = (e) => onPointerDown(e, slotId);
+  canvas.onpointermove = (e) => onPointerMove(e, slotId);
+  canvas.onpointerup   = (e) => onPointerUp(e, slotId);
+  canvas.onpointercancel = (e) => onPointerUp(e, slotId);
+}
+
+// ================================================================
+// DRAWING (CANVAS: 吸着 vs 軌跡)
+// ================================================================
+function drawSlot(slotId) {
+  const slot = slotsState[slotId];
+  const ctx = slot.ctx;
+  if (!ctx || !strokeData) return;
+
+  const size = slot.pixelSize || 180;
+  const scale = size / SVG_VB;
+  ctx.clearRect(0, 0, size, size);
+
+  // 1. ガイド線の描画
+  const isNeedGuide = (slot.guide === 'line' || slot.guide === 'faint' || slot.showFaintHint);
+  
+  if (isNeedGuide && !slot.isDone) {
+    strokeData.paths.forEach((pStr, pIdx) => {
+      if (pIdx < slot.strokeIdx) return;
+
+      let strokeColor = '#e2e8f0';
+      let strokeWidth = 2.2;
+
+      if (slot.guide === 'faint') {
+        strokeColor = 'rgba(226, 232, 240, 0.65)';
+        strokeWidth = 1.8;
+      }
+      if (slot.showFaintHint) {
+        strokeColor = 'rgba(148, 163, 184, 0.55)';
+        strokeWidth = 2.4;
+      }
+      if (pIdx === slot.strokeIdx) {
+        strokeColor = (slot.guide === 'faint') ? '#cbd5e1' : '#94a3b8';
+        strokeWidth = 3.0;
+      }
+
+      drawSvgPath(ctx, pStr, scale, strokeColor, strokeWidth);
+    });
+  }
+
+  // 2. 確定済みの画の描画
+  if (slot.snap) {
+    slot.completedPaths.forEach(pStr => {
+      drawSvgPath(ctx, pStr, scale, '#18181b', 4.4);
+    });
+  } else {
+    slot.userStrokes.forEach(stroke => {
+      drawSmoothStroke(ctx, stroke, scale, '#18181b', 4.2 * scale);
+    });
+  }
+
+  // 3. 現在ドラッグ中の軌跡
+  if (slot.currentPts && slot.currentPts.length > 1) {
+    drawSmoothStroke(ctx, slot.currentPts, scale, '#2563eb', 4.0 * scale);
+  }
+
+  // 4. ミス時ヒント（始点のオレンジ点滅）
+  if (slot.hintFlash) {
+    ctx.save();
+    ctx.fillStyle = '#ea580c';
+    ctx.shadowColor = 'rgba(234, 88, 12, 0.85)';
+    ctx.shadowBlur = 8 * scale;
+    ctx.beginPath();
+    ctx.arc(slot.hintFlash.x * scale, slot.hintFlash.y * scale, 6.5 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawSvgPath(ctx, dStr, scale, color, lineWidth) {
+  ctx.save();
+  ctx.scale(scale, scale);
+  const p = new Path2D(dStr);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke(p);
+  ctx.restore();
+}
+
+function drawSmoothStroke(ctx, pts, scale, color, lineWidth) {
+  if (pts.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  
+  if (pts.length === 2) {
+    ctx.moveTo(pts[0].x * scale, pts[0].y * scale);
+    ctx.lineTo(pts[1].x * scale, pts[1].y * scale);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  ctx.moveTo(pts[0].x * scale, pts[0].y * scale);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const midX = (pts[i].x + pts[i + 1].x) / 2;
+    const midY = (pts[i].y + pts[i + 1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x * scale, pts[i].y * scale, midX * scale, midY * scale);
+  }
+  ctx.lineTo(pts[pts.length - 1].x * scale, pts[pts.length - 1].y * scale);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ================================================================
+// POINTER EVENTS & RIGOROUS STROKE VERIFICATION
+// ================================================================
+function getPointerPos(e, slotId) {
+  const canvas = document.getElementById(`canvas-${slotId}`);
+  const r = canvas.getBoundingClientRect();
+  const scale = r.width / SVG_VB;
+  return {
+    x: (e.clientX - r.left) / scale,
+    y: (e.clientY - r.top) / scale
+  };
+}
+
+function onPointerDown(e, slotId) {
+  const slot = slotsState[slotId];
+  if (slot.isDone || !strokeData) return;
+
+  if (activeSlotIdx !== slotId) {
+    selectSlot(slotId);
+  }
+
+  const canvas = document.getElementById(`canvas-${slotId}`);
+  canvas.setPointerCapture(e.pointerId);
+  slot.isDrawing = true;
+  slot.currentPts = [getPointerPos(e, slotId)];
+  drawSlot(slotId);
+}
+
+function onPointerMove(e, slotId) {
+  const slot = slotsState[slotId];
+  if (!slot.isDrawing) return;
+  slot.currentPts.push(getPointerPos(e, slotId));
+  drawSlot(slotId);
+}
+
+function onPointerUp(e, slotId) {
+  const slot = slotsState[slotId];
+  if (!slot.isDrawing) return;
+  slot.isDrawing = false;
+  const canvas = document.getElementById(`canvas-${slotId}`);
+  try { canvas.releasePointerCapture(e.pointerId); } catch {}
+
+  const targetPath = strokeData.paths[slot.strokeIdx];
+  const isFree = (slot.guide === 'none');
+  const tol = isFree ? TOLERANCE_FREE : TOLERANCE_TRACE;
+
+  if (verifyStroke(targetPath, slot.currentPts, tol)) {
+    if (slot.snap) {
+      slot.completedPaths.push(targetPath);
+    } else {
+      slot.userStrokes.push([...slot.currentPts]);
+    }
+    slot.currentPts = [];
+    slot.strokeIdx++;
+
+    if (slot.strokeIdx >= strokeData.paths.length) {
+      onSlotComplete(slotId);
+    } else {
+      setStatus(`✨ ${slot.strokeIdx}画目OK！`, 'good');
+      drawSlot(slotId);
+    }
+  } else {
+    slot.currentPts = [];
+    setStatus('もういちど かいてみよう！', 'retry');
+
+    const pathInfo = parsePathPoints(targetPath);
+    if (pathInfo.points.length > 0) {
+      slot.hintFlash = pathInfo.points[0];
+      drawSlot(slotId);
+      setTimeout(() => {
+        slot.hintFlash = null;
+        drawSlot(slotId);
+      }, 700);
+    } else {
+      drawSlot(slotId);
+    }
+  }
+}
+
+const NS_SVG = 'http://www.w3.org/2000/svg';
+let _hiddenSvg = null;
+function getHiddenSvg() {
+  if (!_hiddenSvg) {
+    _hiddenSvg = document.createElementNS(NS_SVG, 'svg');
+    _hiddenSvg.style.cssText = 'position:absolute;width:0;height:0;visibility:hidden;overflow:hidden';
+    document.body.appendChild(_hiddenSvg);
+  }
+  return _hiddenSvg;
+}
+
+function parsePathPoints(dStr) {
+  const svg = getHiddenSvg();
+  const path = document.createElementNS(NS_SVG, 'path');
+  path.setAttribute('d', dStr);
+  svg.appendChild(path);
+
+  const len = path.getTotalLength();
+  const n = Math.max(16, Math.ceil(len / 3));
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const pt = path.getPointAtLength((i / n) * len);
+    pts.push({ x: pt.x, y: pt.y });
+  }
+  svg.removeChild(path);
+  return { length: len, points: pts };
+}
+
+function verifyStroke(targetD, userPts, tolerance) {
+  if (!userPts || userPts.length < 2) return false;
+  const { length: refLen, points: refPts } = parsePathPoints(targetD);
+  if (!refPts || refPts.length === 0) return false;
+
+  const startRef = refPts[0];
+  const endRef = refPts[refPts.length - 1];
+  const startUser = userPts[0];
+  const endUser = userPts[userPts.length - 1];
+
+  const distStart = Math.hypot(startUser.x - startRef.x, startUser.y - startRef.y);
+  if (distStart > tolerance) return false;
+
+  let userLen = 0;
+  for (let i = 1; i < userPts.length; i++) {
+    userLen += Math.hypot(userPts[i].x - userPts[i - 1].x, userPts[i].y - userPts[i - 1].y);
+  }
+
+  if (refLen < 16) {
+    if (distStart <= tolerance && userLen <= tolerance * 1.5) {
+      return true;
+    }
+  }
+
+  if (refLen >= 16) {
+    if (userLen < refLen * 0.35 || userLen > refLen * 2.2) return false;
+  }
+
+  const distEnd = Math.hypot(endUser.x - endRef.x, endUser.y - endRef.y);
+  if (distEnd > tolerance * 1.35) return false;
+
+  const dxRef = endRef.x - startRef.x;
+  const dyRef = endRef.y - startRef.y;
+  const dxUser = endUser.x - startUser.x;
+  const dyUser = endUser.y - startUser.y;
+  const dot = (dxRef * dxUser + dyRef * dyUser);
+  if (refLen >= 16 && dot < 0) {
+    return false;
+  }
+
+  let matched = 0;
+  const step = Math.max(1, Math.floor(refPts.length / 8));
+  let sampleCount = 0;
+
+  for (let i = 0; i < refPts.length; i += step) {
+    sampleCount++;
+    const rp = refPts[i];
+    let minDist = Infinity;
+    for (let j = 0; j < userPts.length; j++) {
+      const d = Math.hypot(userPts[j].x - rp.x, userPts[j].y - rp.y);
+      if (d < minDist) minDist = d;
+    }
+    if (minDist <= tolerance * 1.1) matched++;
+  }
+
+  return (matched / sampleCount) >= 0.60;
+}
+
+function onSlotComplete(slotId) {
+  const slot = slotsState[slotId];
+  slot.isDone = true;
+  drawSlot(slotId);
+
+  const card = document.getElementById(`slot-card-${slotId}`);
+  if (card) {
+    card.classList.add('completed');
+  }
+
+  updateProgress();
+
+  const allCompleted = slotsState.every(s => s.isDone);
+  if (allCompleted) {
+    setTimeout(() => {
+      showCompletionModal();
+    }, 600);
+  } else {
+    const nextSlot = slotsState.find(s => !s.isDone);
+    if (nextSlot) {
+      setTimeout(() => {
+        selectSlot(nextSlot.id);
+        setStatus(`⭕️ 丸がつきました！ つぎへ`, 'good');
+      }, 500);
+    }
+  }
+}
+
+function selectSlot(slotId) {
+  activeSlotIdx = slotId;
+  slotsState.forEach(s => {
+    const card = document.getElementById(`slot-card-${s.id}`);
+    if (card) card.classList.toggle('active', s.id === slotId);
+  });
+  const currentSlot = slotsState[slotId];
+  setStatus(`✏️ ${currentSlot.label} をかこう`, '');
+}
+
+function updateProgress() {
+  const doneCount = slotsState.filter(s => s.isDone).length;
+  const pEl = document.getElementById('progress-text');
+  if (pEl) pEl.textContent = `${doneCount} / 6 完成`;
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `status-message ${type}`;
+}
+
+// ================================================================
+// SAMPLE (右側見本・大きく表示)
+// ================================================================
+function renderSample() {
+  const svg = document.getElementById('sample-svg');
+  svg.innerHTML = '';
+  if (!strokeData) return;
+
+  strokeData.paths.forEach((pStr, idx) => {
+    const path = document.createElementNS(NS_SVG, 'path');
+    path.setAttribute('d', pStr);
+    path.setAttribute('stroke', '#18181b');
+    path.setAttribute('stroke-width', '4.4');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('fill', 'none');
+    path.id = `sample-path-${idx}`;
+    svg.appendChild(path);
+  });
+}
+
+function playSampleAnimation() {
+  if (!strokeData) return;
+  if (animTimer) clearTimeout(animTimer);
+
+  const paths = strokeData.paths;
+  const svg = document.getElementById('sample-svg');
+  if (!svg) return;
+
+  paths.forEach((_, i) => {
+    const p = document.getElementById(`sample-path-${i}`);
+    if (p) {
+      const len = p.getTotalLength ? p.getTotalLength() : 100;
+      p.style.transition = 'none';
+      p.style.strokeDasharray = len;
+      p.style.strokeDashoffset = len;
+      p.style.stroke = '#dc2626';
+    }
+  });
+
+  let currentIdx = 0;
+  isAnimatingSample = true;
+
+  function animateNextStroke() {
+    if (currentIdx >= paths.length) {
+      isAnimatingSample = false;
+      setTimeout(() => {
+        paths.forEach((_, i) => {
+          const p = document.getElementById(`sample-path-${i}`);
+          if (p) {
+            p.style.transition = 'stroke 0.35s ease';
+            p.style.stroke = '#18181b';
+          }
+        });
+      }, 400);
+      return;
+    }
+
+    const p = document.getElementById(`sample-path-${currentIdx}`);
+    if (p) {
+      p.style.transition = 'stroke-dashoffset 0.42s ease-out';
+      p.style.strokeDashoffset = '0';
+    }
+    currentIdx++;
+    animTimer = setTimeout(animateNextStroke, 450);
+  }
+
+  setTimeout(animateNextStroke, 40);
+}
+
+// ================================================================
+// KANJI INFO (下部・右から左へ並ぶ堅牢な縦書き)
+// ================================================================
+let currentReadingMode = localStorage.getItem('kanji_skill_reading_mode') || 'A';
+
+function switchReadingMode(mode) {
+  currentReadingMode = mode;
+  localStorage.setItem('kanji_skill_reading_mode', mode);
+  document.querySelectorAll('.btn-mode').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  renderInfo();
+}
+
+function renderInfo() {
+  if (!textbookData || !strokeData) return;
+
+  document.getElementById('info-stroke-count').textContent = `${strokeData.strokeCount}画`;
+
+  document.querySelectorAll('.btn-mode').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === currentReadingMode);
+  });
+
+  const container = document.getElementById('vertical-info-flow');
+  container.innerHTML = '';
+
+  if (currentReadingMode === 'B') {
+    renderPairLayout(container);
+  } else {
+    renderCategorizedLayout(container);
+  }
+}
+
+// ── A案: カテゴリ別まとめ表示（音 → 訓 → 例） ──
+function renderCategorizedLayout(container) {
+  // 1. 【音】（一番右）
+  const rawOn = textbookData.readings?.on || [];
+  const onList = rawOn.flatMap(item => item.split('・')).filter(Boolean);
+  onList.forEach((onItem, idx) => {
+    const col = document.createElement('div');
+    col.className = 'reading-item-col';
+    if (idx === 0) {
+      col.innerHTML = `
+        <div class="item-label badge-on">音</div>
+        <div class="item-vtext">${onItem}</div>
+      `;
+    } else {
+      col.innerHTML = `
+        <div class="item-spacer"></div>
+        <div class="item-vtext">${onItem}</div>
+      `;
+    }
+    container.appendChild(col);
+  });
+
+  // 2. 【訓】（2番目）- 教科書の読みを全件表示（primaryを最優先で先頭に配置）
+  const rawKun = textbookData.readings?.kun || [];
+  let allKun = rawKun.flatMap(item => item.split('・')).filter(Boolean);
+  const primaryReading = textbookData.readings?.primary;
+  if (primaryReading && allKun.includes(primaryReading)) {
+    allKun = [primaryReading, ...allKun.filter(k => k !== primaryReading)];
+  }
+  const kunList = allKun;
+  kunList.forEach((kunItem, idx) => {
+    const col = document.createElement('div');
+    col.className = `reading-item-col ${idx === 0 && onList.length > 0 ? 'divider-right' : ''}`;
+
+    const parts = kunItem.split('-');
+    const formatted = parts.length > 1
+      ? `${parts[0]}<span class="okuri-text">（${parts[1]}）</span>`
+      : kunItem;
+
+    if (idx === 0) {
+      col.innerHTML = `
+        <div class="item-label badge-kun">訓</div>
+        <div class="item-vtext">${formatted}</div>
+      `;
+    } else {
+      col.innerHTML = `
+        <div class="item-spacer"></div>
+        <div class="item-vtext">${formatted}</div>
+      `;
+    }
+    container.appendChild(col);
+  });
+
+  // 3. 【例】（3番目以降）- 用例を全件表示（学年別の既習漢字化を適用）
+  const rawEx = textbookData.examples || [`${currentChar}の練習`];
+  const exList = rawEx.filter(Boolean);
+  exList.forEach((exItem, idx) => {
+    const col = document.createElement('div');
+    col.className = `reading-item-col ${idx === 0 && (onList.length > 0 || kunList.length > 0) ? 'divider-right' : ''}`;
+    const formattedEx = formatExampleByGrade(exItem, currentGrade);
+    const isLong = formattedEx.length >= 10;
+
+    if (idx === 0) {
+      col.innerHTML = `
+        <div class="item-label badge-ex">例</div>
+        <div class="item-vtext is-example ${isLong ? 'is-long-example' : ''}">${formattedEx}</div>
+      `;
+    } else {
+      col.innerHTML = `
+        <div class="item-spacer"></div>
+        <div class="item-vtext is-example ${isLong ? 'is-long-example' : ''}">${formattedEx}</div>
+      `;
+    }
+    container.appendChild(col);
+  });
+}
+
+// ── B案: 読み＋用例ペア表示（全漢字対応） ──
+function renderPairLayout(container) {
+  let pairs = [];
+
+  if (currentChar === '生') {
+    pairs = [
+      { type: 'kun', reading: 'う-まれる', example: 'ひなが 生まれる', isPrimary: true },
+      { type: 'on', reading: 'セイ', example: '生ぶつ', isPrimary: false },
+      { type: 'on', reading: 'ショウ', example: '一生けんめい', isPrimary: false },
+      { type: 'kun', reading: 'い-きる', example: 'たくましく 生きる', isPrimary: false },
+      { type: 'kun', reading: 'い-かす', example: '力を 生かす', isPrimary: false },
+      { type: 'kun', reading: 'い-ける', example: '花を 生ける', isPrimary: false },
+      { type: 'kun', reading: 'う-む', example: 'よい かんがえを 生む', isPrimary: false },
+      { type: 'kun', reading: 'は-える', example: 'くさが 生える', isPrimary: false },
+      { type: 'kun', reading: 'は-やす', example: 'くさを 生やす', isPrimary: false },
+      { type: 'kun', reading: 'なま', example: '生たまご', isPrimary: false }
+    ];
+  } else {
+    pairs = buildGenericPairs(textbookData);
+  }
+
+  if (pairs.length === 0) {
+    renderCategorizedLayout(container);
+    return;
+  }
+
+  pairs.forEach(p => {
+    const card = document.createElement('div');
+    card.className = `reading-pair-unit ${p.isPrimary ? 'is-primary' : (p.type === 'on' ? 'is-on' : 'is-kun')}`;
+
+    const parts = (p.reading || '').split('-');
+    const formatted = parts.length > 1
+      ? `${parts[0]}<span class="okuri-text">（${parts[1]}）</span>`
+      : p.reading;
+
+    const labelClass = p.type === 'on' ? 'badge-on' : 'badge-kun';
+    const labelText = p.type === 'on' ? '音' : '訓';
+    const isLong = (p.example || '').length >= 10;
+
+    let readingHtml = '';
+    if (p.reading) {
+      readingHtml = `
+        <div class="reading-item-col">
+          <div class="item-label ${labelClass}">${labelText}</div>
+          <div class="item-vtext">${formatted}</div>
+        </div>
+      `;
+    }
+
+    let exampleHtml = '';
+    if (p.example) {
+      const formattedEx = formatExampleByGrade(p.example, currentGrade);
+      const isExLong = formattedEx.length >= 10;
+      exampleHtml = `
+        <div class="reading-item-col">
+          <div class="item-label badge-ex">例</div>
+          <div class="item-vtext is-example ${isExLong ? 'is-long-example' : ''}">${formattedEx}</div>
+        </div>
+      `;
+    }
+
+    card.innerHTML = `${readingHtml}${exampleHtml}`;
+    container.appendChild(card);
+  });
+}
+
+function buildGenericPairs(tbData) {
+  if (!tbData) return [];
+  const onList = (tbData.readings?.on || []).flatMap(item => item.split('・')).filter(Boolean);
+  const kunList = (tbData.readings?.kun || []).flatMap(item => item.split('・')).filter(Boolean);
+  const exList = (tbData.examples || []).filter(Boolean);
+  const primaryReading = tbData.readings?.primary;
+
+  const allReadings = [
+    ...onList.map(o => ({ type: 'on', reading: o, isPrimary: (o === primaryReading) })),
+    ...kunList.map(k => ({ type: 'kun', reading: k, isPrimary: (k === primaryReading) }))
+  ];
+
+  const pairs = [];
+  const maxLen = Math.max(allReadings.length, exList.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const r = allReadings[i] || null;
+    const ex = exList[i] || '';
+    if (r) {
+      pairs.push({ type: r.type, reading: r.reading, isPrimary: r.isPrimary, example: ex });
+    } else if (ex) {
+      pairs.push({ type: 'ex-only', reading: '', isPrimary: false, example: ex });
+    }
+  }
+  return pairs;
+}
+
+// ================================================================
+// RESET & UNDO ACTIONS
+// ================================================================
+function undoSlot(slotId) {
+  const slot = slotsState[slotId];
+  if (slot.isDone) return;
+  if (slot.snap) {
+    if (slot.completedPaths.length === 0) return;
+    slot.completedPaths.pop();
+  } else {
+    if (slot.userStrokes.length === 0) return;
+    slot.userStrokes.pop();
+  }
+  slot.strokeIdx = Math.max(0, slot.strokeIdx - 1);
+  drawSlot(slotId);
+  setStatus(`↩ 直前の1画をもどしました`, '');
+}
+
+function undoCurrentSlot() {
+  undoSlot(activeSlotIdx);
+}
+
+function clearSlot(slotId) {
+  const slot = slotsState[slotId];
+  if (!slot) return;
+  slot.completedPaths = [];
+  slot.userStrokes = [];
+  slot.currentPts = [];
+  slot.strokeIdx = 0;
+  slot.isDone = false;
+  drawSlot(slotId);
+
+  const card = document.getElementById(`slot-card-${slotId}`);
+  if (card) card.classList.remove('completed');
+  updateProgress();
+}
+
+function clearCurrentSlot() {
+  clearSlot(activeSlotIdx);
+}
+
+function resetAllSlots() {
+  slotsState.forEach(slot => {
+    slot.completedPaths = [];
+    slot.userStrokes = [];
+    slot.currentPts = [];
+    slot.strokeIdx = 0;
+    slot.isDone = false;
+    slot.hintFlash = null;
+    slot.showFaintHint = false;
+    const card = document.getElementById(`slot-card-${slot.id}`);
+    if (card) card.classList.remove('completed');
+    drawSlot(slot.id);
+  });
+  activeSlotIdx = 0;
+  selectSlot(0);
+  updateProgress();
+  hideCompletionModal();
+  setStatus('右上のなぞり書きからスタート！', '');
+}
+
+function showHintForActiveSlot() {
+  const slot = slotsState[activeSlotIdx];
+  if (slot.isDone) return;
+
+  slot.showFaintHint = true;
+  drawSlot(activeSlotIdx);
+  setStatus('💡 うすいガイドを ひょうじしました', '');
+
+  setTimeout(() => {
+    slot.showFaintHint = false;
+    drawSlot(activeSlotIdx);
+  }, 2000);
+}
+
+// ================================================================
+// COMPLETION MODAL & NAVIGATION
+// ================================================================
+function showCompletionModal() {
+  markKanjiCompleted(currentChar);
+  document.getElementById('completion-modal').classList.add('active');
+
+  // 親アプリ (learning-platform) への学習完了通知 (postMessage)
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'SKILL_COMPLETED',
+        mode: 'kanji',
+        grade: currentGrade,
+        char: currentChar,
+        timestamp: Date.now()
+      }, '*');
+    }
+  } catch (err) {
+    console.error('Failed to postMessage to parent:', err);
+  }
+}
+function hideCompletionModal() {
+  document.getElementById('completion-modal').classList.remove('active');
+}
+
+function navigateKanji(step) {
+  const sel = document.getElementById('select-kanji');
+  const idx = sel.selectedIndex;
+  const nextIdx = idx + step;
+  if (nextIdx >= 0 && nextIdx < sel.options.length) {
+    sel.selectedIndex = nextIdx;
+    loadKanjiData(sel.value);
+  }
+}
+
+// ================================================================
+// EVENT LISTENERS
+// ================================================================
+function setupEventListeners() {
+  document.querySelectorAll('.btn-grade').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const g = parseInt(e.currentTarget.dataset.grade, 10);
+      if (g !== currentGrade) switchGrade(g);
+    });
+  });
+
+  document.querySelectorAll('.btn-mode').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const m = e.currentTarget.dataset.mode;
+      if (m !== currentReadingMode) switchReadingMode(m);
+    });
+  });
+
+  document.getElementById('btn-prev-kanji').addEventListener('click', () => navigateKanji(-1));
+  document.getElementById('btn-next-kanji').addEventListener('click', () => navigateKanji(1));
+
+  document.getElementById('btn-animate-sample').addEventListener('click', () => playSampleAnimation());
+
+  document.getElementById('btn-undo')?.addEventListener('click', () => undoCurrentSlot());
+  document.getElementById('btn-clear-slot')?.addEventListener('click', () => clearCurrentSlot());
+  document.getElementById('btn-hint')?.addEventListener('click', () => showHintForActiveSlot());
+  document.getElementById('btn-reset-all')?.addEventListener('click', () => resetAllSlots());
+
+  document.getElementById('btn-modal-retry').addEventListener('click', () => {
+    hideCompletionModal();
+    resetAllSlots();
+  });
+  document.getElementById('btn-modal-next').addEventListener('click', () => {
+    hideCompletionModal();
+    navigateKanji(1);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>

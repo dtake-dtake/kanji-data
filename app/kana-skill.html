@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>かなスキル — ひらがな・カタカナ書き順学習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   RESET & 1-PAGE FIT (SCROLL PROHIBITED)
+================================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+:root {
+  --bg-color: #f7f4ee;
+  --panel-bg: #ffffff;
+  --text-main: #1c1917;
+  --text-sub: #44403c;
+  --text-muted: #78716c;
+  --border-color: #e2dcd2;
+  --accent-red: #dc2626;
+  --accent-blue: #2563eb;
+  --accent-purple: #9333ea;
+  --ink-color: #18181b;
+  --font-gothic: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+}
+
+html, body {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden; /* スクロール禁止・1P完結 */
+  background-color: var(--bg-color);
+  font-family: var(--font-gothic);
+  color: var(--text-main);
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================================================
+   APP HEADER (44px, 漢字スキルと完全同一サイズ・デザイン)
+================================================================ */
+.app-header {
+  height: 44px;
+  min-height: 44px;
+  background: var(--panel-bg);
+  border-bottom: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-badge {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+  font-size: 0.76rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+.brand-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: 0.02em;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ひらがな / カタカナ 切替タブ */
+.kana-type-tabs {
+  display: inline-flex;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 1.5px;
+  gap: 2px;
+}
+.btn-kana-tab {
+  border: none;
+  background: transparent;
+  font-family: var(--font-gothic);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #475569;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-kana-tab:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+.btn-kana-tab.active {
+  background: #9333ea;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(147, 51, 234, 0.25);
+}
+
+.btn-nav {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+}
+.btn-nav:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+.btn-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.selector-wrap {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #9333ea;
+  border-radius: 8px;
+  padding: 1px 5px;
+  gap: 4px;
+}
+.custom-select {
+  font-family: var(--font-gothic);
+  font-size: 0.95rem;
+  font-weight: 800;
+  border: none;
+  background: transparent;
+  color: #581c87;
+  outline: none;
+  cursor: pointer;
+  padding: 1px 2px;
+}
+.custom-select.char-select {
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+/* ================================================================
+   MAIN CONTAINER (漢字スキルと完全同一サイズ・配置・統一感)
+================================================================ */
+.main-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px 10px;
+}
+
+.skill-book-container {
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 280px; /* 左: 練習6マス / 右: 大きな手本と言葉 */
+  gap: 14px;
+  background: #ffffff;
+  border: 2.5px solid #e2dcd2;
+  border-radius: 18px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .skill-book-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+/* ================================================================
+   LEFT COLUMN: 練習枠（縦2行 × 横3列 = 6マス）
+   縦書き文化: 右列(①なぞり) → 中列(②れんしゅう) → 左列(③ほんばん)
+================================================================ */
+.practice-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+  order: 1; /* 左側 */
+}
+@media (max-width: 860px) {
+  .practice-column {
+    order: 2;
+  }
+}
+
+/* 3列の見出しタグ（右開き縦書き文化: 右から左へ進む！） */
+.grid-col-headers {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.col-header-chip {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.header-trace {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.header-snap {
+  background: #fef3c7;
+  color: #92400e;
+}
+.header-free {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+/* 縦2 × 横3 グリッド（計6マス） */
+.practice-grid-3x2 {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.slot-card {
+  background: #ffffff;
+  border: 2px solid #d6cebf;
+  border-radius: 12px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  overflow: hidden;
+}
+.slot-card:hover {
+  border-color: #94a3b8;
+  background: #fafaf9;
+}
+.slot-card.active {
+  border-color: #9333ea;
+  background: #faf5ff;
+  box-shadow: 0 0 0 2.5px rgba(147, 51, 234, 0.22);
+}
+.slot-card.completed {
+  border-color: #fca5a5;
+  background: #fffafa;
+}
+
+/* 手書きキャンバス領域（正方形を維持・漢字スキルと完全同一構造） */
+.canvas-wrapper {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 1px solid #e7dfd5;
+  border-radius: 9px;
+  overflow: hidden;
+  touch-action: none;
+}
+.slot-card.active .canvas-wrapper {
+  border-color: #c084fc;
+  border-width: 1.5px;
+}
+.slot-card.completed .canvas-wrapper {
+  border-color: #fecaca;
+}
+
+.drawing-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+}
+
+/* 十字点線リーダー */
+.canvas-cross {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.canvas-cross-h {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed #cbd5e1;
+  transform: translateY(-50%);
+}
+.canvas-cross-v {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed #cbd5e1;
+  transform: translateX(-50%);
+}
+
+/* 正解時の赤ペン正円（◯）オーバーレイ（漢字スキルと完全同一アニメーション） */
+.maru-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 6;
+  pointer-events: none;
+  display: none;
+}
+.slot-card.completed .maru-overlay {
+  display: block;
+}
+.maru-circle {
+  fill: none;
+  stroke: #dc2626;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: drawMaruCircle 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  filter: drop-shadow(0 2px 4px rgba(220, 38, 38, 0.25));
+}
+@keyframes drawMaruCircle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ================================================================
+   RIGHT COLUMN: 見本マス（上部・大きく！）＋ ことば欄（下部・縦書き）
+================================================================ */
+.sample-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  order: 2; /* 右側 */
+  align-items: stretch;
+}
+@media (max-width: 860px) {
+  .sample-column {
+    order: 1;
+    height: auto;
+  }
+}
+
+/* 上部: 見本マスカード（適切な高さを保ち、余白をことば欄に譲る） */
+.sample-card {
+  width: 100%;
+  flex-shrink: 0;
+  background: #faf8f5;
+  border: 1.5px solid #e7dfd5;
+  border-radius: 14px;
+  padding: 8px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.sample-tag-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.sample-title-tag {
+  background: #9333ea;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+/* 上部見本マス（約200px〜210pxで大きく表示） */
+.sample-grid-box {
+  position: relative;
+  width: 100%;
+  max-width: 210px;
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 3px solid #9333ea;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(147, 51, 234, 0.12);
+}
+
+.cross-leader {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.cross-leader-h {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed #f5d0fe;
+  transform: translateY(-50%);
+}
+.cross-leader-v {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px dashed #f5d0fe;
+  transform: translateX(-50%);
+}
+
+.sample-svg-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.sample-controls {
+  width: 100%;
+  max-width: 220px;
+  margin-top: 6px;
+  display: flex;
+  flex-shrink: 0;
+}
+.btn-sample-play {
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+.btn-sample-play:hover {
+  background: #f3e8ff;
+  border-color: #c084fc;
+  color: #7e22ce;
+}
+
+/* ================================================================
+   下部: ことば欄（漢字スキルのreadings-panelと完全同一の高さ・配置）
+================================================================ */
+.words-panel {
+  width: 100%;
+  flex: 1;
+  min-height: 160px;
+  background: #ffffff;
+  border: 1.5px solid #e2dcd2;
+  border-radius: 14px;
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.words-panel-header {
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #78716c;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #f1ece4;
+  padding: 0 2px 4px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.words-title {
+  color: #44403c;
+  font-weight: 900;
+}
+.words-sub {
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+/* ことばカードの横並びスクロールエリア */
+.words-scroll-area {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.words-scroll-area::-webkit-scrollbar {
+  height: 4px;
+}
+.words-scroll-area::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.word-card {
+  height: 100%;
+  max-height: 175px;
+  min-width: 74px;
+  background: #fafaf9;
+  border: 1.5px solid #e7dfd5;
+  border-radius: 12px;
+  padding: 6px 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.word-card:hover {
+  transform: translateY(-2px);
+  border-color: #d8b4fe;
+  box-shadow: 0 4px 8px rgba(147, 51, 234, 0.1);
+}
+
+.word-emoji {
+  font-size: clamp(1.6rem, 3.8vh, 2.2rem);
+  line-height: 1;
+  margin-top: 2px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.08));
+  flex-shrink: 0;
+}
+
+.word-text-wrap {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.word-text-vertical {
+  writing-mode: vertical-rl;
+  -webkit-writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  display: block;
+  margin: 0 auto;
+  text-align: center;
+  white-space: nowrap;
+  transform-origin: top center;
+  transition: transform 0.1s ease;
+}
+.word-text-vertical.is-long {
+  font-size: 1.08rem;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+}
+
+.target-char-highlight {
+  color: #dc2626 !important;
+  font-weight: 900 !important;
+  font-size: 1.18em;
+  text-shadow: 0 0 1px rgba(220, 38, 38, 0.3);
+}
+
+/* ================================================================
+   COMPLETION MODAL (花丸スタンプ)
+================================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-card {
+  background: #ffffff;
+  border: 3px solid #dc2626;
+  border-radius: 22px;
+  padding: 24px 20px;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.18);
+  transform: scale(0.9);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal-overlay.active .modal-card {
+  transform: scale(1);
+}
+.modal-badge {
+  font-size: 3.5rem;
+  margin-bottom: 8px;
+  animation: bounce 1s infinite alternate ease-in-out;
+}
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #b91c1c;
+  margin-bottom: 4px;
+}
+.modal-sub {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 18px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.btn-modal {
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+.btn-modal-primary {
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  color: #ffffff;
+}
+.btn-modal-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     APP HEADER (44px, 漢字スキルと統一)
+================================================================ -->
+<header class="app-header">
+  <div class="header-brand">
+    <a id="btn-return-parent" href="#" class="btn-nav" style="display:none; background:#f1f5f9; text-decoration:none; margin-right:4px;">◀ もどる</a>
+    <span class="brand-badge">かなスキル</span>
+    <h1 class="brand-title" id="header-unit-title">ひらがな 「あ行」 の がくしゅう</h1>
+  </div>
+
+  <div class="header-nav">
+    <div class="kana-type-tabs">
+      <button class="btn-kana-tab active" id="tab-hiragana" onclick="switchKanaType('hiragana')">ひらがな</button>
+      <button class="btn-kana-tab" id="tab-katakana" onclick="switchKanaType('katakana')">カタカナ</button>
+    </div>
+
+    <button id="btn-prev" class="btn-nav" onclick="goToPrevChar()" title="前の文字">◀ まえ</button>
+
+    <div class="selector-wrap">
+      <select id="row-select" class="custom-select" onchange="onRowChange(this.value)">
+        <!-- JS生成 -->
+      </select>
+      <select id="char-select" class="custom-select char-select" onchange="onCharChange(this.value)">
+        <!-- JS生成 -->
+      </select>
+    </div>
+
+    <button id="btn-next" class="btn-nav" onclick="goToNextChar()" title="次の文字">つぎ ▶</button>
+    <a href="kanji-skill.html" class="btn-nav" style="background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; text-decoration:none;" title="漢字スキルへ移動">漢字スキル ➔</a>
+  </div>
+</header>
+
+<!-- ================================================================
+     MAIN CONTENT (1-PAGE FIT, NO SCROLL)
+================================================================ -->
+<main class="main-wrapper">
+  <div class="skill-book-container">
+
+    <!-- ============================================================
+         LEFT COLUMN: 練習枠（縦2行 × 横3列 = 6マス）
+         右開き文化: 右列(①なぞり) → 中列(②れんしゅう) → 左列(③ほんばん)
+    ============================================================ -->
+    <section class="practice-column">
+
+      <!-- 3列の見出しタグ（右開き文化: 右列が①なぞり、中列が②れんしゅう、左列が③ほんばん） -->
+      <div class="grid-col-headers">
+        <div class="col-header-chip header-free">③ ほんばん</div>
+        <div class="col-header-chip header-snap">② れんしゅう</div>
+        <div class="col-header-chip header-trace">① なぞり</div>
+      </div>
+
+      <!-- 縦2 × 横3 グリッド（計6マス） -->
+      <div class="practice-grid-3x2" id="practice-grid">
+        <!-- JSで6つのスロット要素を生成 -->
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         RIGHT COLUMN: 見本マス（上部・大きく！）＋ ことば欄（下部・縦書き）
+    ============================================================ -->
+    <aside class="sample-column">
+      <!-- 上部: 見本マスカード -->
+      <div class="sample-card">
+        <div class="sample-tag-row">
+          <span class="sample-title-tag">手本</span>
+          <span style="font-size:0.75rem; font-weight:900; color:#9333ea;" id="info-stroke-count">3画</span>
+        </div>
+        
+        <div class="sample-grid-box" id="sample-box">
+          <div class="cross-leader">
+            <div class="cross-leader-h"></div>
+            <div class="cross-leader-v"></div>
+          </div>
+          <!-- 見本SVG -->
+          <svg id="sample-svg" class="sample-svg-layer" viewBox="0 0 109 109">
+            <!-- JSで描画 -->
+          </svg>
+        </div>
+
+        <div class="sample-controls">
+          <button id="btn-animate-sample" class="btn-sample-play" onclick="playSampleAnimation()">
+            <span>▶ かき順アニメ</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 下部: ことば欄（絵文字 ＋ 縦書き単語、該当文字赤色太字ハイライト） -->
+      <div class="words-panel">
+        <div class="words-panel-header">
+          <span class="words-title">ことば</span>
+          <span class="words-sub">えをみて よんでみよう</span>
+        </div>
+
+        <div class="words-scroll-area" id="words-container">
+          <!-- JSで絵文字カードを動的生成 -->
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<!-- ================================================================
+     COMPLETION MODAL (花丸スタンプ)
+================================================================ -->
+<div class="modal-overlay" id="completion-modal">
+  <div class="modal-card">
+    <div class="modal-badge">💮</div>
+    <h2 class="modal-title">たいへんよくできました！</h2>
+    <p class="modal-sub">6マスぜんぶ まるがついたよ！</p>
+    <div class="modal-actions">
+      <button class="btn-modal btn-modal-secondary" onclick="retryCurrentChar()">もういちど</button>
+      <button class="btn-modal btn-modal-primary" onclick="goToNextChar()">つぎのもじ ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     DATA SCRIPTS (ルートおよびapp/両対応)
+================================================================ -->
+<script>
+(function() {
+  const isAppDir = window.location.pathname.includes('/app/') || window.location.pathname.includes('\\app\\');
+  const base = isAppDir ? '../' : './';
+  document.write('<script src="' + base + 'data/hiragana.js"><\/script>');
+  document.write('<script src="' + base + 'data/katakana.js"><\/script>');
+  document.write('<script src="' + base + 'data/kana-words.js"><\/script>');
+})();
+</script>
+
+<!-- ================================================================
+     APPLICATION LOGIC (縦書き右から練習・完全同期)
+================================================================ -->
+<script>
+const NS_SVG = 'http://www.w3.org/2000/svg';
+const SVG_VB = 109;
+
+let currentType = 'hiragana'; // 'hiragana' | 'katakana'
+let currentChar = 'あ';
+let strokeData = null;
+let animTimer = null;
+
+// ================================================================
+// 6マスの状態管理（右列から順に進行: 0, 1 -> 2, 3 -> 4, 5）
+// ================================================================
+// スロット定義:
+// 0: 右上 (①なぞり上)
+// 1: 右下 (①なぞり下)
+// 2: 中上 (②れんしゅう上)
+// 3: 中下 (②れんしゅう下)
+// 4: 左上 (③ほんばん上)
+// 5: 左下 (③ほんばん下)
+const slotsState = [
+  { id: 0, guide: true,  snap: true,  strokes: [], isDone: false, label: '① なぞり (上)', hintFlash: null },
+  { id: 1, guide: true,  snap: true,  strokes: [], isDone: false, label: '① なぞり (下)', hintFlash: null },
+  { id: 2, guide: false, snap: true,  strokes: [], isDone: false, label: '② れんしゅう (上)', hintFlash: null },
+  { id: 3, guide: false, snap: true,  strokes: [], isDone: false, label: '② れんしゅう (下)', hintFlash: null },
+  { id: 4, guide: false, snap: false, strokes: [], isDone: false, label: '③ ほんばん (上)', hintFlash: null },
+  { id: 5, guide: false, snap: false, strokes: [], isDone: false, label: '③ ほんばん (下)', hintFlash: null }
+];
+
+let activeSlotIdx = 0;
+let isDrawing = false;
+let currentPath = [];
+const lastTapTime = {};
+
+// ================================================================
+// INIT
+// ================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramType = urlParams.get('type');
+  const paramChar = urlParams.get('char');
+  const paramReturnUrl = urlParams.get('returnUrl');
+
+  if (paramType === 'katakana' || paramType === 'hiragana') {
+    currentType = paramType;
+  } else {
+    const savedType = localStorage.getItem('kana_skill_type');
+    if (savedType === 'katakana' || savedType === 'hiragana') {
+      currentType = savedType;
+    }
+  }
+
+  if (paramChar) {
+    currentChar = paramChar;
+  } else {
+    const savedChar = localStorage.getItem(`kana_skill_char_${currentType}`);
+    currentChar = savedChar || (currentType === 'hiragana' ? 'あ' : 'ア');
+  }
+
+  if (paramReturnUrl) {
+    const btnReturn = document.getElementById('btn-return-parent');
+    if (btnReturn) {
+      btnReturn.style.display = 'inline-flex';
+      btnReturn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.parent && window.parent !== window) {
+          window.parent.location.href = paramReturnUrl;
+        } else {
+          window.location.href = paramReturnUrl;
+        }
+      });
+    }
+  }
+
+  updateTabsUI();
+  initRowsAndChars();
+  buildPracticeGrid();
+  loadCharacter(currentChar);
+
+  window.addEventListener('resize', handleResize);
+
+  // キーボードショートカット
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'ArrowRight') {
+      goToNextChar();
+    } else if (e.key === 'ArrowLeft') {
+      goToPrevChar();
+    } else if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      playSampleAnimation();
+    } else if (e.key === 'Backspace') {
+      undoSlotStroke(activeSlotIdx);
+    }
+  });
+});
+
+// ================================================================
+// BUILD 3x2 GRID (縦書き右から進行: 右列[0,1] 中列[2,3] 左列[4,5])
+// ================================================================
+function buildPracticeGrid() {
+  const container = document.getElementById('practice-grid');
+  container.innerHTML = '';
+
+  // CSS Grid (3列×2行) の配置順:
+  // 1行目: [左: slot 4] [中: slot 2] [右: slot 0]
+  // 2行目: [左: slot 5] [中: slot 3] [右: slot 1]
+  const displayOrder = [
+    slotsState[4], slotsState[2], slotsState[0],
+    slotsState[5], slotsState[3], slotsState[1]
+  ];
+
+  displayOrder.forEach(slot => {
+    const card = document.createElement('div');
+    card.className = `slot-card ${slot.id === activeSlotIdx ? 'active' : ''}`;
+    card.id = `slot-card-${slot.id}`;
+    card.dataset.slotId = slot.id;
+
+    card.innerHTML = `
+      <div class="canvas-wrapper" id="canvas-wrap-${slot.id}">
+        <div class="canvas-cross">
+          <div class="canvas-cross-h"></div>
+          <div class="canvas-cross-v"></div>
+        </div>
+        <canvas class="drawing-canvas" id="canvas-${slot.id}"></canvas>
+        
+        <!-- 赤ペン正円（◯）オーバーレイ -->
+        <svg class="maru-overlay" viewBox="0 0 100 100">
+          <circle class="maru-circle" cx="50" cy="50" r="41" />
+        </svg>
+      </div>
+    `;
+
+    card.addEventListener('click', (e) => {
+      // ダブルタップ検知（リセット）
+      const now = Date.now();
+      const last = lastTapTime[slot.id] || 0;
+      if (now - last < 350) {
+        clearSlot(slot.id);
+        return;
+      }
+      lastTapTime[slot.id] = now;
+      selectSlot(slot.id);
+    });
+
+    container.appendChild(card);
+  });
+
+  // キャンバスのイベント登録
+  for (let i = 0; i < 6; i++) {
+    const canvas = document.getElementById(`canvas-${i}`);
+    if (!canvas) continue;
+
+    canvas.addEventListener('pointerdown', (e) => onPointerDown(i, e));
+    canvas.addEventListener('pointermove', (e) => onPointerMove(i, e));
+    canvas.addEventListener('pointerup', (e) => onPointerUp(i, e));
+    canvas.addEventListener('pointercancel', (e) => onPointerUp(i, e));
+  }
+
+  setTimeout(handleResize, 40);
+}
+
+function handleResize() {
+  for (let i = 0; i < 6; i++) {
+    const canvas = document.getElementById(`canvas-${i}`);
+    if (!canvas) continue;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    if (rect.width > 0 && rect.height > 0) {
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      drawSlot(i);
+    }
+  }
+  adjustWordTextScaling();
+}
+
+// ================================================================
+// TABS & SELECTION
+// ================================================================
+function switchKanaType(type) {
+  if (currentType === type) return;
+  currentType = type;
+  localStorage.setItem('kana_skill_type', type);
+
+  const savedChar = localStorage.getItem(`kana_skill_char_${currentType}`);
+  currentChar = savedChar || (type === 'hiragana' ? 'あ' : 'ア');
+
+  updateTabsUI();
+  initRowsAndChars();
+  loadCharacter(currentChar);
+}
+
+function updateTabsUI() {
+  const tabH = document.getElementById('tab-hiragana');
+  const tabK = document.getElementById('tab-katakana');
+  if (tabH) tabH.classList.toggle('active', currentType === 'hiragana');
+  if (tabK) tabK.classList.toggle('active', currentType === 'katakana');
+}
+
+function getDataSource() {
+  return currentType === 'hiragana' ? window.HIRAGANA_DATA : window.KATAKANA_DATA;
+}
+
+function initRowsAndChars() {
+  const data = getDataSource();
+  const rowSelect = document.getElementById('row-select');
+  if (!data || !rowSelect) return;
+
+  rowSelect.innerHTML = '';
+
+  const groups = data.meta.groups || {};
+  const allRows = [
+    ...(groups.seion || []),
+    ...(groups.dakuon || []),
+    ...(groups.special || [])
+  ];
+  const rows = allRows.length > 0 ? allRows : (data.meta.rows || []);
+
+  rows.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.name;
+    opt.textContent = r.name;
+    rowSelect.appendChild(opt);
+  });
+
+  let targetRowName = rows[0]?.name || '';
+  for (const r of rows) {
+    if (r.chars && r.chars.includes(currentChar)) {
+      targetRowName = r.name;
+      break;
+    }
+  }
+
+  rowSelect.value = targetRowName;
+  updateCharSelect(targetRowName);
+}
+
+function updateCharSelect(rowName) {
+  const data = getDataSource();
+  const charSelect = document.getElementById('char-select');
+  if (!data || !charSelect) return;
+
+  const groups = data.meta.groups || {};
+  const allRows = [
+    ...(groups.seion || []),
+    ...(groups.dakuon || []),
+    ...(groups.special || [])
+  ];
+  const rows = allRows.length > 0 ? allRows : (data.meta.rows || []);
+  const rowObj = rows.find(r => r.name === rowName) || rows[0];
+
+  charSelect.innerHTML = '';
+  if (rowObj && rowObj.chars) {
+    rowObj.chars.forEach(ch => {
+      const opt = document.createElement('option');
+      opt.value = ch;
+      opt.textContent = ch;
+      charSelect.appendChild(opt);
+    });
+
+    if (rowObj.chars.includes(currentChar)) {
+      charSelect.value = currentChar;
+    } else {
+      currentChar = rowObj.chars[0];
+      charSelect.value = currentChar;
+    }
+  }
+}
+
+function onRowChange(rowName) {
+  updateCharSelect(rowName);
+  const charSelect = document.getElementById('char-select');
+  if (charSelect && charSelect.value) {
+    loadCharacter(charSelect.value);
+  }
+}
+
+function onCharChange(ch) {
+  loadCharacter(ch);
+}
+
+function getAllCharsList() {
+  const data = getDataSource();
+  if (!data) return [];
+  const groups = data.meta.groups || {};
+  const allRows = [
+    ...(groups.seion || []),
+    ...(groups.dakuon || []),
+    ...(groups.special || [])
+  ];
+  const rows = allRows.length > 0 ? allRows : (data.meta.rows || []);
+  const list = [];
+  rows.forEach(r => {
+    if (r.chars) list.push(...r.chars);
+  });
+  return list;
+}
+
+function goToPrevChar() {
+  const list = getAllCharsList();
+  const idx = list.indexOf(currentChar);
+  if (idx > 0) {
+    loadCharacter(list[idx - 1]);
+  }
+}
+
+function goToNextChar() {
+  const list = getAllCharsList();
+  const idx = list.indexOf(currentChar);
+  if (idx !== -1 && idx < list.length - 1) {
+    loadCharacter(list[idx + 1]);
+  }
+}
+
+// ================================================================
+// LOAD CHARACTER
+// ================================================================
+function loadCharacter(ch) {
+  const data = getDataSource();
+  if (!data || !data.characters || !data.characters[ch]) {
+    console.warn('Character data not found:', ch);
+    return;
+  }
+
+  currentChar = ch;
+  localStorage.setItem(`kana_skill_char_${currentType}`, ch);
+
+  strokeData = data.characters[ch];
+
+  // タイトル更新
+  const typeName = currentType === 'hiragana' ? 'ひらがな' : 'カタカナ';
+  const rowName = strokeData.row || '';
+  const titleEl = document.getElementById('header-unit-title');
+  if (titleEl) {
+    titleEl.textContent = `${typeName} 「${rowName}・${ch}」 の がくしゅう`;
+  }
+  document.title = `かなスキル — ${typeName} 「${ch}」`;
+
+  // UI更新
+  const charSelect = document.getElementById('char-select');
+  if (charSelect && charSelect.value !== ch) {
+    charSelect.value = ch;
+  }
+  const strokeCountEl = document.getElementById('info-stroke-count');
+  if (strokeCountEl) {
+    strokeCountEl.textContent = `${strokeData.strokeCount}画`;
+  }
+
+  const list = getAllCharsList();
+  const idx = list.indexOf(ch);
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  if (btnPrev) btnPrev.disabled = (idx <= 0);
+  if (btnNext) btnNext.disabled = (idx >= list.length - 1 || idx === -1);
+
+  // 見本描画＆アニメーション
+  renderSample();
+  setTimeout(() => playSampleAnimation(), 150);
+
+  // 単語・絵文字表示
+  renderWords(ch);
+
+  // マスリセット（右上のなぞり0から開始！）
+  resetAllSlots();
+  hideCompletionModal();
+}
+
+// ================================================================
+// WORDS & EMOJI (下部カード描画・赤ハイライト)
+// ================================================================
+function renderWords(ch) {
+  const container = document.getElementById('words-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const wordsDict = window.KANA_WORDS ? window.KANA_WORDS[currentType] : null;
+  const wordEntries = (wordsDict && wordsDict[ch]) ? wordsDict[ch] : [
+    { emoji: "✏️", word: ch }
+  ];
+
+  wordEntries.forEach(entry => {
+    const card = document.createElement('div');
+    card.className = 'word-card';
+
+    const emojiDiv = document.createElement('div');
+    emojiDiv.className = 'word-emoji';
+    emojiDiv.textContent = entry.emoji || '📝';
+
+    const wrapDiv = document.createElement('div');
+    wrapDiv.className = 'word-text-wrap';
+
+    const textDiv = document.createElement('div');
+    textDiv.className = `word-text-vertical ${(entry.word && entry.word.length >= 4) ? 'is-long' : ''}`;
+    textDiv.innerHTML = highlightTargetChar(entry.word, ch);
+
+    wrapDiv.appendChild(textDiv);
+    card.appendChild(emojiDiv);
+    card.appendChild(wrapDiv);
+    container.appendChild(card);
+  });
+
+  requestAnimationFrame(adjustWordTextScaling);
+}
+
+function adjustWordTextScaling() {
+  const cards = document.querySelectorAll('.word-card');
+  cards.forEach(card => {
+    const textDiv = card.querySelector('.word-text-vertical');
+    const wrap = card.querySelector('.word-text-wrap');
+    if (!textDiv || !wrap) return;
+
+    textDiv.style.transform = 'none';
+    const wrapH = wrap.clientHeight;
+    const textH = textDiv.scrollHeight;
+
+    if (textH > 0 && wrapH > 0 && textH > wrapH) {
+      const scale = Math.max(0.62, (wrapH - 2) / textH);
+      textDiv.style.transform = `scale(${scale})`;
+    }
+  });
+}
+
+function highlightTargetChar(word, targetChar) {
+  if (!word) return '';
+  let result = '';
+  for (let i = 0; i < word.length; i++) {
+    const c = word[i];
+    if (c === targetChar) {
+      result += `<span class="target-char-highlight">${c}</span>`;
+    } else {
+      result += c;
+    }
+  }
+  return result;
+}
+
+// ================================================================
+// SAMPLE (手本アニメーション)
+// ================================================================
+function renderSample() {
+  const svg = document.getElementById('sample-svg');
+  if (!svg || !strokeData) return;
+  svg.innerHTML = '';
+
+  strokeData.paths.forEach((pStr, idx) => {
+    const path = document.createElementNS(NS_SVG, 'path');
+    path.setAttribute('d', pStr);
+    path.setAttribute('stroke', '#18181b');
+    path.setAttribute('stroke-width', '4.4');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('fill', 'none');
+    path.id = `sample-path-${idx}`;
+    svg.appendChild(path);
+  });
+}
+
+function playSampleAnimation() {
+  if (!strokeData) return;
+  if (animTimer) clearTimeout(animTimer);
+
+  const paths = strokeData.paths;
+  const svg = document.getElementById('sample-svg');
+  if (!svg) return;
+
+  svg.innerHTML = '';
+
+  // ガイド薄文字
+  paths.forEach(pStr => {
+    const bgP = document.createElementNS(NS_SVG, 'path');
+    bgP.setAttribute('d', pStr);
+    bgP.setAttribute('stroke', '#e2e8f0');
+    bgP.setAttribute('stroke-width', '4.4');
+    bgP.setAttribute('stroke-linecap', 'round');
+    bgP.setAttribute('stroke-linejoin', 'round');
+    bgP.setAttribute('fill', 'none');
+    svg.appendChild(bgP);
+  });
+
+  let currentIdx = 0;
+
+  function animateNext() {
+    if (currentIdx >= paths.length) {
+      animTimer = setTimeout(() => {
+        renderSample();
+      }, 500);
+      return;
+    }
+
+    const pStr = paths[currentIdx];
+    const path = document.createElementNS(NS_SVG, 'path');
+    path.setAttribute('d', pStr);
+    path.setAttribute('stroke', '#9333ea');
+    path.setAttribute('stroke-width', '4.8');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+
+    const duration = Math.min(650, Math.max(300, length * 4.2));
+
+    path.animate([
+      { strokeDashoffset: length },
+      { strokeDashoffset: 0 }
+    ], {
+      duration: duration,
+      fill: 'forwards',
+      easing: 'ease-in-out'
+    }).onfinish = () => {
+      path.setAttribute('stroke', '#18181b');
+      currentIdx++;
+      animTimer = setTimeout(animateNext, 120);
+    };
+  }
+
+  animateNext();
+}
+
+// ================================================================
+// DRAWING ROUTINES (右から練習開始: 0, 1 -> 2, 3 -> 4, 5)
+// ================================================================
+function resetAllSlots() {
+  slotsState.forEach(s => {
+    s.strokes = [];
+    s.isDone = false;
+    s.hintFlash = null;
+    const card = document.getElementById(`slot-card-${s.id}`);
+    if (card) card.classList.remove('completed');
+  });
+  // 右上スロット0 (①なぞり上) を最初にアクティブ化！
+  selectSlot(0);
+  handleResize();
+}
+
+function clearSlot(slotId) {
+  const slot = slotsState[slotId];
+  slot.strokes = [];
+  slot.isDone = false;
+  slot.hintFlash = null;
+  const card = document.getElementById(`slot-card-${slotId}`);
+  if (card) card.classList.remove('completed');
+  drawSlot(slotId);
+}
+
+function undoSlotStroke(slotId) {
+  const slot = slotsState[slotId];
+  if (slot.isDone) return;
+  if (slot.strokes.length > 0) {
+    slot.strokes.pop();
+    drawSlot(slotId);
+  }
+}
+
+function retryCurrentChar() {
+  hideCompletionModal();
+  resetAllSlots();
+}
+
+function selectSlot(slotId) {
+  activeSlotIdx = slotId;
+  slotsState.forEach(s => {
+    const card = document.getElementById(`slot-card-${s.id}`);
+    if (card) card.classList.toggle('active', s.id === slotId);
+  });
+}
+
+function getNormalizedPoint(canvas, e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const normX = (x / rect.width) * SVG_VB;
+  const normY = (y / rect.height) * SVG_VB;
+  return { x: normX, y: normY };
+}
+
+function onPointerDown(slotId, e) {
+  if (slotId !== activeSlotIdx) {
+    selectSlot(slotId);
+  }
+  const slot = slotsState[slotId];
+  if (slot.isDone) return;
+
+  const canvas = document.getElementById(`canvas-${slotId}`);
+  canvas.setPointerCapture(e.pointerId);
+
+  isDrawing = true;
+  currentPath = [getNormalizedPoint(canvas, e)];
+  drawSlot(slotId);
+}
+
+function onPointerMove(slotId, e) {
+  if (!isDrawing) return;
+  const canvas = document.getElementById(`canvas-${slotId}`);
+  currentPath.push(getNormalizedPoint(canvas, e));
+  drawSlot(slotId);
+}
+
+function onPointerUp(slotId, e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+
+  const slot = slotsState[slotId];
+  if (!strokeData || !strokeData.paths) return;
+
+  const strokeIdx = slot.strokes.length;
+  if (strokeIdx >= strokeData.paths.length) return;
+
+  const targetPathD = strokeData.paths[strokeIdx];
+  const userPts = currentPath.map(p => ({ x: p.x, y: p.y }));
+
+  // なぞりマス (0, 1) は許容度甘め
+  const tolerance = (slotId === 0 || slotId === 1) ? 22 : 18;
+  const isMatch = verifyStroke(targetPathD, userPts, tolerance);
+
+  if (isMatch) {
+    if (slot.snap) {
+      // ①なぞり・②れんしゅう: 手本SVGパスに美しく吸着！
+      slot.strokes.push({ type: 'snap', path: targetPathD });
+    } else {
+      // ③ほんばん: 自分の肉筆軌跡をそのまま残す！
+      slot.strokes.push({ type: 'free', points: [...currentPath] });
+    }
+    currentPath = [];
+    drawSlot(slotId);
+
+    if (slot.strokes.length === strokeData.paths.length) {
+      onSlotComplete(slotId);
+    }
+  } else {
+    // 間違い時は始点オレンジ点滅ヒントを表示して自動消去
+    currentPath = [];
+    const pathInfo = parsePathPoints(targetPathD);
+    if (pathInfo && pathInfo.points && pathInfo.points.length > 0) {
+      slot.hintFlash = pathInfo.points[0];
+      drawSlot(slotId);
+      setTimeout(() => {
+        slot.hintFlash = null;
+        drawSlot(slotId);
+      }, 700);
+    } else {
+      drawSlot(slotId);
+    }
+  }
+}
+
+function drawSvgPath(ctx, dStr, scale, color, lineWidth) {
+  ctx.save();
+  ctx.scale(scale, scale);
+  const p = new Path2D(dStr);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke(p);
+  ctx.restore();
+}
+
+function drawSmoothStroke(ctx, pts, scale, color, lineWidth) {
+  if (pts.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  
+  if (pts.length === 2) {
+    ctx.moveTo(pts[0].x * scale, pts[0].y * scale);
+    ctx.lineTo(pts[1].x * scale, pts[1].y * scale);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  ctx.moveTo(pts[0].x * scale, pts[0].y * scale);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const midX = (pts[i].x + pts[i + 1].x) / 2;
+    const midY = (pts[i].y + pts[i + 1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x * scale, pts[i].y * scale, midX * scale, midY * scale);
+  }
+  ctx.lineTo(pts[pts.length - 1].x * scale, pts[pts.length - 1].y * scale);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSlot(slotId) {
+  const canvas = document.getElementById(`canvas-${slotId}`);
+  if (!canvas || !strokeData) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  const scale = rect.width / SVG_VB;
+  const slot = slotsState[slotId];
+
+  // 1. なぞりマス (0, 1) の薄いお手本文字
+  if (slot.guide && !slot.isDone) {
+    strokeData.paths.forEach((pStr, pIdx) => {
+      if (pIdx < slot.strokes.length) return; // 確定済みの画はスキップ
+      const isNext = (pIdx === slot.strokes.length);
+      const color = isNext ? 'rgba(148, 163, 184, 0.7)' : 'rgba(203, 213, 225, 0.45)';
+      const width = isNext ? 3.6 : 3.0;
+      drawSvgPath(ctx, pStr, scale, color, width);
+    });
+  }
+
+  // 2. 確定済みのストローク（黒墨色）
+  slot.strokes.forEach(strokeItem => {
+    if (strokeItem.type === 'snap') {
+      drawSvgPath(ctx, strokeItem.path, scale, '#18181b', 4.4);
+    } else if (strokeItem.type === 'free') {
+      drawSmoothStroke(ctx, strokeItem.points, scale, '#18181b', 4.2 * scale);
+    }
+  });
+
+  // 3. 現在描いているストローク（青紫色・滑らか）
+  if (isDrawing && activeSlotIdx === slotId && currentPath.length > 1) {
+    drawSmoothStroke(ctx, currentPath, scale, '#9333ea', 4.4 * scale);
+  }
+
+  // 4. ミス時ヒント（始点のオレンジ点滅）
+  if (slot.hintFlash) {
+    ctx.save();
+    ctx.fillStyle = '#ea580c';
+    ctx.shadowColor = 'rgba(234, 88, 12, 0.85)';
+    ctx.shadowBlur = 8 * scale;
+    ctx.beginPath();
+    ctx.arc(slot.hintFlash.x * scale, slot.hintFlash.y * scale, 6.5 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ================================================================
+// STROKE VERIFICATION
+// ================================================================
+let hiddenSvg = null;
+function getHiddenSvg() {
+  if (!hiddenSvg) {
+    hiddenSvg = document.createElementNS(NS_SVG, 'svg');
+    hiddenSvg.setAttribute('viewBox', '0 0 109 109');
+    hiddenSvg.style.position = 'absolute';
+    hiddenSvg.style.width = '0';
+    hiddenSvg.style.height = '0';
+    hiddenSvg.style.visibility = 'hidden';
+    document.body.appendChild(hiddenSvg);
+  }
+  return hiddenSvg;
+}
+
+function parsePathPoints(dStr) {
+  const svg = getHiddenSvg();
+  const path = document.createElementNS(NS_SVG, 'path');
+  path.setAttribute('d', dStr);
+  svg.appendChild(path);
+
+  const len = path.getTotalLength();
+  const n = Math.max(16, Math.ceil(len / 3));
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const pt = path.getPointAtLength((i / n) * len);
+    pts.push({ x: pt.x, y: pt.y });
+  }
+  svg.removeChild(path);
+  return { length: len, points: pts };
+}
+
+function verifyStroke(targetD, userPts, tolerance) {
+  if (!userPts || userPts.length < 2) return false;
+  const { length: refLen, points: refPts } = parsePathPoints(targetD);
+  if (!refPts || refPts.length === 0) return false;
+
+  const startRef = refPts[0];
+  const endRef = refPts[refPts.length - 1];
+  const startUser = userPts[0];
+  const endUser = userPts[userPts.length - 1];
+
+  const distStart = Math.hypot(startUser.x - startRef.x, startUser.y - startRef.y);
+  if (distStart > tolerance) return false;
+
+  let userLen = 0;
+  for (let i = 1; i < userPts.length; i++) {
+    userLen += Math.hypot(userPts[i].x - userPts[i - 1].x, userPts[i].y - userPts[i - 1].y);
+  }
+
+  if (refLen < 16) {
+    if (distStart <= tolerance && userLen <= tolerance * 1.5) {
+      return true;
+    }
+  }
+
+  if (refLen >= 16) {
+    if (userLen < refLen * 0.35 || userLen > refLen * 2.2) return false;
+  }
+
+  const distEnd = Math.hypot(endUser.x - endRef.x, endUser.y - endRef.y);
+  if (distEnd > tolerance * 1.35) return false;
+
+  const dxRef = endRef.x - startRef.x;
+  const dyRef = endRef.y - startRef.y;
+  const dxUser = endUser.x - startUser.x;
+  const dyUser = endUser.y - startUser.y;
+  const dot = (dxRef * dxUser + dyRef * dyUser);
+  if (refLen >= 16 && dot < 0) return false;
+
+  let matched = 0;
+  const step = Math.max(1, Math.floor(refPts.length / 8));
+  let sampleCount = 0;
+
+  for (let i = 0; i < refPts.length; i += step) {
+    sampleCount++;
+    const rp = refPts[i];
+    let minDist = Infinity;
+    for (let j = 0; j < userPts.length; j++) {
+      const d = Math.hypot(userPts[j].x - rp.x, userPts[j].y - rp.y);
+      if (d < minDist) minDist = d;
+    }
+    if (minDist <= tolerance * 1.15) matched++;
+  }
+
+  return (matched / sampleCount) >= 0.58;
+}
+
+// ================================================================
+// ON SLOT COMPLETE (右から順次自動遷移: 0->1->2->3->4->5)
+// ================================================================
+function onSlotComplete(slotId) {
+  const slot = slotsState[slotId];
+  slot.isDone = true;
+  drawSlot(slotId);
+
+  const card = document.getElementById(`slot-card-${slotId}`);
+  if (card) {
+    card.classList.add('completed');
+  }
+
+  const allCompleted = slotsState.every(s => s.isDone);
+  if (allCompleted) {
+    setTimeout(() => {
+      showCompletionModal();
+    }, 550);
+  } else {
+    // 次のスロット（0 -> 1 -> 2 -> 3 -> 4 -> 5）を探す
+    const nextSlot = slotsState.find(s => !s.isDone);
+    if (nextSlot) {
+      setTimeout(() => {
+        selectSlot(nextSlot.id);
+      }, 450);
+    }
+  }
+}
+
+// ================================================================
+// MODAL
+// ================================================================
+function showCompletionModal() {
+  const modal = document.getElementById('completion-modal');
+  if (modal) modal.classList.add('active');
+
+  // 親アプリ (learning-platform) への学習完了通知 (postMessage)
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'SKILL_COMPLETED',
+        mode: currentType, // 'hiragana' | 'katakana'
+        char: currentChar,
+        timestamp: Date.now()
+      }, '*');
+    }
+  } catch (err) {
+    console.error('Failed to postMessage to parent:', err);
+  }
+}
+
+function hideCompletionModal() {
+  const modal = document.getElementById('completion-modal');
+  if (modal) modal.classList.remove('active');
+}
+</script>
+
+</body>
+</html>

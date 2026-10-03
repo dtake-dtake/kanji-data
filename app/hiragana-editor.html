@@ -218,8 +218,12 @@
 <body>
 
   <header>
-    <a href="hiragana-practice.html">← ドリルへ</a>
-    <h1>ひらがな 筆順エディタ</h1>
+    <a href="hiragana-drill.html">← ドリルへ</a>
+    <h1 id="editor-title">ひらがな 筆順エディタ</h1>
+    <select id="kana-mode-select" style="font-weight:bold; padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff3e0;">
+      <option value="hiragana">ひらがな</option>
+      <option value="katakana">カタカナ</option>
+    </select>
     
     <button id="prev-char-btn" title="前の文字 (←)">◀</button>
     <span id="char-position" style="font-size:13px; font-weight:bold; min-width:40px; text-align:center;">あ</span>
@@ -377,6 +381,9 @@
   <script>
     // --- State ---
     let hiraganaData = null;
+    let katakanaData = null;
+    let kanaMode = 'hiragana'; // 'hiragana' or 'katakana'
+    function activeKanaData() { return kanaMode === 'katakana' ? katakanaData : hiraganaData; }
     let currentChar = null;
     let currentStrokeIndex = -1;
     let parsedStrokes = [];
@@ -498,7 +505,7 @@
       const y = parseFloat(document.getElementById('font-y').value);
 
       // 小文字（促音・拗音）の場合は左下の部屋の中心（x=27.25, y=81.75）に配置
-      const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(currentChar.char);
+      const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ','ァ','ィ','ゥ','ェ','ォ','ャ','ュ','ョ','ッ'].includes(currentChar.char);
       const effectiveSize = isSmallKana ? size * 0.62 : size;
       const effectiveX = isSmallKana ? 27.25 : 54.5;
       const effectiveY = isSmallKana ? 81.75 : y;
@@ -543,14 +550,49 @@
         const res = await fetch('../data/hiragana.json?t=' + Date.now());
         if (!res.ok) throw new Error('Data not found');
         hiraganaData = await res.json();
+
+        // Load katakana data
+        try {
+          const kRes = await fetch('../data/katakana.json?t=' + Date.now());
+          if (kRes.ok) katakanaData = await kRes.json();
+        } catch(e) { console.warn('katakana.json not found'); }
         
+        // Check URL params for mode
+        const params = new URLSearchParams(window.location.search);
+        const modeParam = params.get('mode');
+        if (modeParam === 'katakana' && katakanaData) {
+          kanaMode = 'katakana';
+          document.getElementById('kana-mode-select').value = 'katakana';
+          document.getElementById('editor-title').textContent = 'カタカナ 筆順エディタ';
+        }
+
         initGojuonTabs();
         renderGojuon();
         
-        const params = new URLSearchParams(window.location.search);
-        const charParam = params.get('char') || 'あ';
+        let charParam = params.get('char');
+        const data = activeKanaData();
+        if (!charParam || !data || !data.characters || !data.characters[charParam]) {
+          charParam = kanaMode === 'katakana' ? 'ア' : 'あ';
+        }
         loadChar(charParam);
         
+        // Kana mode switch
+        document.getElementById('kana-mode-select').addEventListener('change', (e) => {
+          if (e.target.value === 'katakana' && !katakanaData) {
+            e.target.value = 'hiragana';
+            showToast('カタカナデータがありません', true);
+            return;
+          }
+          kanaMode = e.target.value;
+          document.getElementById('editor-title').textContent =
+            kanaMode === 'katakana' ? 'カタカナ 筆順エディタ' : 'ひらがな 筆順エディタ';
+          currentGojuonTab = 'seion';
+          renderGojuon();
+          const firstChar = kanaMode === 'katakana' ? 'ア' : 'あ';
+          loadChar(firstChar);
+          updateUrlChar(firstChar);
+        });
+
         setupEventListeners();
       } catch (err) {
         showToast('データの読み込みに失敗しました', true);
@@ -564,15 +606,18 @@
     function renderGojuon() {
       const container = document.getElementById('gojuon-grid');
       container.innerHTML = '';
-      if (!hiraganaData || !hiraganaData.meta) return;
+      const data = activeKanaData();
+      if (!data || !data.meta) return;
 
       // タブごとの行データを取得
       let rows = [];
-      if (hiraganaData.meta.groups) {
-        rows = hiraganaData.meta.groups[currentGojuonTab] || hiraganaData.meta.rows;
-      } else {
-        rows = hiraganaData.meta.rows;
+      if (data.meta.groups) {
+        rows = data.meta.groups[currentGojuonTab] || data.meta.rows || [];
+      } else if (data.meta.rows) {
+        rows = data.meta.rows;
       }
+
+      if (!Array.isArray(rows)) rows = [];
 
       rows.forEach(row => {
         const rowEl = document.createElement('div');
@@ -615,16 +660,24 @@
     function updateUrlChar(charStr) {
       const url = new URL(window.location);
       url.searchParams.set('char', charStr);
+      url.searchParams.set('mode', kanaMode);
       window.history.pushState({}, '', url);
     }
 
     // 親子（清音 ↔ 濁音・半濁音）マップ
     const CHAR_PARENT_MAP = {
+      // ひらがな
       'が': 'か', 'ぎ': 'き', 'ぐ': 'く', 'げ': 'け', 'ご': 'こ',
       'ざ': 'さ', 'じ': 'し', 'ず': 'す', 'ぜ': 'せ', 'ぞ': 'そ',
       'だ': 'た', 'ぢ': 'ち', 'づ': 'つ', 'で': 'て', 'ど': 'と',
       'ば': 'は', 'び': 'ひ', 'ぶ': 'ふ', 'べ': 'へ', 'ぼ': 'ほ',
-      'ぱ': 'は', 'ぴ': 'ひ', 'ぷ': 'ふ', 'ぺ': 'へ', 'ぽ': 'ほ'
+      'ぱ': 'は', 'ぴ': 'ひ', 'ぷ': 'ふ', 'ぺ': 'へ', 'ぽ': 'ほ',
+      // カタカナ
+      'ガ': 'カ', 'ギ': 'キ', 'グ': 'ク', 'ゲ': 'ケ', 'ゴ': 'コ',
+      'ザ': 'サ', 'ジ': 'シ', 'ズ': 'ス', 'ゼ': 'セ', 'ゾ': 'ソ',
+      'ダ': 'タ', 'ヂ': 'チ', 'ヅ': 'ツ', 'デ': 'テ', 'ド': 'ト',
+      'バ': 'ハ', 'ビ': 'ヒ', 'ブ': 'フ', 'ベ': 'ヘ', 'ボ': 'ホ',
+      'パ': 'ハ', 'ピ': 'ヒ', 'プ': 'フ', 'ペ': 'ヘ', 'ポ': 'ホ'
     };
     const CHAR_CHILDREN_MAP = {};
     for (const [child, parent] of Object.entries(CHAR_PARENT_MAP)) {
@@ -634,14 +687,26 @@
 
     // 清音→小文字マップ（小文字化ボタン用）
     const CHAR_SMALL_MAP = {
+      // ひらがな
       'や': 'ゃ',
       'ゆ': 'ゅ',
       'よ': 'ょ',
       'つ': 'っ',
+      // カタカナ
+      'ア': 'ァ',
+      'イ': 'ィ',
+      'ウ': 'ゥ',
+      'エ': 'ェ',
+      'オ': 'ォ',
+      'ヤ': 'ャ',
+      'ユ': 'ュ',
+      'ヨ': 'ョ',
+      'ツ': 'ッ'
     };
 
     async function saveCurrentChar(isSilent = false) {
-      if (!currentChar || !hiraganaData || !parsedStrokes || parsedStrokes.length === 0) return;
+      const data = activeKanaData();
+      if (!currentChar || !data || !parsedStrokes || parsedStrokes.length === 0) return;
       const newPaths = parsedStrokes.map(s => buildSvgPath(s));
       const originalPaths = currentChar.paths || [];
       const isChanged = JSON.stringify(originalPaths) !== JSON.stringify(newPaths);
@@ -649,16 +714,16 @@
       if (!isChanged && isSilent) return; // 変更なし＆自動保存なら通信スキップ
 
       currentChar.paths = newPaths;
-      hiraganaData.characters[currentChar.char] = JSON.parse(JSON.stringify(currentChar));
+      data.characters[currentChar.char] = JSON.parse(JSON.stringify(currentChar));
 
-      // 子文字（濁音・半濁音）の本体も自動同期！
+      // 子文字（濁音・半濁音）の本体も自動同期
       let syncedChildren = [];
       const children = CHAR_CHILDREN_MAP[currentChar.char];
       if (children && children.length > 0) {
         children.forEach(childChar => {
-          const cData = hiraganaData.characters[childChar];
+          const cData = data.characters[childChar];
           if (cData) {
-            const isHandaku = ['ぱ','ぴ','ぷ','ぺ','ぽ'].includes(childChar);
+            const isHandaku = ['ぱ','ぴ','ぷ','ぺ','ぽ','パ','ピ','プ','ペ','ポ'].includes(childChar);
             const dotCount = isHandaku ? 1 : 2;
             const dots = cData.paths.slice(-dotCount);
             cData.paths = [...currentChar.paths, ...dots];
@@ -666,6 +731,29 @@
             syncedChildren.push(childChar);
           }
         });
+      }
+
+      if (kanaMode === 'katakana') {
+        // カタカナ保存 (全体保存で同期文字も含めて確実に保存)
+        try {
+          const res = await fetch('/api/save-katakana', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(katakanaData)
+          });
+          if (res.ok) {
+            const syncMsg = syncedChildren.length > 0 ? `（${syncedChildren.join('・')} も自動同期）` : '';
+            if (!isSilent) showToast(`保存しました ${syncMsg}`);
+            else showToast(`「${currentChar.char}」を自動保存 ${syncMsg}`);
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            showToast(`保存失敗: ${errData.error || res.statusText}`, true);
+          }
+        } catch (e) {
+          console.error('Save error:', e);
+          showToast('サーバーに接続できません（server.js が停止している可能性があります）', true);
+        }
+        return;
       }
 
       try {
@@ -679,21 +767,23 @@
           if (!isSilent) showToast(`保存しました ${syncMsg}`);
           else showToast(`「${currentChar.char}」を自動保存 ${syncMsg}`);
         } else {
-          showToast('保存に失敗しました', true);
+          const errData = await res.json().catch(() => ({}));
+          showToast(`保存失敗: ${errData.error || res.statusText}`, true);
         }
       } catch (e) {
         console.error('Save error:', e);
-        showToast('保存エラーが発生しました', true);
+        showToast('サーバーに接続できません（server.js が停止している可能性があります）', true);
       }
     }
 
     function syncWithParent() {
       if (!currentChar) return;
       const parentChar = CHAR_PARENT_MAP[currentChar.char];
-      if (!parentChar || !hiraganaData || !hiraganaData.characters[parentChar]) return;
+      const data = activeKanaData();
+      if (!parentChar || !data || !data.characters[parentChar]) return;
 
-      const pData = hiraganaData.characters[parentChar];
-      const isHandaku = ['ぱ','ぴ','ぷ','ぺ','ぽ'].includes(currentChar.char);
+      const pData = data.characters[parentChar];
+      const isHandaku = ['ぱ','ぴ','ぷ','ぺ','ぽ','パ','ピ','プ','ペ','ポ'].includes(currentChar.char);
       const dotCount = isHandaku ? 1 : 2;
 
       // 現在の濁点（末尾の画）を取得
@@ -710,7 +800,8 @@
     }
 
     async function loadChar(charStr) {
-      if (!hiraganaData || !hiraganaData.characters[charStr]) {
+      const data = activeKanaData();
+      if (!data || !data.characters[charStr]) {
         showToast(`文字「${charStr}」が見つかりません`, true);
         return;
       }
@@ -721,7 +812,7 @@
         await saveCurrentChar(true);
       }
       
-      currentChar = JSON.parse(JSON.stringify(hiraganaData.characters[charStr])); // Deep copy
+      currentChar = JSON.parse(JSON.stringify(data.characters[charStr])); // Deep copy
       parsedStrokes = currentChar.paths.map(p => parseSvgPath(p));
       currentStrokeIndex = 0;
       
@@ -763,10 +854,11 @@
     }
 
     function updateGojuonSelection() {
-      if (!currentChar || !hiraganaData) return;
+      const data = activeKanaData();
+      if (!currentChar || !data) return;
       // 所属グループを判定してタブを自動同期
-      if (hiraganaData.meta && hiraganaData.meta.groups) {
-        for (const [tabKey, rows] of Object.entries(hiraganaData.meta.groups)) {
+      if (data.meta && data.meta.groups) {
+        for (const [tabKey, rows] of Object.entries(data.meta.groups)) {
           const hasChar = rows.some(r => r.chars.includes(currentChar.char));
           if (hasChar && currentGojuonTab !== tabKey) {
             currentGojuonTab = tabKey;
@@ -785,8 +877,9 @@
     }
 
     function getFlatChars() {
-      if (!hiraganaData || !hiraganaData.characters) return [];
-      return Object.keys(hiraganaData.characters);
+      const data = activeKanaData();
+      if (!data || !data.characters) return [];
+      return Object.keys(data.characters);
     }
 
     function navigateChar(delta) {
@@ -1537,7 +1630,7 @@
         const fontSize = parseFloat(document.getElementById('font-size').value);
         const fontY = parseFloat(document.getElementById('font-y').value);
 
-        const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(char);
+        const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ','ァ','ィ','ゥ','ェ','ォ','ャ','ュ','ョ','ッ'].includes(char);
         const effSize = isSmallKana ? fontSize * 0.62 : fontSize;
         const effX = isSmallKana ? 27.25 : 54.5;
         const effY = isSmallKana ? 81.75 : fontY;
@@ -1745,7 +1838,7 @@
         const fontSize = parseFloat(document.getElementById('font-size').value);
         const fontY = parseFloat(document.getElementById('font-y').value);
 
-        const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ'].includes(char);
+        const isSmallKana = ['ゃ','ゅ','ょ','っ','ぁ','ぃ','ぅ','ぇ','ぉ','ァ','ィ','ゥ','ェ','ォ','ャ','ュ','ョ','ッ'].includes(char);
         const effSize = isSmallKana ? fontSize * 0.62 : fontSize;
         const effX = isSmallKana ? 27.25 : 54.5;
         const effY = isSmallKana ? 81.75 : fontY;
@@ -2504,18 +2597,21 @@
         });
 
         // 小文字データを更新
-        if (!hiraganaData.characters[smallChar]) {
-          hiraganaData.characters[smallChar] = { char: smallChar, strokeCount: transformedPaths.length, paths: [] };
+        const data = activeKanaData();
+        if (!data.characters[smallChar]) {
+          data.characters[smallChar] = { char: smallChar, strokeCount: transformedPaths.length, paths: [] };
         }
-        hiraganaData.characters[smallChar].paths = transformedPaths;
-        hiraganaData.characters[smallChar].strokeCount = transformedPaths.length;
+        data.characters[smallChar].paths = transformedPaths;
+        data.characters[smallChar].strokeCount = transformedPaths.length;
 
         // サーバーに保存
         try {
-          const res = await fetch('/api/save-hiragana', {
+          const endpoint = kanaMode === 'katakana' ? '/api/save-katakana' : '/api/save-hiragana';
+          const payload = kanaMode === 'katakana' ? katakanaData : hiraganaData;
+          const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(hiraganaData)
+            body: JSON.stringify(payload)
           });
           if (res.ok) {
             showToast(`「${currentChar.char}」→「${smallChar}」に小文字化して保存しました`);

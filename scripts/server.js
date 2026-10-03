@@ -271,8 +271,60 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── API: Save Katakana Stroke Data ────────────────────────────────
+  if (pathname === '/api/save-katakana' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        const katakanaFile = path.join(ROOT_DIR, 'data', 'katakana.json');
+        const jsFile = path.join(ROOT_DIR, 'data', 'katakana.js');
+
+        // Pattern A: Single character save { char, paths, numbers }
+        if (payload.char && payload.paths) {
+          const data = JSON.parse(fs.readFileSync(katakanaFile, 'utf-8'));
+          if (!data.characters[payload.char]) throw new Error(`Character "${payload.char}" not found in katakana.json`);
+
+          data.characters[payload.char].paths = payload.paths;
+          data.characters[payload.char].strokeCount = payload.paths.length;
+          if (payload.numbers) data.characters[payload.char].numbers = payload.numbers;
+
+          fs.writeFileSync(katakanaFile, JSON.stringify(data, null, 2), 'utf-8');
+          console.log(`[Editor] Saved katakana "${payload.char}" (${payload.paths.length} strokes) to katakana.json`);
+
+          const jsData = { meta: data.meta, characters: data.characters };
+          fs.writeFileSync(jsFile, `window.KATAKANA_DATA = ${JSON.stringify(jsData)};`, 'utf-8');
+          console.log(`[Editor] Synced katakana.js`);
+        }
+        // Pattern B: Full dataset save { meta, characters }
+        else if (payload.characters) {
+          fs.writeFileSync(katakanaFile, JSON.stringify(payload, null, 2), 'utf-8');
+          console.log(`[Editor] Saved katakana.json (${Object.keys(payload.characters).length} characters)`);
+
+          const jsData = { meta: payload.meta, characters: payload.characters };
+          fs.writeFileSync(jsFile, `window.KATAKANA_DATA = ${JSON.stringify(jsData)};`, 'utf-8');
+          console.log(`[Editor] Synced katakana.js`);
+        } else {
+          throw new Error('Invalid katakana save payload');
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
   // ── Static Files Delivery ───────────────────────────────────────────
-  let filePath = path.join(ROOT_DIR, pathname === '/' ? 'viewer.html' : pathname);
+  let normalizedPath = pathname === '/' ? 'viewer.html' : pathname;
+  if (normalizedPath.startsWith('/app/data/')) {
+    normalizedPath = normalizedPath.replace('/app/data/', '/data/');
+  }
+  let filePath = path.join(ROOT_DIR, normalizedPath);
   if (!fs.existsSync(filePath)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     return res.end('404 Not Found');
